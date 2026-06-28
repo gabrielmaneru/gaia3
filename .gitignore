@@ -1,0 +1,10 @@
+# Binaries
+build/
+
+# Visual Studio files
+.vs/
+**.vcxproj.filters
+**.vcxproj.user
+
+# vcpkg installed
+vcpkg_installed/
