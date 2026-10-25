@@ -19,13 +19,13 @@ void Renderer::Init(ProcAddressFn procAddressLoader)
 
 	if (!InitializeDummyShaders())
 	{
-		std::cerr << "Failed to create dummy shaders\n";
+		std::cerr << "Renderer init failed: Failed to create dummy shaders\n";
 		return;
 	}
 
 	if (!InitializeDummyVertexBuffer())
 	{
-		std::cerr << "Failed to create dummy vertex buffer\n";
+		std::cerr << "Renderer init failed: Failed to create dummy vertex buffer\n";
 		return;
 	}
 
