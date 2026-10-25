@@ -8,3 +8,6 @@ build/
 
 # vcpkg installed
 vcpkg_installed/
+
+# PrecompiledHeader
+*.pch

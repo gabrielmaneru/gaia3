@@ -1,6 +1,7 @@
 #pragma once
 
 #include <core/window.h>
+#include <gfx/renderer.h>
 
 class App
 {
@@ -11,4 +12,5 @@ public:
 
 private:
 	static Window m_Window;
+	static Renderer m_Renderer;
 };
