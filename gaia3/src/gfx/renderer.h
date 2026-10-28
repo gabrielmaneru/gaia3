@@ -5,7 +5,7 @@
 class Renderer
 {
 public:
-	void Init(ProcAddressFn procAddressLoader);
+	bool Init(ProcAddressFn procAddressLoader);
 	void Update();
 	void Shutdown();
 

@@ -2,12 +2,21 @@
 #include "app.h"
 
 Window App::m_Window;
+Input App::m_Input;
 Renderer App::m_Renderer;
 
-void App::Init()
+bool App::Init()
 {
-	m_Window.Init("Gaia3", { 800, 600 });
-	m_Renderer.Init(m_Window.GetProcAddressLoader());
+	if (!m_Window.Init("Gaia3", { 800, 600 }))
+		return false;
+
+	if (!m_Input.Init(m_Window.GetWindowHandle()))
+		return false;
+
+	if (!m_Renderer.Init(m_Window.GetProcAddressLoader()))
+		return false;
+
+	return true;
 }
 
 void App::Run()
@@ -15,6 +24,7 @@ void App::Run()
 	do
 	{
 		m_Renderer.Update();
+		m_Input.Update();
 		m_Window.Update();
 	} while (!m_Window.ShouldClose());
 }

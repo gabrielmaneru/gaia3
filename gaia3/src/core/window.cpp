@@ -3,13 +3,13 @@
 
 #include <GLFW/glfw3.h>
 
-void Window::Init(const char* title, rect canvas)
+bool Window::Init(const char* title, rect canvas)
 {
 	if (!glfwInit())
 	{
 		std::cerr << "Failed to initialize GLFW\n";
 		m_WindowHandle = nullptr;
-		return;
+		return false;
 	}
 
 	// Request an OpenGL 3.3 core profile context
@@ -22,12 +22,13 @@ void Window::Init(const char* title, rect canvas)
 	{
 		std::cerr << "Failed to create GLFW window\n";
 		glfwTerminate();
-		return;
+		return false;
 	}
 
 	glfwMakeContextCurrent(m_WindowHandle);
 
 	SetVSyncEnabled(true);
+	return true;
 }
 
 void Window::Update()
@@ -50,9 +51,9 @@ void Window::Shutdown()
 	glfwTerminate();
 }
 
-ProcAddressFn Window::GetProcAddressLoader() const
+ProcAddressFn Window::GetProcAddressLoader()
 {
-	return m_WindowHandle != nullptr ? reinterpret_cast<ProcAddressFn>(glfwGetProcAddress) : nullptr;
+	return reinterpret_cast<ProcAddressFn>(glfwGetProcAddress);
 }
 
 void Window::SetVSyncEnabled(bool val)

@@ -3,33 +3,30 @@
 
 #include <glad/glad.h>
 
-void Renderer::Init(ProcAddressFn procAddressLoader)
+bool Renderer::Init(ProcAddressFn procAddressLoader)
 {
-	if (procAddressLoader == nullptr)
-	{
-		std::cerr << "Renderer init failed: invalid proc address loader\n";
-		return;
-	}
+	assert(procAddressLoader != nullptr);
 
 	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(procAddressLoader)))
 	{
 		std::cerr << "Renderer init failed: GLAD loader initialization failed\n";
-		return;
+		return false;
 	}
 
 	if (!InitializeDummyShaders())
 	{
 		std::cerr << "Renderer init failed: Failed to create dummy shaders\n";
-		return;
+		return false;
 	}
 
 	if (!InitializeDummyVertexBuffer())
 	{
 		std::cerr << "Renderer init failed: Failed to create dummy vertex buffer\n";
-		return;
+		return false;
 	}
 
 	m_IsInitialized = true;
+	return true;
 }
 
 void Renderer::Update()
@@ -147,6 +144,7 @@ bool Renderer::InitializeDummyShaders()
 	// Delete shader cache
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
+
 	return true;
 }
 
@@ -170,4 +168,6 @@ bool Renderer::InitializeDummyVertexBuffer()
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+
+	return true;
 }

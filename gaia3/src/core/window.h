@@ -7,10 +7,12 @@ struct GLFWwindow;
 class Window
 {
 public:
-	void Init(const char* title, rect canvas);
+	bool Init(const char* title, rect canvas);
 	void Update();
 	void Shutdown();
-	ProcAddressFn GetProcAddressLoader() const;
+
+	static ProcAddressFn GetProcAddressLoader();
+	GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }
 
 	void SetVSyncEnabled(bool val);
 	bool ShouldClose() const;

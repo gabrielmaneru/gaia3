@@ -173,8 +173,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\core\app.cpp" />
+    <ClCompile Include="src\core\input.cpp" />
     <ClCompile Include="src\core\window.cpp" />
-    <ClInclude Include="src\gaia3.h" />
     <ClCompile Include="src\gaia3_pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -185,8 +185,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\app.h" />
+    <ClInclude Include="src\core\input.h" />
     <ClInclude Include="src\core\types.h" />
     <ClInclude Include="src\core\window.h" />
+    <ClInclude Include="src\gaia3.h" />
     <ClInclude Include="src\gaia3_pch.h" />
     <ClInclude Include="src\gfx\renderer.h" />
   </ItemGroup>
