@@ -23,7 +23,7 @@ void App::Run()
 {
 	do
 	{
-		m_Renderer.Update();
+		m_Renderer.Update(m_Window.GetCanvas());
 		m_Input.Update();
 		m_Window.Update();
 	} while (!m_Window.ShouldClose());

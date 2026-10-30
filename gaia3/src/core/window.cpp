@@ -3,8 +3,12 @@
 
 #include <GLFW/glfw3.h>
 
+Window* Window::s_Instance = nullptr;
+
 bool Window::Init(const char* title, rect canvas)
 {
+	s_Instance = this;
+
 	if (!glfwInit())
 	{
 		std::cerr << "Failed to initialize GLFW\n";
@@ -26,6 +30,13 @@ bool Window::Init(const char* title, rect canvas)
 	}
 
 	glfwMakeContextCurrent(m_WindowHandle);
+	glfwSetWindowSizeCallback(m_WindowHandle, &Window::OnWindowSizeChanged);
+
+	int currentWidth = 0;
+	int currentHeight = 0;
+	glfwGetWindowSize(m_WindowHandle, &currentWidth, &currentHeight);
+	m_Canvas.x = currentWidth > 0 ? currentWidth : 1;
+	m_Canvas.y = currentHeight > 0 ? currentHeight : 1;
 
 	SetVSyncEnabled(true);
 	return true;
@@ -48,6 +59,10 @@ void Window::Shutdown()
 		glfwDestroyWindow(m_WindowHandle);
 		m_WindowHandle = nullptr;
 	}
+
+	if (s_Instance == this)
+		s_Instance = nullptr;
+
 	glfwTerminate();
 }
 
@@ -75,4 +90,13 @@ void Window::SetVSyncEnabled(bool val)
 bool Window::ShouldClose() const
 {
 	return m_WindowHandle != nullptr ? glfwWindowShouldClose(m_WindowHandle) : true;
+}
+
+void Window::OnWindowSizeChanged(GLFWwindow* window, int width, int height)
+{
+	if (window == nullptr || s_Instance == nullptr)
+		return;
+
+	s_Instance->m_Canvas.x = width > 0 ? width : 1;
+	s_Instance->m_Canvas.y = height > 0 ? height : 1;
 }

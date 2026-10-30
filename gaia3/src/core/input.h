@@ -177,6 +177,8 @@ public:
 	double GetMouseDeltaX() const { return m_MouseDeltaX; }
 	double GetMouseDeltaY() const { return m_MouseDeltaY; }
 
+	static Input* _GetInstance() { assert(s_Instance != nullptr); return s_Instance; }
+
 private:
 	static void KeyCallback(GLFWwindow* windowHandle, int key, int scancode, int action, int mods);
 	static void MouseButtonCallback(GLFWwindow* windowHandle, int button, int action, int mods);
@@ -195,3 +197,4 @@ private:
 	double m_MouseDeltaY = 0.0;
 	bool m_HasMousePosition = false;
 };
+#define input Input::_GetInstance()

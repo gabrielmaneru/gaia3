@@ -19,6 +19,9 @@ bool Input::Init(GLFWwindow* windowHandle)
 
 void Input::Update()
 {
+	m_MouseDeltaX = 0.0;
+	m_MouseDeltaY = 0.0;
+
 	for (u16 i = 0; i < (u16)eInputKeys::_KEY_COUNT; i++)
 	{
 		if (m_KeyStates[i] == eInputState::TRIGGERED)

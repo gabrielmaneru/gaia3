@@ -25,14 +25,12 @@ bool Renderer::Init(ProcAddressFn procAddressLoader)
 		return false;
 	}
 
-	m_IsInitialized = true;
 	return true;
 }
 
-void Renderer::Update()
+void Renderer::Update(rect canvas)
 {
-	if (!m_IsInitialized)
-		return;
+	glViewport(0, 0, canvas.x, canvas.y);
 
 	// Clear buffer
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -40,7 +38,14 @@ void Renderer::Update()
 
 	// Draw dummy mesh
 	glUseProgram(m_Program);
+
+	m_Camera.Update(canvas);
+	const Matrix44& view = m_Camera.GetViewMatrix();
+	const Matrix44& projection = m_Camera.GetProjectionMatrix();
+	glUniformMatrix4fv(m_ViewMatrixLocation, 1, GL_FALSE, &view.col_0.x);
+	glUniformMatrix4fv(m_ProjectionMatrixLocation, 1, GL_FALSE, &projection.col_0.x);
 	glBindVertexArray(m_VertexArray);
+
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	glBindVertexArray(0);
 }
@@ -64,8 +69,6 @@ void Renderer::Shutdown()
 		glDeleteProgram(m_Program);
 		m_Program = 0;
 	}
-
-	m_IsInitialized = false;
 }
 
 bool Renderer::InitializeDummyShaders()
@@ -73,9 +76,11 @@ bool Renderer::InitializeDummyShaders()
 	constexpr const char* vertexShaderSource = R"(
 		#version 330 core
 		layout (location = 0) in vec3 aPos;
+		uniform mat4 u_View;
+		uniform mat4 u_Projection;
 		void main()
 		{
-			gl_Position = vec4(aPos, 1.0);
+			gl_Position = u_Projection * u_View * vec4(aPos, 1.0);
 		}
 	)";
 
@@ -144,6 +149,14 @@ bool Renderer::InitializeDummyShaders()
 	// Delete shader cache
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
+
+	m_ViewMatrixLocation = glGetUniformLocation(m_Program, "u_View");
+	m_ProjectionMatrixLocation = glGetUniformLocation(m_Program, "u_Projection");
+	if (m_ViewMatrixLocation < 0 || m_ProjectionMatrixLocation < 0)
+	{
+		std::cerr << "Renderer init failed: Camera matrix uniform lookup failed\n";
+		return false;
+	}
 
 	return true;
 }

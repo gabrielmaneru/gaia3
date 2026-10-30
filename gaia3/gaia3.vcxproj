@@ -175,22 +175,36 @@
     <ClCompile Include="src\core\app.cpp" />
     <ClCompile Include="src\core\input.cpp" />
     <ClCompile Include="src\core\window.cpp" />
+    <ClCompile Include="src\gfx\camera.cpp" />
+    <ClCompile Include="src\gfx\renderer.cpp" />
+    <ClCompile Include="src\math\mathHelpers.cpp" />
+    <ClCompile Include="src\math\matrix.cpp" />
+    <ClCompile Include="src\math\matrixTransforms.cpp" />
+    <ClCompile Include="src\math\scalar.cpp" />
+    <ClCompile Include="src\math\vector.cpp" />
+    <ClCompile Include="src\math\vectorTransforms.cpp" />
     <ClCompile Include="src\gaia3_pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\gfx\renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\app.h" />
     <ClInclude Include="src\core\input.h" />
     <ClInclude Include="src\core\types.h" />
     <ClInclude Include="src\core\window.h" />
+    <ClInclude Include="src\gfx\camera.h" />
+    <ClInclude Include="src\gfx\renderer.h" />
+    <ClInclude Include="src\math\mathHelpers.h" />
+    <ClInclude Include="src\math\matrix.h" />
+    <ClInclude Include="src\math\matrixTransforms.h" />
+    <ClInclude Include="src\math\scalar.h" />
+    <ClInclude Include="src\math\vector.h" />
+    <ClInclude Include="src\math\vectorTransforms.h" />
     <ClInclude Include="src\gaia3.h" />
     <ClInclude Include="src\gaia3_pch.h" />
-    <ClInclude Include="src\gfx\renderer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
