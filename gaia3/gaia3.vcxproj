@@ -100,7 +100,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>gaia3_pch.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile />
+      <PrecompiledHeaderOutputFile>$(SolutionDir)build\pch\gaia3_pch.pch</PrecompiledHeaderOutputFile>
     </ClCompile>
     <Link>
       <SubSystem></SubSystem>
@@ -121,7 +121,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>gaia3_pch.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile />
+      <PrecompiledHeaderOutputFile>$(SolutionDir)build\pch\gaia3_pch.pch</PrecompiledHeaderOutputFile>
     </ClCompile>
     <Link>
       <SubSystem></SubSystem>
@@ -140,7 +140,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>gaia3_pch.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile />
+      <PrecompiledHeaderOutputFile>$(SolutionDir)build\pch\gaia3_pch.pch</PrecompiledHeaderOutputFile>
     </ClCompile>
     <Link>
       <SubSystem></SubSystem>
@@ -161,7 +161,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>gaia3_pch.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile />
+      <PrecompiledHeaderOutputFile>$(SolutionDir)build\pch\gaia3_pch.pch</PrecompiledHeaderOutputFile>
     </ClCompile>
     <Link>
       <SubSystem></SubSystem>

@@ -3,5 +3,6 @@
     <Platform Name="x64" />
   </Configurations>
   <Project Path="gaia3/gaia3.vcxproj" Id="755c7518-de5b-4cb1-b769-8b2124319b70" />
+  <Project Path="gaia3_tests/gaia3_tests.vcxproj" Id="2f6f9220-b0dd-4a44-b1d3-93df7857bc2e" />
   <Project Path="samples/sandbox.vcxproj" Id="7dc8b85f-00ef-4215-8f0b-18ba3a13eb2c" />
 </Solution>
