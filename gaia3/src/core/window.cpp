@@ -97,6 +97,6 @@ void Window::OnWindowSizeChanged(GLFWwindow* window, int width, int height)
 	if (window == nullptr || s_Instance == nullptr)
 		return;
 
-	s_Instance->m_Canvas.x = width > 0 ? width : 1;
-	s_Instance->m_Canvas.y = height > 0 ? height : 1;
+	s_Instance->m_Canvas.x = width;
+	s_Instance->m_Canvas.y = height;
 }

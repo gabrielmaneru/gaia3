@@ -172,10 +172,11 @@ public:
 	bool IsMouseButtonTriggered(eInputMouseButtons inputButton) const;
 	bool IsMouseButtonReleased(eInputMouseButtons inputButton) const;
 
-	double GetMouseX() const { return m_MouseX; }
-	double GetMouseY() const { return m_MouseY; }
-	double GetMouseDeltaX() const { return m_MouseDeltaX; }
-	double GetMouseDeltaY() const { return m_MouseDeltaY; }
+	float GetMouseX() const { return m_MouseX; }
+	float GetMouseY() const { return m_MouseY; }
+	float GetMouseDeltaX() const { return m_MouseDeltaX; }
+	float GetMouseDeltaY() const { return m_MouseDeltaY; }
+	bool IsMouseMoving() const { return m_MouseDeltaX != 0.0f || m_MouseDeltaY != 0.0f; }
 
 	static Input* _GetInstance() { assert(s_Instance != nullptr); return s_Instance; }
 
@@ -189,12 +190,12 @@ private:
 	eInputState m_KeyStates[(u16)eInputKeys::_KEY_COUNT] = {};
 	eInputState m_MouseButtonStates[(u16)eInputMouseButtons::_BUTTON_COUNT] = {};
 	
-	double m_MouseX = 0.0;
-	double m_MouseY = 0.0;
-	double m_PrevMouseX = 0.0;
-	double m_PrevMouseY = 0.0;
-	double m_MouseDeltaX = 0.0;
-	double m_MouseDeltaY = 0.0;
+	float m_MouseX = 0.0f;
+	float m_MouseY = 0.0f;
+	float m_PrevMouseX = 0.0f;
+	float m_PrevMouseY = 0.0f;
+	float m_MouseDeltaX = 0.0f;
+	float m_MouseDeltaY = 0.0f;
 	bool m_HasMousePosition = false;
 };
 #define input Input::_GetInstance()

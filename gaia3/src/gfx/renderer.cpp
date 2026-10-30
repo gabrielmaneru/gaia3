@@ -3,9 +3,10 @@
 
 #include <glad/glad.h>
 
-bool Renderer::Init(ProcAddressFn procAddressLoader)
+bool Renderer::Init(ProcAddressFn procAddressLoader, rect canvas)
 {
 	assert(procAddressLoader != nullptr);
+	assert(canvas.x > 0 && canvas.y > 0);
 
 	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(procAddressLoader)))
 	{
@@ -24,6 +25,8 @@ bool Renderer::Init(ProcAddressFn procAddressLoader)
 		std::cerr << "Renderer init failed: Failed to create dummy vertex buffer\n";
 		return false;
 	}
+
+	m_Camera.Init(canvas);
 
 	return true;
 }

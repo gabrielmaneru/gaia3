@@ -6,7 +6,7 @@
 class Renderer
 {
 public:
-	bool Init(ProcAddressFn procAddressLoader);
+	bool Init(ProcAddressFn procAddressLoader, rect canvas);
 	void Update(rect canvas);
 	void Shutdown();
 
@@ -20,5 +20,4 @@ private:
 	u32 m_Program = 0;
 	int m_ViewMatrixLocation = -1;
 	int m_ProjectionMatrixLocation = -1;
-	bool m_IsInitialized = false;
 };

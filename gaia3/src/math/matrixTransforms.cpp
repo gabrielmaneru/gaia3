@@ -37,16 +37,16 @@ Matrix44 LookAt(const Vec3& eye, const Vec3& forwardDir, const Vec3& upAxis)
 
 	const Vec3 up = Cross(right, front).Normalized();
 
-	// View translation for column-major matrix with basis columns [right, up, -front].
+	// View translation terms from dot products with camera basis vectors.
 	const float tx = -Dot(right, eye);
 	const float ty = -Dot(up, eye);
 	const float tz = Dot(front, eye);
 
 	Matrix44 view;
-	view.col_0 = Vec4(right, 0.0f);
-	view.col_1 = Vec4(up, 0.0f);
-	view.col_2 = Vec4(-front, 0.0f);
-	view.col_3 = Vec4(tx, ty, tz, 1.0f);
+	view.SetRow(0, Vec4(right, tx));
+	view.SetRow(1, Vec4(up, ty));
+	view.SetRow(2, Vec4(-front, tz));
+	view.SetRow(3, Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	return view;
 }
@@ -67,10 +67,10 @@ Matrix44 Perspective(float fovRadians, float aspectRatio, float nearPlane, float
 	const float f2 = 1.0f / tanHalfFovY;
 
 	Matrix44 projection;
-	projection.col_0 = Vec4(f1, 0.0f, 0.0f, 0.0f);
-	projection.col_1 = Vec4(0.0f, f2, 0.0f, 0.0f);
-	projection.col_2 = Vec4(0.0f, 0.0f, (clampedFar + clampedNear) / (clampedNear - clampedFar), -1.0f);
-	projection.col_3 = Vec4(0.0f, 0.0f, (2.0f * clampedFar * clampedNear) / (clampedNear - clampedFar), 0.0f);
+	projection.SetRow(0, Vec4(f1, 0.0f, 0.0f, 0.0f));
+	projection.SetRow(1, Vec4(0.0f, f2, 0.0f, 0.0f));
+	projection.SetRow(2, Vec4(0.0f, 0.0f, (clampedFar + clampedNear) / (clampedNear - clampedFar), (2.0f * clampedFar * clampedNear) / (clampedNear - clampedFar)));
+	projection.SetRow(3, Vec4(0.0f, 0.0f, -1.0f, 0.0f));
 
 	return projection;
 }

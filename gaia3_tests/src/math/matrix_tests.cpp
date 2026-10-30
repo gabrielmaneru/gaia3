@@ -31,19 +31,63 @@ TEST(MatrixTests, Matrix44DefaultIsZero)
 	EXPECT_FLOAT_EQ(m.col_3.w, 0.0f);
 }
 
+TEST(MatrixTests, Matrix33SetRowWritesExpectedComponents)
+{
+	Matrix33 m;
+	m.SetRow(0, Vec3(1.0f, 2.0f, 3.0f));
+	m.SetRow(1, Vec3(4.0f, 5.0f, 6.0f));
+	m.SetRow(2, Vec3(7.0f, 8.0f, 9.0f));
+
+	EXPECT_FLOAT_EQ(m.col_0.x, 1.0f);
+	EXPECT_FLOAT_EQ(m.col_1.x, 2.0f);
+	EXPECT_FLOAT_EQ(m.col_2.x, 3.0f);
+	EXPECT_FLOAT_EQ(m.col_0.y, 4.0f);
+	EXPECT_FLOAT_EQ(m.col_1.y, 5.0f);
+	EXPECT_FLOAT_EQ(m.col_2.y, 6.0f);
+	EXPECT_FLOAT_EQ(m.col_0.z, 7.0f);
+	EXPECT_FLOAT_EQ(m.col_1.z, 8.0f);
+	EXPECT_FLOAT_EQ(m.col_2.z, 9.0f);
+}
+
+TEST(MatrixTests, Matrix44SetRowWritesExpectedComponents)
+{
+	Matrix44 m;
+	m.SetRow(0, Vec4(1.0f, 2.0f, 3.0f, 4.0f));
+	m.SetRow(1, Vec4(5.0f, 6.0f, 7.0f, 8.0f));
+	m.SetRow(2, Vec4(9.0f, 10.0f, 11.0f, 12.0f));
+	m.SetRow(3, Vec4(13.0f, 14.0f, 15.0f, 16.0f));
+
+	EXPECT_FLOAT_EQ(m.col_0.x, 1.0f);
+	EXPECT_FLOAT_EQ(m.col_1.x, 2.0f);
+	EXPECT_FLOAT_EQ(m.col_2.x, 3.0f);
+	EXPECT_FLOAT_EQ(m.col_3.x, 4.0f);
+	EXPECT_FLOAT_EQ(m.col_0.y, 5.0f);
+	EXPECT_FLOAT_EQ(m.col_1.y, 6.0f);
+	EXPECT_FLOAT_EQ(m.col_2.y, 7.0f);
+	EXPECT_FLOAT_EQ(m.col_3.y, 8.0f);
+	EXPECT_FLOAT_EQ(m.col_0.z, 9.0f);
+	EXPECT_FLOAT_EQ(m.col_1.z, 10.0f);
+	EXPECT_FLOAT_EQ(m.col_2.z, 11.0f);
+	EXPECT_FLOAT_EQ(m.col_3.z, 12.0f);
+	EXPECT_FLOAT_EQ(m.col_0.w, 13.0f);
+	EXPECT_FLOAT_EQ(m.col_1.w, 14.0f);
+	EXPECT_FLOAT_EQ(m.col_2.w, 15.0f);
+	EXPECT_FLOAT_EQ(m.col_3.w, 16.0f);
+}
+
 TEST(MatrixTransformsTests, LookAtBuildsExpectedBasisAtOrigin)
 {
 	const Matrix44 view = LookAt(Vec3::V_Zero, Vec3::V_Front, Vec3::V_Up);
 
 	EXPECT_FLOAT_EQ(view.col_0.x, 0.0f);
 	EXPECT_FLOAT_EQ(view.col_0.y, 0.0f);
-	EXPECT_FLOAT_EQ(view.col_0.z, 1.0f);
+	EXPECT_FLOAT_EQ(view.col_0.z, -1.0f);
 
 	EXPECT_FLOAT_EQ(view.col_1.x, 0.0f);
 	EXPECT_FLOAT_EQ(view.col_1.y, 1.0f);
 	EXPECT_FLOAT_EQ(view.col_1.z, 0.0f);
 
-	EXPECT_FLOAT_EQ(view.col_2.x, -1.0f);
+	EXPECT_FLOAT_EQ(view.col_2.x, 1.0f);
 	EXPECT_FLOAT_EQ(view.col_2.y, 0.0f);
 	EXPECT_FLOAT_EQ(view.col_2.z, 0.0f);
 

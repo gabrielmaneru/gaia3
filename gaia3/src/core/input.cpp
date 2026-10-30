@@ -128,15 +128,17 @@ void Input::MousePositionCallback(GLFWwindow* windowHandle, double xPos, double 
 
 	if (s_Instance->m_HasMousePosition == false)
 	{
-		s_Instance->m_PrevMouseX = xPos;
-		s_Instance->m_PrevMouseY = yPos;
+		s_Instance->m_PrevMouseX = static_cast<float>(xPos);
+		s_Instance->m_PrevMouseY = static_cast<float>(yPos);
 		s_Instance->m_HasMousePosition = true;
 	}
 
-	s_Instance->m_MouseX = xPos;
-	s_Instance->m_MouseY = yPos;
-	s_Instance->m_MouseDeltaX = xPos - s_Instance->m_PrevMouseX;
-	s_Instance->m_MouseDeltaY = yPos - s_Instance->m_PrevMouseY;
-	s_Instance->m_PrevMouseX = xPos;
-	s_Instance->m_PrevMouseY = yPos;
+	const float mouseX = static_cast<float>(xPos);
+	const float mouseY = static_cast<float>(yPos);
+	s_Instance->m_MouseX = mouseX;
+	s_Instance->m_MouseY = mouseY;
+	s_Instance->m_MouseDeltaX = mouseX - s_Instance->m_PrevMouseX;
+	s_Instance->m_MouseDeltaY = s_Instance->m_PrevMouseY - mouseY;
+	s_Instance->m_PrevMouseX = mouseX;
+	s_Instance->m_PrevMouseY = mouseY;
 }

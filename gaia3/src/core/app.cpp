@@ -13,7 +13,7 @@ bool App::Init()
 	if (!m_Input.Init(m_Window.GetWindowHandle()))
 		return false;
 
-	if (!m_Renderer.Init(m_Window.GetProcAddressLoader()))
+	if (!m_Renderer.Init(m_Window.GetProcAddressLoader(), m_Window.GetCanvas()))
 		return false;
 
 	return true;
@@ -23,8 +23,11 @@ void App::Run()
 {
 	do
 	{
-		m_Renderer.Update(m_Window.GetCanvas());
-		m_Input.Update();
+		if (!m_Window.IsMinimized())
+		{
+			m_Renderer.Update(m_Window.GetCanvas());
+			m_Input.Update();
+		}
 		m_Window.Update();
 	} while (!m_Window.ShouldClose());
 }
