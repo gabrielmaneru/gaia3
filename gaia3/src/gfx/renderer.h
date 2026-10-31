@@ -1,13 +1,13 @@
 #pragma once
 
-#include <core/window.h>
 #include "camera.h"
+#include <platform/window.h>
 
 class Renderer
 {
 public:
-	bool Init(ProcAddressFn procAddressLoader, rect canvas);
-	void Update(rect canvas);
+	bool Init( ProcAddressFn procAddressLoader, rect canvas );
+	void Update( rect canvas );
 	void Shutdown();
 
 private:
@@ -15,9 +15,9 @@ private:
 	bool InitializeDummyVertexBuffer();
 
 	Camera m_Camera;
-	u32 m_VertexArray = 0;
-	u32 m_VertexBuffer = 0;
-	u32 m_Program = 0;
-	int m_ViewMatrixLocation = -1;
-	int m_ProjectionMatrixLocation = -1;
+	u32    m_VertexArray              = 0;
+	u32    m_VertexBuffer             = 0;
+	u32    m_Program                  = 0;
+	int    m_ViewMatrixLocation       = -1;
+	int    m_ProjectionMatrixLocation = -1;
 };

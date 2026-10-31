@@ -2,7 +2,7 @@
 
 int main()
 {
-	if (!App::Init())
+	if( !App::Init() )
 		return 1;
 	App::Run();
 	App::Shutdown();

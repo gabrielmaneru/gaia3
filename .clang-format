@@ -1,0 +1,40 @@
+BasedOnStyle: LLVM
+
+# Indent
+IndentWidth: 4
+ContinuationIndentWidth: 4
+UseTab: ForIndentation
+TabWidth: 4
+AccessModifierOffset: -4
+
+# Parentheses
+SpaceBeforeParens: Never
+SpacesInParentheses: true
+SortIncludes: false
+IncludeBlocks: Preserve
+
+# Braces
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeElse: true
+
+# Alignment
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Packing
+ColumnLimit: 0
+AllowShortFunctionsOnASingleLine: Inline
+BreakBeforeBinaryOperators: NonAssignment
+BinPackParameters: false
+BinPackArguments: false

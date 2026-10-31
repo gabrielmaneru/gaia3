@@ -1,11 +1,9 @@
 #include "gaia3_pch.h"
 #include "matrix.h"
 
-
-
-void Matrix33::SetRow(int row, const Vec3& v)
+void Matrix33::SetRow( int row, const Vec3& v )
 {
-	switch (row)
+	switch( row )
 	{
 	case 0:
 		col_0.x = v.x;
@@ -23,16 +21,14 @@ void Matrix33::SetRow(int row, const Vec3& v)
 		col_2.z = v.z;
 		break;
 	default:
-		assert(false);
+		assert( false );
 		break;
 	}
 }
 
-
-
-void Matrix44::SetRow(int row, const Vec4& v)
+void Matrix44::SetRow( int row, const Vec4& v )
 {
-	switch (row)
+	switch( row )
 	{
 	case 0:
 		col_0.x = v.x;
@@ -59,7 +55,7 @@ void Matrix44::SetRow(int row, const Vec4& v)
 		col_3.w = v.w;
 		break;
 	default:
-		assert(false);
+		assert( false );
 		break;
 	}
 }

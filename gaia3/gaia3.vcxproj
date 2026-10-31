@@ -173,8 +173,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\core\app.cpp" />
-    <ClCompile Include="src\core\input.cpp" />
-    <ClCompile Include="src\core\window.cpp" />
+    <ClCompile Include="src\platform\input.cpp" />
+    <ClCompile Include="src\platform\window.cpp" />
     <ClCompile Include="src\gfx\camera.cpp" />
     <ClCompile Include="src\gfx\renderer.cpp" />
     <ClCompile Include="src\math\mathHelpers.cpp" />
@@ -192,9 +192,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\app.h" />
-    <ClInclude Include="src\core\input.h" />
+    <ClInclude Include="src\platform\input.h" />
     <ClInclude Include="src\core\types.h" />
-    <ClInclude Include="src\core\window.h" />
+    <ClInclude Include="src\platform\window.h" />
     <ClInclude Include="src\gfx\camera.h" />
     <ClInclude Include="src\gfx\renderer.h" />
     <ClInclude Include="src\math\mathHelpers.h" />
