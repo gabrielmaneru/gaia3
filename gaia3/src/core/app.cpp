@@ -4,16 +4,20 @@
 Window   App::m_Window;
 Input    App::m_Input;
 Renderer App::m_Renderer;
+Session  App::m_Session;
 
-bool App::Init()
+bool App::Init( const AppConfig& config )
 {
-	if( !m_Window.Init( "Gaia3", { 800, 600 } ) )
+	if( !m_Window.Init( config.title, config.canvas ) )
 		return false;
 
 	if( !m_Input.Init( m_Window.GetWindowHandle() ) )
 		return false;
 
 	if( !m_Renderer.Init( m_Window.GetProcAddressLoader(), m_Window.GetCanvas() ) )
+		return false;
+
+	if( !m_Session.Init( config.startLevel, config.commonPath, config.appPath ) )
 		return false;
 
 	return true;
@@ -25,6 +29,7 @@ void App::Run()
 	{
 		if( !m_Window.IsMinimized() )
 		{
+			m_Session.Update();
 			m_Renderer.Update( m_Window.GetCanvas() );
 			m_Input.Update();
 		}
@@ -34,6 +39,7 @@ void App::Run()
 
 void App::Shutdown()
 {
+	m_Session.Shutdown();
 	m_Renderer.Shutdown();
 	m_Window.Shutdown();
 }

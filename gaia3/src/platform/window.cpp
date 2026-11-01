@@ -1,11 +1,11 @@
-#include "window.h"
 #include "gaia3_pch.h"
+#include "window.h"
 
 #include <GLFW/glfw3.h>
 
 Window* Window::s_Instance = nullptr;
 
-bool Window::Init( const char* title, rect canvas )
+bool Window::Init( std::string_view title, rect canvas )
 {
 	s_Instance = this;
 
@@ -20,8 +20,8 @@ bool Window::Init( const char* title, rect canvas )
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 3 );
 	glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
-
-	m_WindowHandle = glfwCreateWindow( canvas.x, canvas.y, title, nullptr, nullptr );
+	
+	m_WindowHandle = glfwCreateWindow( canvas.x, canvas.y, title.data(), nullptr, nullptr );
 	if( m_WindowHandle == nullptr )
 	{
 		std::cerr << "Failed to create GLFW window\n";

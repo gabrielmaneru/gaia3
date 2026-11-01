@@ -1,8 +1,6 @@
 #include "gaia3_pch.h"
 #include "vectorTransforms.h"
 
-#include <math.h>
-
 Vec3 Cross( const Vec3& a, const Vec3& b )
 {
 	return Vec3( a.y * b.z - a.z * b.y,

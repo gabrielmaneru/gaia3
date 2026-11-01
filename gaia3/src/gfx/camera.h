@@ -1,5 +1,8 @@
 #pragma once
 
+#include <core/types.h>
+#include <math/matrix.h>
+
 class Camera
 {
 public:

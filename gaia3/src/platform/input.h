@@ -1,5 +1,9 @@
 #pragma once
 
+#include <core/types.h>
+
+#include <cassert>
+
 enum class eInputKeys : u16
 {
 	// Copy from GLFW_KEY defines

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <core/types.h>
 #include "camera.h"
 #include <platform/window.h>
 

@@ -2,7 +2,12 @@
 
 // Default STD includes
 #include <cassert>
+#include <fstream>
 #include <iostream>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <vector>
 
 // Core types
 #include <core/types.h>

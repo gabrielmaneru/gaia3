@@ -1,13 +1,17 @@
 #pragma once
 
-typedef void* ProcAddressFn;
+#include <core/types.h>
+
+using ProcAddressFn = void*;
 
 struct GLFWwindow;
+
+#include <string_view>
 
 class Window
 {
 public:
-	bool Init( const char* title, rect canvas );
+	bool Init( std::string_view title, rect canvas );
 	void Update();
 	void Shutdown();
 
