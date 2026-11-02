@@ -1,5 +1,6 @@
 #pragma once
 
+#include <core/serializationTypes.h>
 #include <core/types.h>
 #include <system/type_id.h>
 #include <json/json.h>
@@ -15,13 +16,13 @@ namespace rtti
 
 struct PropertyInfo
 {
-	using SerializeFunc = bool (*)( const void* valuePtr, Json::Value& outValue );
-	using DeserializeFunc = bool (*)( void* valuePtr, const Json::Value& inValue );
+	using SerializeFunc   = bool ( * )( const void* valuePtr, Json::Value& outValue );
+	using DeserializeFunc = bool ( * )( void* valuePtr, const Json::Value& inValue );
 
-	const char* Name;
-	u64         TypeId;
-	size_t      Offset;
-	SerializeFunc Serialize;
+	const char*     Name;
+	u64             TypeId;
+	size_t          Offset;
+	SerializeFunc   Serialize;
 	DeserializeFunc Deserialize;
 };
 
@@ -266,9 +267,10 @@ bool Deserialize( T& instance, const Json::Value& sourceObject )
 }
 } // namespace rtti
 
-#define RTTI_DECLARE_TYPE( TypeName )	             \
-public:									             \
+#define RTTI_DECLARE_TYPE( TypeName )                \
+public:                                              \
 	static const ::rtti::TypeInfo& StaticTypeInfo(); \
+                                                     \
 private:
 
 #define RTTI_DEFINE_TYPE( TypeName, ... )                                                   \

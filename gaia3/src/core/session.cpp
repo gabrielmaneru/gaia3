@@ -6,19 +6,11 @@ bool Session::Init( std::string_view startLevel, std::string_view commonPath, st
 	if( !m_ResourceManager.Init( commonPath, appPath ) )
 		return false;
 
-	if( !startLevel.empty() )
+	if( shared<Level> levelResource = m_ResourceManager.FindResource<Level>( startLevel, true ) )
 	{
-		if( shared<Level> levelResource = m_ResourceManager.FindResource<Level>( startLevel, true ) )
-		{
-			m_CurrentLevel = levelResource;
-		}
-		else
-		{
-			m_CurrentLevel = new_shared<Level>( startLevel, ResourceState::Loaded );
-		}
+		m_CurrentLevel = levelResource;
 	}
-
-	if( m_CurrentLevel == nullptr )
+	else
 	{
 		m_CurrentLevel = new_shared<Level>();
 	}

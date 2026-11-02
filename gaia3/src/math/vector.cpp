@@ -3,9 +3,15 @@
 
 /// Vec3
 const Vec3 Vec3::V_Zero( 0.0f, 0.0f, 0.0f );
+const Vec3 Vec3::V_One( 1.0f, 1.0f, 1.0f );
 const Vec3 Vec3::V_Front( 1.0f, 0.0f, 0.0f );
 const Vec3 Vec3::V_Up( 0.0f, 1.0f, 0.0f );
 const Vec3 Vec3::V_Right( 0.0f, 0.0f, 1.0f );
+
+Vec3::Vec3( const Vec4& _v )
+    : x( _v.x ), y( _v.y ), z( _v.z )
+{
+}
 
 Vec3 Vec3::operator-() const
 {
@@ -50,6 +56,20 @@ Vec3& Vec3::operator-=( const Vec3& rhs )
 	return *this;
 }
 
+Vec3 Vec3::operator*( const Vec3& rhs ) const
+{
+	Vec3 result( *this );
+	return result *= rhs;
+}
+
+Vec3& Vec3::operator*=( const Vec3& rhs )
+{
+	x *= rhs.x;
+	y *= rhs.y;
+	z *= rhs.z;
+	return *this;
+}
+
 Vec3 Vec3::operator*( const Scalar& s ) const
 {
 	Vec3 result( *this );
@@ -91,10 +111,11 @@ Vec3 Vec3::Normalized() const
 }
 
 /// Vec4
-const Vec4 Vec4::V_Zero( 0.0f, 0.0f, 0.0f );
-const Vec4 Vec4::V_Front( 1.0f, 0.0f, 0.0f );
-const Vec4 Vec4::V_Up( 0.0f, 1.0f, 0.0f );
-const Vec4 Vec4::V_Right( 0.0f, 0.0f, 1.0f );
+const Vec4 Vec4::V_Zero( 0.0f, 0.0f, 0.0f, 0.0f );
+const Vec4 Vec4::V_One( 1.0f, 1.0f, 1.0f, 1.0f );
+
+Vec4::Vec4( const Vec3& _v, float _w )
+    : x( _v.x ), y( _v.y ), z( _v.z ), w( _w ) {}
 
 Vec4 Vec4::operator-() const
 {
@@ -138,6 +159,21 @@ Vec4& Vec4::operator-=( const Vec4& rhs )
 	y -= rhs.y;
 	z -= rhs.z;
 	w -= rhs.w;
+	return *this;
+}
+
+Vec4 Vec4::operator*( const Vec4& rhs ) const
+{
+	Vec4 result( *this );
+	return result *= rhs;
+}
+
+Vec4& Vec4::operator*=( const Vec4& rhs )
+{
+	x *= rhs.x;
+	y *= rhs.y;
+	z *= rhs.z;
+	w *= rhs.w;
 	return *this;
 }
 

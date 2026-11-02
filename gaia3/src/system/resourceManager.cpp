@@ -17,7 +17,7 @@ std::string ToLower( std::string value )
 
 std::string BuildResourceKey( const std::filesystem::path& rootPath, const std::filesystem::path& filePath )
 {
-	std::error_code ec;
+	std::error_code       ec;
 	std::filesystem::path relativePath = std::filesystem::relative( filePath, rootPath, ec );
 	if( ec )
 		relativePath = filePath.filename();
@@ -42,14 +42,14 @@ bool ResourceManager::Init( std::string_view commonPath, std::string_view appPat
 			return;
 
 		for( const std::filesystem::directory_entry& entry :
-			 std::filesystem::recursive_directory_iterator( root, std::filesystem::directory_options::skip_permission_denied ) )
+		     std::filesystem::recursive_directory_iterator( root, std::filesystem::directory_options::skip_permission_denied ) )
 		{
 			if( !entry.is_regular_file() )
 				continue;
 
-			const std::filesystem::path& filePath       = entry.path();
-			std::string                  fileExtension  = ToLower( filePath.extension().string() );
-			const Resource::TypeDescriptor* descriptor = Resource::FindResourceTypeByExtension( fileExtension );
+			const std::filesystem::path&    filePath      = entry.path();
+			std::string                     fileExtension = ToLower( filePath.extension().string() );
+			const Resource::TypeDescriptor* descriptor    = Resource::FindResourceTypeByExtension( fileExtension );
 			if( descriptor == nullptr )
 				continue;
 
@@ -108,8 +108,8 @@ shared<Resource> ResourceManager::FindResourceByTypeId( u64 typeId, std::string_
 	if( typeIt == m_ResourceMaps.end() )
 		return {};
 
-	const ResourceMap& resourceMap = typeIt->second;
-	auto returnResource = [forceLoad]( const shared<Resource>& resource ) -> shared<Resource> {
+	const ResourceMap& resourceMap    = typeIt->second;
+	auto               returnResource = [forceLoad]( const shared<Resource>& resource ) -> shared<Resource> {
 		if( resource == nullptr )
 			return {};
 
@@ -131,7 +131,7 @@ shared<Resource> ResourceManager::FindResourceByTypeId( u64 typeId, std::string_
 		return resource;
 
 	std::filesystem::path requestedPath( resourceIdString );
-	const std::string requestedGeneric = requestedPath.generic_string();
+	const std::string     requestedGeneric = requestedPath.generic_string();
 	if( requestedGeneric != resourceIdString )
 	{
 		if( shared<Resource> resource = tryFindKey( requestedGeneric ) )
@@ -153,8 +153,7 @@ shared<Resource> ResourceManager::FindResourceByTypeId( u64 typeId, std::string_
 		if( typedResource == nullptr )
 			continue;
 
-		if( typedResource->GetName() == resourceIdString ||
-			( !requestedNameNoExt.empty() && typedResource->GetName() == requestedNameNoExt ) )
+		if( typedResource->GetName() == resourceIdString || ( !requestedNameNoExt.empty() && typedResource->GetName() == requestedNameNoExt ) )
 		{
 			return returnResource( typedResource );
 		}

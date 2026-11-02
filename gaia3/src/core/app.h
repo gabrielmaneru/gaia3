@@ -10,7 +10,7 @@
 struct AppConfig
 {
 	rect        canvas = { 800, 600 };
-	std::string title = "";
+	std::string title  = "";
 
 	std::string startLevel = "";
 
@@ -29,7 +29,7 @@ public:
 	static Window&   GetWindow() { return m_Window; }
 	static Input&    GetInput() { return m_Input; }
 	static Renderer& GetRenderer() { return m_Renderer; }
-	static Session&   GetSession() { return m_Session; }
+	static Session&  GetSession() { return m_Session; }
 
 private:
 	static Window   m_Window;

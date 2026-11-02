@@ -37,6 +37,27 @@ TEST( Vec3Tests, AddSubtractMultiply )
 	EXPECT_FLOAT_EQ( scaled.z, 7.5f );
 }
 
+TEST( Vec3Tests, ComponentWiseMultiplyAssignAndVec4Conversion )
+{
+	Vec3       a( 2.0f, 3.0f, 4.0f );
+	const Vec3 b( 5.0f, 6.0f, 7.0f );
+
+	const Vec3 multiplied = a * b;
+	EXPECT_FLOAT_EQ( multiplied.x, 10.0f );
+	EXPECT_FLOAT_EQ( multiplied.y, 18.0f );
+	EXPECT_FLOAT_EQ( multiplied.z, 28.0f );
+
+	a *= b;
+	EXPECT_FLOAT_EQ( a.x, multiplied.x );
+	EXPECT_FLOAT_EQ( a.y, multiplied.y );
+	EXPECT_FLOAT_EQ( a.z, multiplied.z );
+
+	const Vec3 fromVec4( Vec4( 9.0f, 8.0f, 7.0f, 6.0f ) );
+	EXPECT_FLOAT_EQ( fromVec4.x, 9.0f );
+	EXPECT_FLOAT_EQ( fromVec4.y, 8.0f );
+	EXPECT_FLOAT_EQ( fromVec4.z, 7.0f );
+}
+
 TEST( Vec3Tests, NormalizeAndNormalized )
 {
 	Vec3       v( 3.0f, 0.0f, 4.0f );
@@ -67,9 +88,51 @@ TEST( Vec4Tests, BasicOperationsAndNormalize )
 	EXPECT_FLOAT_EQ( sum.z, 2.0f );
 	EXPECT_FLOAT_EQ( sum.w, 4.5f );
 
-	Vec4 n( 0.0f, 3.0f, 4.0f, 0.0f );
+	Vec4       n( 0.0f, 3.0f, 4.0f, 0.0f );
+	const Vec4 original = n;
+	const Vec4 copyNorm = n.Normalized();
+	EXPECT_NEAR( copyNorm.LengthSq(), 1.0f, 1e-5f );
+	EXPECT_FLOAT_EQ( n.x, original.x );
+	EXPECT_FLOAT_EQ( n.y, original.y );
+	EXPECT_FLOAT_EQ( n.z, original.z );
+	EXPECT_FLOAT_EQ( n.w, original.w );
+
 	n.Normalize();
 	EXPECT_NEAR( n.LengthSq(), 1.0f, 1e-5f );
+}
+
+TEST( Vec4Tests, EqualityUnaryAndComponentWiseMultiply )
+{
+	const Vec4 a( 1.0f, -2.0f, 3.0f, -4.0f );
+	EXPECT_TRUE( a == Vec4( 1.0f, -2.0f, 3.0f, -4.0f ) );
+	EXPECT_TRUE( a != Vec4( 1.0f, -2.0f, 3.0f, 4.0f ) );
+
+	const Vec4 neg = -a;
+	EXPECT_FLOAT_EQ( neg.x, -1.0f );
+	EXPECT_FLOAT_EQ( neg.y, 2.0f );
+	EXPECT_FLOAT_EQ( neg.z, -3.0f );
+	EXPECT_FLOAT_EQ( neg.w, 4.0f );
+
+	Vec4       lhs( 2.0f, 3.0f, 4.0f, 5.0f );
+	const Vec4 rhs( 6.0f, 7.0f, 8.0f, 9.0f );
+
+	const Vec4 multiplied = lhs * rhs;
+	EXPECT_FLOAT_EQ( multiplied.x, 12.0f );
+	EXPECT_FLOAT_EQ( multiplied.y, 21.0f );
+	EXPECT_FLOAT_EQ( multiplied.z, 32.0f );
+	EXPECT_FLOAT_EQ( multiplied.w, 45.0f );
+
+	lhs *= rhs;
+	EXPECT_FLOAT_EQ( lhs.x, multiplied.x );
+	EXPECT_FLOAT_EQ( lhs.y, multiplied.y );
+	EXPECT_FLOAT_EQ( lhs.z, multiplied.z );
+	EXPECT_FLOAT_EQ( lhs.w, multiplied.w );
+
+	const Vec4 fromVec3( Vec3( 2.0f, 4.0f, 6.0f ), 8.0f );
+	EXPECT_FLOAT_EQ( fromVec3.x, 2.0f );
+	EXPECT_FLOAT_EQ( fromVec3.y, 4.0f );
+	EXPECT_FLOAT_EQ( fromVec3.z, 6.0f );
+	EXPECT_FLOAT_EQ( fromVec3.w, 8.0f );
 }
 
 TEST( VectorTransformsTests, CrossAndDotVec3 )

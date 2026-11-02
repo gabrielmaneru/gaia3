@@ -5,18 +5,17 @@
 #include <json/json.h>
 
 RTTI_DEFINE_RESOURCE( Level,
-	RTTI_RESOURCE_EXTENSIONS( ".level", ".lvl" ),
-	RTTI_PROPERTY( m_NextEntityId ),
-	RTTI_PROPERTY( m_Entities )
-)
+                      RTTI_RESOURCE_EXTENSIONS( ".level", ".lvl" ),
+                      RTTI_PROPERTY( m_NextEntityId ),
+                      RTTI_PROPERTY( m_Entities ) )
 
 Level::Level()
-	: Resource( "", ResourceState::New )
+    : Resource( "", ResourceState::New )
 {
 }
 
 Level::Level( std::string_view levelPath, ResourceState state )
-	: Resource( levelPath, state )
+    : Resource( levelPath, state )
 {
 }
 
@@ -76,7 +75,7 @@ bool Level::SaveAsInternal( std::string_view path )
 Entity* Level::CreateEntity( std::string_view entityName )
 {
 	unique<Entity> entity    = new_unique<Entity>( m_NextEntityId++, std::string( entityName ) );
-	Entity* entityPtr = entity.get();
+	Entity*        entityPtr = entity.get();
 	m_Entities.push_back( std::move( entity ) );
 	return entityPtr;
 }

@@ -2,12 +2,16 @@
 
 #include <math/scalar.h>
 
+struct Vec3;
+struct Vec4;
+
 struct Vec3
 {
 	Vec3( float _x = 0.0f, float _y = 0.0f, float _z = 0.0f )
 	    : x( _x ), y( _y ), z( _z )
 	{
 	}
+	explicit Vec3( const Vec4& _v );
 
 	Vec3  operator-() const;
 	bool  operator==( const Vec3& rhs ) const;
@@ -16,10 +20,13 @@ struct Vec3
 	Vec3& operator+=( const Vec3& rhs );
 	Vec3  operator-( const Vec3& rhs ) const;
 	Vec3& operator-=( const Vec3& rhs );
+	Vec3  operator*( const Vec3& rhs ) const;
+	Vec3& operator*=( const Vec3& rhs );
 	Vec3  operator*( const Scalar& s ) const;
 	Vec3& operator*=( const Scalar& s );
 
 	static const Vec3 V_Zero;
+	static const Vec3 V_One;
 	static const Vec3 V_Front;
 	static const Vec3 V_Up;
 	static const Vec3 V_Right;
@@ -35,14 +42,11 @@ struct Vec3
 
 struct Vec4
 {
-	Vec4( const Vec3& _v, float _w = 1.0f )
-	    : x( _v.x ), y( _v.y ), z( _v.z ), w( _w )
-	{
-	}
-	Vec4( float _x = 0.0f, float _y = 0.0f, float _z = 0.0f, float _w = 1.0f )
+	Vec4( float _x = 0.0f, float _y = 0.0f, float _z = 0.0f, float _w = 0.0f )
 	    : x( _x ), y( _y ), z( _z ), w( _w )
 	{
 	}
+	explicit Vec4( const Vec3& _v, float _w = 0.0f );
 
 	Vec4  operator-() const;
 	bool  operator==( const Vec4& rhs ) const;
@@ -51,13 +55,13 @@ struct Vec4
 	Vec4& operator+=( const Vec4& rhs );
 	Vec4  operator-( const Vec4& rhs ) const;
 	Vec4& operator-=( const Vec4& rhs );
+	Vec4  operator*( const Vec4& rhs ) const;
+	Vec4& operator*=( const Vec4& rhs );
 	Vec4  operator*( const Scalar& s ) const;
 	Vec4& operator*=( const Scalar& s );
 
 	static const Vec4 V_Zero;
-	static const Vec4 V_Front;
-	static const Vec4 V_Up;
-	static const Vec4 V_Right;
+	static const Vec4 V_One;
 
 	float x = 0.0f;
 	float y = 0.0f;

@@ -16,10 +16,10 @@ void createDefaultLevel( Level* pLevel )
 int main()
 {
 	AppConfig config;
-	config.canvas = { 1920, 1080 };
-	config.title  = "Sandbox";
+	config.canvas     = { 1920, 1080 };
+	config.title      = "Sandbox";
 	config.startLevel = "test.lvl";
-	config.appPath = R"(.\assets\)";
+	config.appPath    = R"(.\assets\)";
 
 	if( !App::Init( config ) )
 		return 1;

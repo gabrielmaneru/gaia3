@@ -18,3 +18,5 @@
 #include <math/matrixTransforms.h>
 #include <math/vector.h>
 #include <math/vectorTransforms.h>
+#include <math/quaternion.h>
+#include <math/quaternionTransforms.h>

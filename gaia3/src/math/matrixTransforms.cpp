@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-Matrix44 LookAt( const Vec3& eye, const Vec3& forwardDir, const Vec3& upAxis )
+Matrix33 LookAt33( const Vec3& forwardDir, const Vec3& upAxis )
 {
 	// Build a right-handed orthonormal basis from the input direction and
 	// world-up.
@@ -16,6 +16,7 @@ Matrix44 LookAt( const Vec3& eye, const Vec3& forwardDir, const Vec3& upAxis )
 	{
 		front = Vec3::V_Front;
 	}
+
 	Vec3 upAxisNorm = upAxis.Normalized();
 	if( upAxisNorm == Vec3::V_Zero )
 	{
@@ -39,18 +40,26 @@ Matrix44 LookAt( const Vec3& eye, const Vec3& forwardDir, const Vec3& upAxis )
 
 	const Vec3 up = Cross( right, front ).Normalized();
 
+	Matrix33 viewRotation;
+	viewRotation.SetRow( 0, right );
+	viewRotation.SetRow( 1, up );
+	viewRotation.SetRow( 2, -front );
+
+	return viewRotation;
+}
+
+Matrix44 LookAt44( const Vec3& eye, const Vec3& forwardDir, const Vec3& upAxis )
+{
+	const Matrix33 lookAtM33 = LookAt33( forwardDir, upAxis );
+
 	// View translation terms from dot products with camera basis vectors.
-	const float tx = -Dot( right, eye );
-	const float ty = -Dot( up, eye );
-	const float tz = Dot( front, eye );
+	const float tx = -Dot( lookAtM33.GetRow( 0 ), eye );
+	const float ty = -Dot( lookAtM33.GetRow( 1 ), eye );
+	const float tz = Dot( -lookAtM33.GetRow( 2 ), eye );
 
-	Matrix44 view;
-	view.SetRow( 0, Vec4( right, tx ) );
-	view.SetRow( 1, Vec4( up, ty ) );
-	view.SetRow( 2, Vec4( -front, tz ) );
-	view.SetRow( 3, Vec4( 0.0f, 0.0f, 0.0f, 1.0f ) );
-
-	return view;
+	Matrix44 lookAtM44( lookAtM33 );
+	lookAtM44.col_3 = Vec4( tx, ty, tz, 1.0f );
+	return lookAtM44;
 }
 
 Matrix44 Perspective( float fovRadians, float aspectRatio, float nearPlane, float farPlane )

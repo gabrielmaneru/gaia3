@@ -79,7 +79,7 @@ void Camera::RecalculateMatrices( rect canvas )
 {
 	assert( canvas.x > 0 && canvas.y > 0 );
 
-	m_ViewMat = LookAt( m_CameraPos, m_FrontDir, Vec3::V_Up );
+	m_ViewMat = LookAt44( m_CameraPos, m_FrontDir, Vec3::V_Up );
 
 	const float aspectRatio          = (float)canvas.x / (float)canvas.y;
 	const float horizontalFovRadians = ToRadians( m_HorizontalFOV );

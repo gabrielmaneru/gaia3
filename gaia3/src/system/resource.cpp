@@ -6,7 +6,7 @@
 #include <filesystem>
 
 Resource::Resource( std::string_view path, ResourceState state )
-	: m_State( state )
+    : m_State( state )
 {
 	SetPath( path );
 }
@@ -25,7 +25,7 @@ void Resource::SetPath( std::string_view path )
 
 bool Resource::Load()
 {
-	if (m_State == ResourceState::NotLoaded)
+	if( m_State == ResourceState::NotLoaded )
 	{
 		m_State = ResourceState::Loading;
 		if( LoadInternal() )
@@ -57,7 +57,7 @@ bool Resource::Unload()
 
 bool Resource::SaveAs( std::string_view path )
 {
-	if (SaveAsInternal(path))
+	if( SaveAsInternal( path ) )
 	{
 		SetPath( path );
 		m_State = ResourceState::Loaded;

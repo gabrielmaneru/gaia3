@@ -170,7 +170,9 @@
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\math\matrix_tests.cpp" />
-    <ClCompile Include="src\math\vector_tests.cpp" />
+	<ClCompile Include="src\math\quaternion_tests.cpp" />
+	<ClCompile Include="src\math\transform_tests.cpp" />
+	<ClCompile Include="src\math\vector_tests.cpp" />
   </ItemGroup>
   <ItemGroup>
 	<ProjectReference Include="..\gaia3\gaia3.vcxproj">
@@ -180,6 +182,8 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
 </Project>
+
+
 
 
 
