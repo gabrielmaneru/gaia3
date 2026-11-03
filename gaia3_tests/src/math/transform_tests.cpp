@@ -105,3 +105,78 @@ TEST( TransformTests, ToMatrix44NormalizesInputQuaternion )
 	EXPECT_NEAR( m.col_2.x, 1.0f, 1e-5f );
 	EXPECT_NEAR( m.col_2.z, 0.0f, 1e-5f );
 }
+
+TEST( TransformTests, InverseComposedWithOriginalProducesIdentityForIdentityRotation )
+{
+	const Transform t( Vec3( 11.0f, -3.0f, 5.0f ), Quat::V_Identity, Vec3( 2.0f, 4.0f, 0.5f ) );
+	const Transform inv   = t.Inverse();
+	const Transform left  = t * inv;
+	const Transform right = inv * t;
+
+	EXPECT_NEAR( left.position.x, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.position.y, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.position.z, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.rotation.x, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.rotation.y, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.rotation.z, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.rotation.w, 1.0f, 1e-5f );
+	EXPECT_NEAR( left.scale.x, 1.0f, 1e-5f );
+	EXPECT_NEAR( left.scale.y, 1.0f, 1e-5f );
+	EXPECT_NEAR( left.scale.z, 1.0f, 1e-5f );
+
+	EXPECT_NEAR( right.position.x, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.position.y, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.position.z, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.rotation.x, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.rotation.y, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.rotation.z, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.rotation.w, 1.0f, 1e-5f );
+	EXPECT_NEAR( right.scale.x, 1.0f, 1e-5f );
+	EXPECT_NEAR( right.scale.y, 1.0f, 1e-5f );
+	EXPECT_NEAR( right.scale.z, 1.0f, 1e-5f );
+}
+
+TEST( TransformTests, InverseToMatrix44CancelsOriginalMatrix )
+{
+	const float     sinHalf = 0.5f;
+	const float     cosHalf = 0.8660254f;
+	const Transform t( Vec3( 3.0f, 4.0f, -2.0f ), Quat( 0.0f, sinHalf, 0.0f, cosHalf ), Vec3( 2.0f, 2.0f, 2.0f ) );
+	const Transform inv = t.Inverse();
+
+	const Matrix44 left  = t.ToMatrix44() * inv.ToMatrix44();
+	const Matrix44 right = inv.ToMatrix44() * t.ToMatrix44();
+
+	EXPECT_NEAR( left.GetRow( 0 ).x, 1.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 1 ).y, 1.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 2 ).z, 1.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 3 ).w, 1.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 0 ).y, 0.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 0 ).z, 0.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 0 ).w, 0.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 1 ).x, 0.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 1 ).z, 0.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 1 ).w, 0.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 2 ).x, 0.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 2 ).y, 0.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 2 ).w, 0.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 3 ).x, 0.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 3 ).y, 0.0f, 1e-4f );
+	EXPECT_NEAR( left.GetRow( 3 ).z, 0.0f, 1e-4f );
+
+	EXPECT_NEAR( right.GetRow( 0 ).x, 1.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 1 ).y, 1.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 2 ).z, 1.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 3 ).w, 1.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 0 ).y, 0.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 0 ).z, 0.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 0 ).w, 0.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 1 ).x, 0.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 1 ).z, 0.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 1 ).w, 0.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 2 ).x, 0.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 2 ).y, 0.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 2 ).w, 0.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 3 ).x, 0.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 3 ).y, 0.0f, 1e-4f );
+	EXPECT_NEAR( right.GetRow( 3 ).z, 0.0f, 1e-4f );
+}

@@ -1,7 +1,7 @@
 #include "gaia3_pch.h"
 #include "quaternion.h"
 
-const Quat Quat::V_Identity( 0.0f, 0.0f, 0.0f, 1.0f );
+const Quat Quat::V_Identity = Quat();
 const Quat Quat::V_Zero( 0.0f, 0.0f, 0.0f, 0.0f );
 
 Quat Quat::operator-() const
@@ -80,6 +80,11 @@ Quat Quat::Normalized() const
 	Quat v = *this;
 	v.Normalize();
 	return v;
+}
+
+Quat Quat::Inverse() const
+{
+	return Quat( -x, -y, -z, w );
 }
 
 Vec3 Quat::Rotate( const Vec3& v ) const

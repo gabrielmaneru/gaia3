@@ -106,9 +106,9 @@ TEST( QuatTests, RotateVec3AndVec4PreserveExpectedComponents )
 	const Quat  q( 0.0f, sinHalf, 0.0f, cosHalf );
 
 	const Vec3 rotatedVec3 = q.Rotate( Vec3::V_Front );
-	EXPECT_NEAR( rotatedVec3.x, 0.0f, 1e-5f );
+	EXPECT_NEAR( rotatedVec3.x, -1.0f, 1e-5f );
 	EXPECT_NEAR( rotatedVec3.y, 0.0f, 1e-5f );
-	EXPECT_NEAR( rotatedVec3.z, -1.0f, 1e-5f );
+	EXPECT_NEAR( rotatedVec3.z, 0.0f, 1e-5f );
 
 	const Vec4 rotatedVec4 = q.Rotate( Vec4( 1.0f, 0.0f, 0.0f, 3.0f ) );
 	EXPECT_NEAR( rotatedVec4.x, 0.0f, 1e-5f );

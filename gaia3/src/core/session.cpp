@@ -20,7 +20,7 @@ bool Session::Init( std::string_view startLevel, std::string_view commonPath, st
 
 void Session::Update()
 {
-	// check for reloading and next level
+	m_CurrentLevel->Update();
 }
 
 void Session::Shutdown()

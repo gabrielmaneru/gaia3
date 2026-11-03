@@ -1,0 +1,32 @@
+#pragma once
+
+#include <math/matrix.h>
+
+class Renderable
+{
+public:
+	virtual void Draw() const = 0;
+
+protected:
+	virtual ~Renderable() = default;
+
+	void Register();
+	void Unregister();
+};
+
+class RenderCamera
+{
+public:
+	bool IsActive() const { return m_Active; }
+
+	virtual Matrix44 GetProjectionMatrix( rect canvas ) const = 0;
+	virtual Matrix44 GetViewMatrix() const                    = 0;
+
+protected:
+	virtual ~RenderCamera() = default;
+
+	void Register();
+	void Unregister();
+
+	bool m_Active = false;
+};

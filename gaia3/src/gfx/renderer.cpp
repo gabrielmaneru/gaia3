@@ -3,6 +3,8 @@
 
 #include <glad/glad.h>
 
+#include <algorithm>
+
 bool Renderer::Init( ProcAddressFn procAddressLoader, rect canvas )
 {
 	assert( procAddressLoader != nullptr );
@@ -26,8 +28,6 @@ bool Renderer::Init( ProcAddressFn procAddressLoader, rect canvas )
 		return false;
 	}
 
-	m_Camera.Init( canvas );
-
 	return true;
 }
 
@@ -42,19 +42,31 @@ void Renderer::Update( rect canvas )
 	// Draw dummy mesh
 	glUseProgram( m_Program );
 
-	m_Camera.Update( canvas );
-	const Matrix44& view       = m_Camera.GetViewMatrix();
-	const Matrix44& projection = m_Camera.GetProjectionMatrix();
-	glUniformMatrix4fv( m_ViewMatrixLocation, 1, GL_FALSE, &view.col_0.x );
-	glUniformMatrix4fv( m_ProjectionMatrixLocation, 1, GL_FALSE, &projection.col_0.x );
-	glBindVertexArray( m_VertexArray );
+	// Apply Camera Matrices
+	if( !m_Cameras.empty() )
+	{
+		// Use first camera for now
+		const Matrix44 view       = m_Cameras[0]->GetViewMatrix();
+		const Matrix44 projection = m_Cameras[0]->GetProjectionMatrix( canvas );
+		glUniformMatrix4fv( m_ViewMatrixLocation, 1, GL_FALSE, &view.col_0.x );
+		glUniformMatrix4fv( m_ProjectionMatrixLocation, 1, GL_FALSE, &projection.col_0.x );
+	}
+	else
+	{
+		glUniformMatrix4fv( m_ViewMatrixLocation, 1, GL_FALSE, &Matrix44::V_Identity.col_0.x );
+		glUniformMatrix4fv( m_ProjectionMatrixLocation, 1, GL_FALSE, &Matrix44::V_Identity.col_0.x );
+	}
 
+	glBindVertexArray( m_VertexArray );
 	glDrawArrays( GL_TRIANGLES, 0, 3 );
 	glBindVertexArray( 0 );
 }
 
 void Renderer::Shutdown()
 {
+	m_Renderables.clear();
+	m_Cameras.clear();
+
 	if( m_VertexBuffer != 0 )
 	{
 		glDeleteBuffers( 1, &m_VertexBuffer );

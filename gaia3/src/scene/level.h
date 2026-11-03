@@ -1,6 +1,7 @@
 #pragma once
 
 #include <core/types.h>
+#include <scene/componentFactory.h>
 #include <scene/entity.h>
 #include <system/resource.h>
 
@@ -15,6 +16,8 @@ public:
 	explicit Level( std::string_view levelPath, ResourceState state = ResourceState::NotLoaded );
 	~Level();
 
+	void Update();
+
 	bool LoadInternal() override;
 	bool SaveAsInternal( std::string_view path ) override;
 
@@ -25,7 +28,19 @@ public:
 	Entity*       FindEntity( u64 id );
 	const Entity* FindEntity( u64 id ) const;
 
+	void                    RegisterComponent( const shared<Component>& component ) { m_ComponentFactory.RegisterComponent( component ); }
+	void                    UnregisterComponent( const shared<Component>& component ) { m_ComponentFactory.UnregisterComponent( component ); }
+	ComponentFactory&       GetComponentFactory() { return m_ComponentFactory; }
+	const ComponentFactory& GetComponentFactory() const { return m_ComponentFactory; }
+
+	template <typename T>
+	std::vector<shared<T>> GetComponents()
+	{
+		return m_ComponentFactory.GetComponents<T>();
+	}
+
 private:
+	ComponentFactory            m_ComponentFactory;
 	u64                         m_NextEntityId = 1;
 	std::vector<unique<Entity>> m_Entities;
 };

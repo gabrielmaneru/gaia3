@@ -6,7 +6,6 @@
 
 RTTI_DEFINE_RESOURCE( Level,
                       RTTI_RESOURCE_EXTENSIONS( ".level", ".lvl" ),
-                      RTTI_PROPERTY( m_NextEntityId ),
                       RTTI_PROPERTY( m_Entities ) )
 
 Level::Level()
@@ -24,8 +23,19 @@ Level::~Level()
 	ClearEntities();
 }
 
+void Level::Update()
+{
+	for( auto& pEntity : m_Entities )
+	{
+		pEntity->Update();
+	}
+}
+
 bool Level::LoadInternal()
 {
+	m_ComponentFactory.Clear();
+	m_NextEntityId = 1;
+
 	std::ifstream inputFile( GetPath().data() );
 	if( !inputFile.is_open() )
 	{
@@ -45,6 +55,32 @@ bool Level::LoadInternal()
 		return false;
 	}
 
+	const Json::Value& entitiesJson = levelJson["m_Entities"];
+	if( !entitiesJson.isArray() )
+		return false;
+
+	for( size_t i = 0; i < m_Entities.size(); ++i )
+	{
+		const unique<Entity>& entity = m_Entities[i];
+		if( entity == nullptr )
+			continue;
+
+		entity->m_Id = m_NextEntityId++;
+
+		entity->AttachToLevel( this );
+
+		if( i >= entitiesJson.size() )
+			continue;
+
+		const Json::Value& entityJson               = entitiesJson[static_cast<Json::ArrayIndex>( i )];
+		const Json::Value& serializedComponentsJson = entityJson["m_SerializedComponents"];
+		if( !serializedComponentsJson.isArray() )
+			continue;
+
+		if( !entity->DeserializeComponents( serializedComponentsJson ) )
+			return false;
+	}
+
 	return true;
 }
 
@@ -58,8 +94,25 @@ bool Level::SaveAsInternal( std::string_view path )
 	std::filesystem::create_directories( filePath.parent_path(), ec );
 
 	Json::Value levelJson;
+
 	if( !rtti::Serialize( *this, levelJson ) )
 		return false;
+
+	Json::Value& entitiesJson = levelJson["m_Entities"];
+	if( !entitiesJson.isArray() )
+		return false;
+
+	for( Json::ArrayIndex i = 0; i < entitiesJson.size(); ++i )
+	{
+		if( i >= m_Entities.size() || m_Entities[i] == nullptr )
+			continue;
+
+		Json::Value serializedComponents;
+		if( !m_Entities[i]->SerializeComponents( serializedComponents ) )
+			return false;
+
+		entitiesJson[i]["m_SerializedComponents"] = std::move( serializedComponents );
+	}
 
 	std::ofstream outputFile( filePath );
 	if( !outputFile.is_open() )
@@ -74,7 +127,7 @@ bool Level::SaveAsInternal( std::string_view path )
 
 Entity* Level::CreateEntity( std::string_view entityName )
 {
-	unique<Entity> entity    = new_unique<Entity>( m_NextEntityId++, std::string( entityName ) );
+	unique<Entity> entity    = new_unique<Entity>( m_NextEntityId++, std::string( entityName ), this );
 	Entity*        entityPtr = entity.get();
 	m_Entities.push_back( std::move( entity ) );
 	return entityPtr;
@@ -97,6 +150,7 @@ bool Level::RemoveEntity( u64 id )
 void Level::ClearEntities()
 {
 	m_Entities.clear();
+	m_ComponentFactory.Clear();
 	m_NextEntityId = 1;
 }
 

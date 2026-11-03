@@ -178,6 +178,8 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\components\cameraComponent.cpp" />
+    <ClCompile Include="src\components\modelComponent.cpp" />
     <ClCompile Include="src\core\app.cpp" />
     <ClCompile Include="src\core\session.cpp" />
     <ClCompile Include="src\gaia3_pch.cpp">
@@ -189,6 +191,7 @@
     <ClCompile Include="src\gfx\camera.cpp" />
     <ClCompile Include="src\core\serializationTypes.cpp" />
     <ClCompile Include="src\gfx\renderer.cpp" />
+    <ClCompile Include="src\gfx\rendererTypes.cpp" />
     <ClCompile Include="src\math\mathHelpers.cpp" />
     <ClCompile Include="src\math\matrix.cpp" />
     <ClCompile Include="src\math\matrixTransforms.cpp" />
@@ -200,6 +203,8 @@
     <ClCompile Include="src\math\vectorTransforms.cpp" />
     <ClCompile Include="src\platform\input.cpp" />
     <ClCompile Include="src\platform\window.cpp" />
+    <ClCompile Include="src\scene\component.cpp" />
+    <ClCompile Include="src\scene\componentFactory.cpp" />
     <ClCompile Include="src\scene\entity.cpp" />
     <ClCompile Include="src\scene\level.cpp" />
     <ClCompile Include="src\system\resource.cpp" />
@@ -207,6 +212,8 @@
     <ClCompile Include="src\system\rtti.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\components\cameraComponent.h" />
+    <ClInclude Include="src\components\modelComponent.h" />
     <ClInclude Include="src\core\app.h" />
     <ClInclude Include="src\core\serializationTypes.h" />
     <ClInclude Include="src\core\session.h" />
@@ -215,6 +222,7 @@
     <ClInclude Include="src\gaia3_pch.h" />
     <ClInclude Include="src\gfx\camera.h" />
     <ClInclude Include="src\gfx\renderer.h" />
+    <ClInclude Include="src\gfx\rendererTypes.h" />
     <ClInclude Include="src\math\mathHelpers.h" />
     <ClInclude Include="src\math\matrix.h" />
     <ClInclude Include="src\math\matrixTransforms.h" />
@@ -226,6 +234,8 @@
     <ClInclude Include="src\math\vectorTransforms.h" />
     <ClInclude Include="src\platform\input.h" />
     <ClInclude Include="src\platform\window.h" />
+    <ClInclude Include="src\scene\component.h" />
+    <ClInclude Include="src\scene\componentFactory.h" />
     <ClInclude Include="src\scene\entity.h" />
     <ClInclude Include="src\scene\level.h" />
     <ClInclude Include="src\system\resource.h" />
@@ -237,4 +247,3 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
-

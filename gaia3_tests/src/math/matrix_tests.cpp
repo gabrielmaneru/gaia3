@@ -8,29 +8,29 @@
 #include <math/vector.h>
 #include <math/vectorTransforms.h>
 
-TEST( MatrixTests, Matrix33DefaultIsZero )
+TEST( MatrixTests, Matrix33DefaultIsIdentity )
 {
 	const Matrix33 m;
 
-	EXPECT_FLOAT_EQ( m.col_0.x, 0.0f );
+	EXPECT_FLOAT_EQ( m.col_0.x, 1.0f );
 	EXPECT_FLOAT_EQ( m.col_0.y, 0.0f );
 	EXPECT_FLOAT_EQ( m.col_0.z, 0.0f );
 	EXPECT_FLOAT_EQ( m.col_1.x, 0.0f );
-	EXPECT_FLOAT_EQ( m.col_1.y, 0.0f );
+	EXPECT_FLOAT_EQ( m.col_1.y, 1.0f );
 	EXPECT_FLOAT_EQ( m.col_1.z, 0.0f );
 	EXPECT_FLOAT_EQ( m.col_2.x, 0.0f );
 	EXPECT_FLOAT_EQ( m.col_2.y, 0.0f );
-	EXPECT_FLOAT_EQ( m.col_2.z, 0.0f );
+	EXPECT_FLOAT_EQ( m.col_2.z, 1.0f );
 }
 
-TEST( MatrixTests, Matrix44DefaultIsZero )
+TEST( MatrixTests, Matrix44DefaultIsIdentity )
 {
 	const Matrix44 m;
 
-	EXPECT_FLOAT_EQ( m.col_0.x, 0.0f );
-	EXPECT_FLOAT_EQ( m.col_1.y, 0.0f );
-	EXPECT_FLOAT_EQ( m.col_2.z, 0.0f );
-	EXPECT_FLOAT_EQ( m.col_3.w, 0.0f );
+	EXPECT_FLOAT_EQ( m.col_0.x, 1.0f );
+	EXPECT_FLOAT_EQ( m.col_1.y, 1.0f );
+	EXPECT_FLOAT_EQ( m.col_2.z, 1.0f );
+	EXPECT_FLOAT_EQ( m.col_3.w, 1.0f );
 }
 
 TEST( MatrixTests, Matrix33SetRowWritesExpectedComponents )
@@ -130,7 +130,7 @@ TEST( MatrixTests, Matrix44GetRowReturnsExpectedComponents )
 	EXPECT_FLOAT_EQ( row3.w, 16.0f );
 }
 
-TEST( MatrixTests, Matrix44ConstructorFromMatrix33CopiesRotationAndZerosLastColumn )
+TEST( MatrixTests, Matrix44ConstructorFromMatrix33CopiesRotationAndIdentityLastColumn )
 {
 	Matrix33 m33;
 	m33.SetRow( 0, Vec3( 1.0f, 2.0f, 3.0f ) );
@@ -155,7 +155,7 @@ TEST( MatrixTests, Matrix44ConstructorFromMatrix33CopiesRotationAndZerosLastColu
 	EXPECT_FLOAT_EQ( m44.col_3.x, 0.0f );
 	EXPECT_FLOAT_EQ( m44.col_3.y, 0.0f );
 	EXPECT_FLOAT_EQ( m44.col_3.z, 0.0f );
-	EXPECT_FLOAT_EQ( m44.col_3.w, 0.0f );
+	EXPECT_FLOAT_EQ( m44.col_3.w, 1.0f );
 }
 
 TEST( MatrixTests, Matrix33MultiplyProducesExpectedProduct )
@@ -254,21 +254,100 @@ TEST( MatrixTests, Matrix44MultiplyProducesExpectedAffineProduct )
 	EXPECT_FLOAT_EQ( inplace.GetRow( 3 ).w, model.GetRow( 3 ).w );
 }
 
+TEST( MatrixTests, Matrix33InverseProducesIdentityWhenMultiplied )
+{
+	Matrix33 m;
+	m.SetRow( 0, Vec3( 4.0f, 7.0f, 2.0f ) );
+	m.SetRow( 1, Vec3( 3.0f, 6.0f, 1.0f ) );
+	m.SetRow( 2, Vec3( 2.0f, 5.0f, 3.0f ) );
+
+	const Matrix33 inverse = m.Inverse();
+	const Matrix33 left    = m * inverse;
+	const Matrix33 right   = inverse * m;
+
+	EXPECT_NEAR( left.GetRow( 0 ).x, 1.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 0 ).y, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 0 ).z, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 1 ).x, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 1 ).y, 1.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 1 ).z, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 2 ).x, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 2 ).y, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 2 ).z, 1.0f, 1e-5f );
+
+	EXPECT_NEAR( right.GetRow( 0 ).x, 1.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 0 ).y, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 0 ).z, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 1 ).x, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 1 ).y, 1.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 1 ).z, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 2 ).x, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 2 ).y, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 2 ).z, 1.0f, 1e-5f );
+}
+
+TEST( MatrixTests, Matrix44InverseProducesIdentityWhenMultiplied )
+{
+	Matrix44 m;
+	m.SetRow( 0, Vec4( 2.0f, 0.0f, 0.0f, 5.0f ) );
+	m.SetRow( 1, Vec4( 0.0f, 3.0f, 0.0f, -4.0f ) );
+	m.SetRow( 2, Vec4( 0.0f, 0.0f, 4.0f, 1.0f ) );
+	m.SetRow( 3, Vec4( 0.0f, 0.0f, 0.0f, 1.0f ) );
+
+	const Matrix44 inverse = m.Inverse();
+	const Matrix44 left    = m * inverse;
+	const Matrix44 right   = inverse * m;
+
+	EXPECT_NEAR( left.GetRow( 0 ).x, 1.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 0 ).y, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 0 ).z, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 0 ).w, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 1 ).x, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 1 ).y, 1.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 1 ).z, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 1 ).w, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 2 ).x, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 2 ).y, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 2 ).z, 1.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 2 ).w, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 3 ).x, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 3 ).y, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 3 ).z, 0.0f, 1e-5f );
+	EXPECT_NEAR( left.GetRow( 3 ).w, 1.0f, 1e-5f );
+
+	EXPECT_NEAR( right.GetRow( 0 ).x, 1.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 0 ).y, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 0 ).z, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 0 ).w, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 1 ).x, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 1 ).y, 1.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 1 ).z, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 1 ).w, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 2 ).x, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 2 ).y, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 2 ).z, 1.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 2 ).w, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 3 ).x, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 3 ).y, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 3 ).z, 0.0f, 1e-5f );
+	EXPECT_NEAR( right.GetRow( 3 ).w, 1.0f, 1e-5f );
+}
+
 TEST( MatrixTransformsTests, LookAtBuildsExpectedBasisAtOrigin )
 {
 	const Matrix44 view = LookAt44( Vec3::V_Zero, Vec3::V_Front, Vec3::V_Up );
 
-	EXPECT_FLOAT_EQ( view.col_0.x, 0.0f );
+	EXPECT_FLOAT_EQ( view.col_0.x, 1.0f );
 	EXPECT_FLOAT_EQ( view.col_0.y, 0.0f );
-	EXPECT_FLOAT_EQ( view.col_0.z, -1.0f );
+	EXPECT_FLOAT_EQ( view.col_0.z, 0.0f );
 
 	EXPECT_FLOAT_EQ( view.col_1.x, 0.0f );
 	EXPECT_FLOAT_EQ( view.col_1.y, 1.0f );
 	EXPECT_FLOAT_EQ( view.col_1.z, 0.0f );
 
-	EXPECT_FLOAT_EQ( view.col_2.x, 1.0f );
+	EXPECT_FLOAT_EQ( view.col_2.x, 0.0f );
 	EXPECT_FLOAT_EQ( view.col_2.y, 0.0f );
-	EXPECT_FLOAT_EQ( view.col_2.z, 0.0f );
+	EXPECT_FLOAT_EQ( view.col_2.z, 1.0f );
 
 	EXPECT_FLOAT_EQ( view.col_3.x, 0.0f );
 	EXPECT_FLOAT_EQ( view.col_3.y, 0.0f );
@@ -280,17 +359,17 @@ TEST( MatrixTransformsTests, LookAt33BuildsExpectedBasis )
 {
 	const Matrix33 view3 = LookAt33( Vec3::V_Front, Vec3::V_Up );
 
-	EXPECT_FLOAT_EQ( view3.col_0.x, 0.0f );
+	EXPECT_FLOAT_EQ( view3.col_0.x, 1.0f );
 	EXPECT_FLOAT_EQ( view3.col_1.x, 0.0f );
-	EXPECT_FLOAT_EQ( view3.col_2.x, 1.0f );
+	EXPECT_FLOAT_EQ( view3.col_2.x, 0.0f );
 
 	EXPECT_FLOAT_EQ( view3.col_0.y, 0.0f );
 	EXPECT_FLOAT_EQ( view3.col_1.y, 1.0f );
 	EXPECT_FLOAT_EQ( view3.col_2.y, 0.0f );
 
-	EXPECT_FLOAT_EQ( view3.col_0.z, -1.0f );
+	EXPECT_FLOAT_EQ( view3.col_0.z, 0.0f );
 	EXPECT_FLOAT_EQ( view3.col_1.z, 0.0f );
-	EXPECT_FLOAT_EQ( view3.col_2.z, 0.0f );
+	EXPECT_FLOAT_EQ( view3.col_2.z, 1.0f );
 }
 
 TEST( MatrixTransformsTests, LookAt33HandlesParallelForwardAndUp )
@@ -330,9 +409,9 @@ TEST( MatrixTransformsTests, LookAtComputesTranslationFromEye )
 	const Vec3     eye( 2.0f, 3.0f, 4.0f );
 	const Matrix44 view = LookAt44( eye, Vec3::V_Front, Vec3::V_Up );
 
-	EXPECT_FLOAT_EQ( view.col_3.x, -4.0f );
+	EXPECT_FLOAT_EQ( view.col_3.x, -2.0f );
 	EXPECT_FLOAT_EQ( view.col_3.y, -3.0f );
-	EXPECT_FLOAT_EQ( view.col_3.z, 2.0f );
+	EXPECT_FLOAT_EQ( view.col_3.z, -4.0f );
 	EXPECT_FLOAT_EQ( view.col_3.w, 1.0f );
 }
 

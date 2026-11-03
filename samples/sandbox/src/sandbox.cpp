@@ -1,15 +1,21 @@
 #include <gaia3.h>
 
+#include <components/cameraComponent.h>
+#include <components/modelComponent.h>
+
 void createDefaultLevel( Level* pLevel )
 {
 	// Create camera
 	Entity* pCamera = pLevel->CreateEntity( "Camera" );
 	{
+		pCamera->GetTransformRef().position = Vec3( 0.0f, 0.0f, -4.12f );
+		pCamera->AddComponent<CameraComponent>();
 	}
 
 	// Create triangle in the middle
 	Entity* pTriangle = pLevel->CreateEntity( "Triangle" );
 	{
+		pTriangle->AddComponent<ModelComponent>();
 	}
 }
 

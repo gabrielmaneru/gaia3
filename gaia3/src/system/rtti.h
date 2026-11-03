@@ -85,6 +85,11 @@ bool ValueToJson( const T& value, Json::Value& outValue )
 		outValue = Json::Value( value );
 		return true;
 	}
+	else if constexpr( std::is_same_v<ValueType, Json::Value> )
+	{
+		outValue = value;
+		return true;
+	}
 	else if constexpr( std::is_same_v<ValueType, const char*> )
 	{
 		if( value == nullptr )
@@ -162,6 +167,11 @@ bool ValueFromJson( const Json::Value& inValue, T& outValue )
 			return false;
 
 		outValue = inValue.asString();
+		return true;
+	}
+	else if constexpr( std::is_same_v<ValueType, Json::Value> )
+	{
+		outValue = inValue;
 		return true;
 	}
 	else if constexpr( std::is_integral_v<ValueType> && std::is_unsigned_v<ValueType> )

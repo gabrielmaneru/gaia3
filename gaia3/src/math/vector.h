@@ -7,7 +7,8 @@ struct Vec4;
 
 struct Vec3
 {
-	Vec3( float _x = 0.0f, float _y = 0.0f, float _z = 0.0f )
+	Vec3() = default;
+	explicit Vec3( float _x, float _y, float _z )
 	    : x( _x ), y( _y ), z( _z )
 	{
 	}
@@ -27,9 +28,9 @@ struct Vec3
 
 	static const Vec3 V_Zero;
 	static const Vec3 V_One;
-	static const Vec3 V_Front;
-	static const Vec3 V_Up;
 	static const Vec3 V_Right;
+	static const Vec3 V_Up;
+	static const Vec3 V_Front;
 
 	float x = 0.0f;
 	float y = 0.0f;
@@ -42,7 +43,8 @@ struct Vec3
 
 struct Vec4
 {
-	Vec4( float _x = 0.0f, float _y = 0.0f, float _z = 0.0f, float _w = 0.0f )
+	Vec4() = default;
+	explicit Vec4( float _x, float _y, float _z, float _w )
 	    : x( _x ), y( _y ), z( _z ), w( _w )
 	{
 	}

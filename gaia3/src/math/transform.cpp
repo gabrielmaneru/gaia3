@@ -1,7 +1,7 @@
 #include "gaia3_pch.h"
 #include "transform.h"
 
-const Transform Transform::V_Identity( Vec3::V_Zero, Quat::V_Identity, Vec3::V_One );
+const Transform Transform::V_Identity = Transform();
 
 Transform Transform::operator*( const Transform& rhs ) const
 {
@@ -22,6 +22,21 @@ Transform& Transform::operator*=( const Transform& rhs )
 	scale    = lhs.scale * rhs.scale;
 
 	return *this;
+}
+
+Transform Transform::Inverse() const
+{
+	if( fabsf( scale.x ) <= eps_6 || fabsf( scale.y ) <= eps_6 || fabsf( scale.z ) <= eps_6 )
+	{
+		assert( false );
+		return Transform();
+	}
+
+	const Quat inverseRotation = rotation.Normalized().Inverse();
+	const Vec3 inverseScale( 1.0f / scale.x, 1.0f / scale.y, 1.0f / scale.z );
+	const Vec3 inversePosition = inverseScale * inverseRotation.Rotate( -position );
+
+	return Transform( inversePosition, inverseRotation, inverseScale );
 }
 
 Matrix44 Transform::ToMatrix44() const

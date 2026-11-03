@@ -6,7 +6,9 @@
 
 struct Transform
 {
-	Transform( Vec3 _pos = Vec3::V_Zero, Quat _rot = Quat::V_Identity, Vec3 _scl = Vec3::V_One )
+	Transform() = default;
+
+	explicit Transform( Vec3 _pos, Quat _rot, Vec3 _scl )
 	    : position( _pos ), rotation( _rot ), scale( _scl ) {}
 
 	Transform  operator*( const Transform& rhs ) const;
@@ -14,9 +16,10 @@ struct Transform
 
 	static const Transform V_Identity;
 
-	Vec3 position;
-	Quat rotation;
-	Vec3 scale;
+	Vec3 position = Vec3();
+	Quat rotation = Quat();
+	Vec3 scale    = Vec3( 1.0f, 1.0f, 1.0f );
 
-	Matrix44 ToMatrix44() const;
+	Transform Inverse() const;
+	Matrix44  ToMatrix44() const;
 };
