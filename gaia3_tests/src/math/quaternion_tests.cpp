@@ -5,6 +5,8 @@
 #include <math/quaternion.h>
 #include <math/quaternionTransforms.h>
 
+#include <math.h>
+
 TEST( QuatTests, UnaryMinus )
 {
 	const Quat q( 1.0f, -2.0f, 3.0f, -4.0f );

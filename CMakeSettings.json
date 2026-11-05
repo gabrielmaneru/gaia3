@@ -1,0 +1,28 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-Debug",
+      "generator": "MinGW Makefiles",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "ucrt64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic -DVCPKG_HOST_TRIPLET=x64-mingw-dynamic",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "cmakeToolchain": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    },
+    {
+      "name": "x64-Release",
+      "generator": "MinGW Makefiles",
+      "configurationType": "Release",
+      "inheritEnvironments": [ "ucrt64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic -DVCPKG_HOST_TRIPLET=x64-mingw-dynamic",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "cmakeToolchain": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    }
+  ]
+}

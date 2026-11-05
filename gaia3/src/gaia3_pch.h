@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <algorithm>
 
 // Core types
 #include <core/types.h>

@@ -2,7 +2,6 @@
 
 #include <core/types.h>
 #include <gfx/rendererTypes.h>
-#include <gfx/camera.h>
 #include <platform/window.h>
 
 class Renderer

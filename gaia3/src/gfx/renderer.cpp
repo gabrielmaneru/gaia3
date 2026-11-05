@@ -48,13 +48,13 @@ void Renderer::Update( rect canvas )
 		// Use first camera for now
 		const Matrix44 view       = m_Cameras[0]->GetViewMatrix();
 		const Matrix44 projection = m_Cameras[0]->GetProjectionMatrix( canvas );
-		glUniformMatrix4fv( m_ViewMatrixLocation, 1, GL_FALSE, &view.col_0.x );
-		glUniformMatrix4fv( m_ProjectionMatrixLocation, 1, GL_FALSE, &projection.col_0.x );
+		glUniformMatrix4fv( m_ViewMatrixLocation, 1, GL_FALSE, &view.m00 );
+		glUniformMatrix4fv( m_ProjectionMatrixLocation, 1, GL_FALSE, &projection.m00 );
 	}
 	else
 	{
-		glUniformMatrix4fv( m_ViewMatrixLocation, 1, GL_FALSE, &Matrix44::V_Identity.col_0.x );
-		glUniformMatrix4fv( m_ProjectionMatrixLocation, 1, GL_FALSE, &Matrix44::V_Identity.col_0.x );
+		glUniformMatrix4fv( m_ViewMatrixLocation, 1, GL_FALSE, &Matrix44::V_Identity.m00 );
+		glUniformMatrix4fv( m_ProjectionMatrixLocation, 1, GL_FALSE, &Matrix44::V_Identity.m00 );
 	}
 
 	glBindVertexArray( m_VertexArray );

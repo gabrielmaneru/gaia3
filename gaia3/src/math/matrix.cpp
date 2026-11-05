@@ -19,17 +19,17 @@ Matrix33& Matrix33::operator*=( const Matrix33& rhs )
 	const Vec3 row1 = lhs.GetRow( 1 );
 	const Vec3 row2 = lhs.GetRow( 2 );
 
-	col_0.x = Dot( row0, rhs.col_0 );
-	col_0.y = Dot( row1, rhs.col_0 );
-	col_0.z = Dot( row2, rhs.col_0 );
+	m00 = Dot( row0, rhs.col[0] );
+	m01 = Dot( row0, rhs.col[1] );
+	m02 = Dot( row0, rhs.col[2] );
 
-	col_1.x = Dot( row0, rhs.col_1 );
-	col_1.y = Dot( row1, rhs.col_1 );
-	col_1.z = Dot( row2, rhs.col_1 );
+	m10 = Dot( row1, rhs.col[0] );
+	m11 = Dot( row1, rhs.col[1] );
+	m12 = Dot( row1, rhs.col[2] );
 
-	col_2.x = Dot( row0, rhs.col_2 );
-	col_2.y = Dot( row1, rhs.col_2 );
-	col_2.z = Dot( row2, rhs.col_2 );
+	m20 = Dot( row2, rhs.col[0] );
+	m21 = Dot( row2, rhs.col[1] );
+	m22 = Dot( row2, rhs.col[2] );
 
 	return *this;
 }
@@ -42,9 +42,9 @@ Matrix33 Matrix33::operator*( const Scalar& s ) const
 
 Matrix33& Matrix33::operator*=( const Scalar& s )
 {
-	col_0 *= s;
-	col_1 *= s;
-	col_2 *= s;
+	col[0] *= s;
+	col[1] *= s;
+	col[2] *= s;
 	return *this;
 }
 
@@ -53,19 +53,19 @@ void Matrix33::SetRow( int row, const Vec3& v )
 	switch( row )
 	{
 	case 0:
-		col_0.x = v.x;
-		col_1.x = v.y;
-		col_2.x = v.z;
+		m00 = v.x;
+		m01 = v.y;
+		m02 = v.z;
 		break;
 	case 1:
-		col_0.y = v.x;
-		col_1.y = v.y;
-		col_2.y = v.z;
+		m10 = v.x;
+		m11 = v.y;
+		m12 = v.z;
 		break;
 	case 2:
-		col_0.z = v.x;
-		col_1.z = v.y;
-		col_2.z = v.z;
+		m20 = v.x;
+		m21 = v.y;
+		m22 = v.z;
 		break;
 	default:
 		assert( false );
@@ -78,11 +78,11 @@ Vec3 Matrix33::GetRow( int row ) const
 	switch( row )
 	{
 	case 0:
-		return Vec3( col_0.x, col_1.x, col_2.x );
+		return Vec3( m00, m01, m02 );
 	case 1:
-		return Vec3( col_0.y, col_1.y, col_2.y );
+		return Vec3( m10, m11, m12 );
 	case 2:
-		return Vec3( col_0.z, col_1.z, col_2.z );
+		return Vec3( m20, m21, m22 );
 	default:
 		assert( false );
 		break;
@@ -148,25 +148,25 @@ Matrix44& Matrix44::operator*=( const Matrix44& rhs )
 	const Vec4 row2 = lhs.GetRow( 2 );
 	const Vec4 row3 = lhs.GetRow( 3 );
 
-	col_0.x = Dot( row0, rhs.col_0 );
-	col_0.y = Dot( row1, rhs.col_0 );
-	col_0.z = Dot( row2, rhs.col_0 );
-	col_0.w = Dot( row3, rhs.col_0 );
+	m00 = Dot( row0, rhs.col[0] );
+	m01 = Dot( row0, rhs.col[1] );
+	m02 = Dot( row0, rhs.col[2] );
+	m03 = Dot( row0, rhs.col[3] );
 
-	col_1.x = Dot( row0, rhs.col_1 );
-	col_1.y = Dot( row1, rhs.col_1 );
-	col_1.z = Dot( row2, rhs.col_1 );
-	col_1.w = Dot( row3, rhs.col_1 );
+	m10 = Dot( row1, rhs.col[0] );
+	m11 = Dot( row1, rhs.col[1] );
+	m12 = Dot( row1, rhs.col[2] );
+	m13 = Dot( row1, rhs.col[3] );
 
-	col_2.x = Dot( row0, rhs.col_2 );
-	col_2.y = Dot( row1, rhs.col_2 );
-	col_2.z = Dot( row2, rhs.col_2 );
-	col_2.w = Dot( row3, rhs.col_2 );
+	m20 = Dot( row2, rhs.col[0] );
+	m21 = Dot( row2, rhs.col[1] );
+	m22 = Dot( row2, rhs.col[2] );
+	m23 = Dot( row2, rhs.col[3] );
 
-	col_3.x = Dot( row0, rhs.col_3 );
-	col_3.y = Dot( row1, rhs.col_3 );
-	col_3.z = Dot( row2, rhs.col_3 );
-	col_3.w = Dot( row3, rhs.col_3 );
+	m30 = Dot( row3, rhs.col[0] );
+	m31 = Dot( row3, rhs.col[1] );
+	m32 = Dot( row3, rhs.col[2] );
+	m33 = Dot( row3, rhs.col[3] );
 
 	return *this;
 }
@@ -179,10 +179,10 @@ Matrix44 Matrix44::operator*( const Scalar& s ) const
 
 Matrix44& Matrix44::operator*=( const Scalar& s )
 {
-	col_0 *= s;
-	col_1 *= s;
-	col_2 *= s;
-	col_3 *= s;
+	col[0] *= s;
+	col[1] *= s;
+	col[2] *= s;
+	col[3] *= s;
 	return *this;
 }
 
@@ -191,28 +191,28 @@ void Matrix44::SetRow( int row, const Vec4& v )
 	switch( row )
 	{
 	case 0:
-		col_0.x = v.x;
-		col_1.x = v.y;
-		col_2.x = v.z;
-		col_3.x = v.w;
+		m00 = v.x;
+		m01 = v.y;
+		m02 = v.z;
+		m03 = v.w;
 		break;
 	case 1:
-		col_0.y = v.x;
-		col_1.y = v.y;
-		col_2.y = v.z;
-		col_3.y = v.w;
+		m10 = v.x;
+		m11 = v.y;
+		m12 = v.z;
+		m13 = v.w;
 		break;
 	case 2:
-		col_0.z = v.x;
-		col_1.z = v.y;
-		col_2.z = v.z;
-		col_3.z = v.w;
+		m20 = v.x;
+		m21 = v.y;
+		m22 = v.z;
+		m23 = v.w;
 		break;
 	case 3:
-		col_0.w = v.x;
-		col_1.w = v.y;
-		col_2.w = v.z;
-		col_3.w = v.w;
+		m30 = v.x;
+		m31 = v.y;
+		m32 = v.z;
+		m33 = v.w;
 		break;
 	default:
 		assert( false );
@@ -225,13 +225,13 @@ Vec4 Matrix44::GetRow( int row ) const
 	switch( row )
 	{
 	case 0:
-		return Vec4( col_0.x, col_1.x, col_2.x, col_3.x );
+		return Vec4( m00, m01, m02, m03 );
 	case 1:
-		return Vec4( col_0.y, col_1.y, col_2.y, col_3.y );
+		return Vec4( m10, m11, m12, m13 );
 	case 2:
-		return Vec4( col_0.z, col_1.z, col_2.z, col_3.z );
+		return Vec4( m20, m21, m22, m23 );
 	case 3:
-		return Vec4( col_0.w, col_1.w, col_2.w, col_3.w );
+		return Vec4( m30, m31, m32, m33 );
 	default:
 		assert( false );
 		break;
@@ -254,7 +254,7 @@ float Matrix44::Determinant() const
 	const float inv02( m01 * c04 - m11 * c12 + m31 * c20 );
 	const float inv03( m01 * c08 - m11 * c16 + m21 * c20 );
 
-	return Dot( col_0, Vec4( inv00, -inv01, inv02, -inv03 ) );
+	return Dot( col[0], Vec4( inv00, -inv01, inv02, -inv03 ) );
 }
 
 Matrix44 Matrix44::Inverse() const
@@ -301,7 +301,7 @@ Matrix44 Matrix44::Inverse() const
 
 	Matrix44 inverse( inv0 * signA, inv1 * signB, inv2 * signA, inv3 * signB );
 
-	const float det = Dot( col_0, inverse.GetRow( 0 ) );
+	const float det = Dot( col[0], inverse.GetRow( 0 ) );
 
 	const Scalar invDet( 1.0f / det );
 

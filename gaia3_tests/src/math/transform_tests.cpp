@@ -57,19 +57,25 @@ TEST( TransformTests, ToMatrix44BuildsExpectedTRSForIdentityRotation )
 	const Transform t( Vec3( 5.0f, 6.0f, 7.0f ), Quat::V_Identity, Vec3( 2.0f, 3.0f, 4.0f ) );
 	const Matrix44  m = t.ToMatrix44();
 
-	EXPECT_FLOAT_EQ( m.col_0.x, 2.0f );
-	EXPECT_FLOAT_EQ( m.col_0.y, 0.0f );
-	EXPECT_FLOAT_EQ( m.col_0.z, 0.0f );
-	EXPECT_FLOAT_EQ( m.col_1.x, 0.0f );
-	EXPECT_FLOAT_EQ( m.col_1.y, 3.0f );
-	EXPECT_FLOAT_EQ( m.col_1.z, 0.0f );
-	EXPECT_FLOAT_EQ( m.col_2.x, 0.0f );
-	EXPECT_FLOAT_EQ( m.col_2.y, 0.0f );
-	EXPECT_FLOAT_EQ( m.col_2.z, 4.0f );
-	EXPECT_FLOAT_EQ( m.col_3.x, 5.0f );
-	EXPECT_FLOAT_EQ( m.col_3.y, 6.0f );
-	EXPECT_FLOAT_EQ( m.col_3.z, 7.0f );
-	EXPECT_FLOAT_EQ( m.col_3.w, 1.0f );
+	EXPECT_FLOAT_EQ( m.m00, 2.0f );
+	EXPECT_FLOAT_EQ( m.m01, 0.0f );
+	EXPECT_FLOAT_EQ( m.m02, 0.0f );
+	EXPECT_FLOAT_EQ( m.m03, 5.0f );
+
+	EXPECT_FLOAT_EQ( m.m10, 0.0f );
+	EXPECT_FLOAT_EQ( m.m11, 3.0f );
+	EXPECT_FLOAT_EQ( m.m12, 0.0f );
+	EXPECT_FLOAT_EQ( m.m13, 6.0f );
+
+	EXPECT_FLOAT_EQ( m.m20, 0.0f );
+	EXPECT_FLOAT_EQ( m.m21, 0.0f );
+	EXPECT_FLOAT_EQ( m.m22, 4.0f );
+	EXPECT_FLOAT_EQ( m.m23, 7.0f );
+
+	EXPECT_FLOAT_EQ( m.m30, 0.0f );
+	EXPECT_FLOAT_EQ( m.m31, 0.0f );
+	EXPECT_FLOAT_EQ( m.m32, 0.0f );
+	EXPECT_FLOAT_EQ( m.m33, 1.0f );
 }
 
 TEST( TransformTests, ToMatrix44BuildsExpectedRotationBasis )
@@ -80,15 +86,17 @@ TEST( TransformTests, ToMatrix44BuildsExpectedRotationBasis )
 
 	const Matrix44 m = t.ToMatrix44();
 
-	EXPECT_NEAR( m.col_0.x, 0.0f, 1e-5f );
-	EXPECT_NEAR( m.col_0.y, 0.0f, 1e-5f );
-	EXPECT_NEAR( m.col_0.z, -1.0f, 1e-5f );
-	EXPECT_NEAR( m.col_1.x, 0.0f, 1e-5f );
-	EXPECT_NEAR( m.col_1.y, 1.0f, 1e-5f );
-	EXPECT_NEAR( m.col_1.z, 0.0f, 1e-5f );
-	EXPECT_NEAR( m.col_2.x, 1.0f, 1e-5f );
-	EXPECT_NEAR( m.col_2.y, 0.0f, 1e-5f );
-	EXPECT_NEAR( m.col_2.z, 0.0f, 1e-5f );
+	EXPECT_NEAR( m.m00, 0.0f, 1e-5f );
+	EXPECT_NEAR( m.m01, 0.0f, 1e-5f );
+	EXPECT_NEAR( m.m02, 1.0f, 1e-5f );
+
+	EXPECT_NEAR( m.m10, 0.0f, 1e-5f );
+	EXPECT_NEAR( m.m11, 1.0f, 1e-5f );
+	EXPECT_NEAR( m.m12, 0.0f, 1e-5f );
+
+	EXPECT_NEAR( m.m20, -1.0f, 1e-5f );
+	EXPECT_NEAR( m.m21, 0.0f, 1e-5f );
+	EXPECT_NEAR( m.m22, 0.0f, 1e-5f );
 }
 
 TEST( TransformTests, ToMatrix44NormalizesInputQuaternion )
@@ -100,10 +108,10 @@ TEST( TransformTests, ToMatrix44NormalizesInputQuaternion )
 
 	const Matrix44 m = t.ToMatrix44();
 
-	EXPECT_NEAR( m.col_0.x, 0.0f, 1e-5f );
-	EXPECT_NEAR( m.col_0.z, -1.0f, 1e-5f );
-	EXPECT_NEAR( m.col_2.x, 1.0f, 1e-5f );
-	EXPECT_NEAR( m.col_2.z, 0.0f, 1e-5f );
+	EXPECT_NEAR( m.m00, 0.0f, 1e-5f );
+	EXPECT_NEAR( m.m20, -1.0f, 1e-5f );
+	EXPECT_NEAR( m.m02, 1.0f, 1e-5f );
+	EXPECT_NEAR( m.m22, 0.0f, 1e-5f );
 }
 
 TEST( TransformTests, InverseComposedWithOriginalProducesIdentityForIdentityRotation )

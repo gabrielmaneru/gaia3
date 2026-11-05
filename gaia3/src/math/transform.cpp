@@ -1,6 +1,8 @@
 #include "gaia3_pch.h"
 #include "transform.h"
 
+#include <math.h>
+
 const Transform Transform::V_Identity = Transform();
 
 Transform Transform::operator*( const Transform& rhs ) const

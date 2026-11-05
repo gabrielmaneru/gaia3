@@ -5,6 +5,8 @@
 #include <scene/componentFactory.h>
 #include <scene/entity.h>
 
+#include <math.h>
+
 RTTI_DEFINE_COMP( CameraComponent,
                   RTTI_PROPERTY( m_HorizontalFOV ),
                   RTTI_PROPERTY( m_NearPlane ),

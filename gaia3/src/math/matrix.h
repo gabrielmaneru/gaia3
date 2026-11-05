@@ -7,14 +7,18 @@ struct Matrix33
 {
 	// clang-format off
 	Matrix33()
-	    : col_0( 1.0f, 0.0f, 0.0f )
-		, col_1( 0.0f, 1.0f, 0.0f )
-		, col_2( 0.0f, 0.0f, 1.0f )
+		: m00(1.0f), m01(0.0f), m02(0.0f)
+		, m10(0.0f), m11(1.0f), m12(0.0f)
+		, m20(0.0f), m21(0.0f), m22(1.0f)
 	{
 	}
 	// clang-format on
-	explicit Matrix33( Vec3 _col_0, Vec3 _col_1, Vec3 _col_2 )
-	    : col_0( _col_0 ), col_1( _col_1 ), col_2( _col_2 ) {}
+	explicit Matrix33( Vec3 _col0, Vec3 _col1, Vec3 _col2 )
+	{
+		col[0] = _col0;
+		col[1] = _col1;
+		col[2] = _col2;
+	}
 
 	Matrix33  operator*( const Matrix33& rhs ) const;
 	Matrix33& operator*=( const Matrix33& rhs );
@@ -25,12 +29,6 @@ struct Matrix33
 
 	union
 	{
-		struct
-		{
-			Vec3 col_0;
-			Vec3 col_1;
-			Vec3 col_2;
-		};
 		struct
 		{
 			float m00;
@@ -45,7 +43,7 @@ struct Matrix33
 			float m12;
 			float m22;
 		};
-		Vec3 value[3];
+		Vec3 col[3];
 	};
 
 	void SetRow( int row, const Vec3& v );
@@ -59,22 +57,27 @@ struct Matrix44
 {
 	// clang-format off
 	Matrix44()
-	    : col_0( 1.0f, 0.0f, 0.0f, 0.0f )
-		, col_1( 0.0f, 1.0f, 0.0f, 0.0f )
-		, col_2( 0.0f, 0.0f, 1.0f, 0.0f )
-		, col_3( 0.0f, 0.0f, 0.0f, 1.0f )
+		: m00(1.0f), m01(0.0f), m02(0.0f), m03(0.0f)
+		, m10(0.0f), m11(1.0f), m12(0.0f), m13(0.0f)
+		, m20(0.0f), m21(0.0f), m22(1.0f), m23(0.0f)
+		, m30(0.0f), m31(0.0f), m32(0.0f), m33(1.0f)
 	{
 	}
 	explicit Matrix44( const Matrix33& m33 )
-	    : col_0(    m33.col_0,     0.0f )
-	    , col_1(    m33.col_1,     0.0f )
-	    , col_2(    m33.col_2,     0.0f )
-		, col_3( 0.0f, 0.0f, 0.0f, 1.0f )
+		: m00(m33.m00), m01(m33.m01), m02(m33.m02), m03(0.0f)
+		, m10(m33.m10), m11(m33.m11), m12(m33.m12), m13(0.0f)
+		, m20(m33.m20), m21(m33.m21), m22(m33.m22), m23(0.0f)
+		, m30(0.0f),    m31(0.0f),    m32(0.0f),    m33(1.0f)
 	{
 	}
 	// clang-format on
-	explicit Matrix44( Vec4 _col_0, Vec4 _col_1, Vec4 _col_2, Vec4 _col_3 )
-	    : col_0( _col_0 ), col_1( _col_1 ), col_2( _col_2 ), col_3( _col_3 ) {}
+	explicit Matrix44( Vec4 _col0, Vec4 _col1, Vec4 _col2, Vec4 _col3 )
+	{
+		col[0] = _col0;
+		col[1] = _col1;
+		col[2] = _col2;
+		col[3] = _col3;
+	}
 
 	Matrix44  operator*( const Matrix44& rhs ) const;
 	Matrix44& operator*=( const Matrix44& rhs );
@@ -85,13 +88,6 @@ struct Matrix44
 
 	union
 	{
-		struct
-		{
-			Vec4 col_0;
-			Vec4 col_1;
-			Vec4 col_2;
-			Vec4 col_3;
-		};
 		struct
 		{
 			float m00;
@@ -114,7 +110,7 @@ struct Matrix44
 			float m23;
 			float m33;
 		};
-		Vec4 value[4];
+		Vec4 col[4];
 	};
 
 	void SetRow( int row, const Vec4& v );

@@ -1,6 +1,8 @@
 #include "gaia3_pch.h"
 #include "vector.h"
 
+#include <math.h>
+
 /// Vec3
 const Vec3 Vec3::V_Zero = Vec3();
 const Vec3 Vec3::V_One( 1.0f, 1.0f, 1.0f );

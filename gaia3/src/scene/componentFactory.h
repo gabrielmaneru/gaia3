@@ -55,7 +55,7 @@ private:
 	}
 
 template <typename T>
-static bool ComponentFactory::RegisterType()
+bool ComponentFactory::RegisterType()
 {
 	static_assert( std::is_base_of_v<Component, T>, "T must derive from Component" );
 	return Register( T::StaticTypeInfo().Name, []() -> shared<Component> { return new_shared<T>(); } );

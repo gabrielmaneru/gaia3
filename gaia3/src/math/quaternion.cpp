@@ -1,6 +1,8 @@
 #include "gaia3_pch.h"
 #include "quaternion.h"
 
+#include <math.h>
+
 const Quat Quat::V_Identity = Quat();
 const Quat Quat::V_Zero( 0.0f, 0.0f, 0.0f, 0.0f );
 

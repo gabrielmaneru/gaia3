@@ -58,7 +58,9 @@ Matrix44 LookAt44( const Vec3& eye, const Vec3& forwardDir, const Vec3& upAxis )
 	const float tz = Dot( -lookAtM33.GetRow( 2 ), eye );
 
 	Matrix44 lookAtM44( lookAtM33 );
-	lookAtM44.col_3 = Vec4( tx, ty, tz, 1.0f );
+	lookAtM44.m03 = tx;
+	lookAtM44.m13 = ty;
+	lookAtM44.m23 = tz;
 	return lookAtM44;
 }
 
