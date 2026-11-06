@@ -1,5 +1,6 @@
 #pragma once
 
+struct Vec2;
 struct Vec3;
 struct Vec4;
 struct Quat;
@@ -13,6 +14,9 @@ class Value;
 
 namespace rtti
 {
+
+bool ValueToJson( const Vec2& value, Json::Value& outValue );
+bool ValueFromJson( const Json::Value& inValue, Vec2& outValue );
 
 bool ValueToJson( const Vec3& value, Json::Value& outValue );
 bool ValueFromJson( const Json::Value& inValue, Vec3& outValue );

@@ -13,11 +13,9 @@ public:
 
 private:
 	bool InitializeDummyShaders();
-	bool InitializeDummyVertexBuffer();
 
-	u32 m_VertexArray              = 0;
-	u32 m_VertexBuffer             = 0;
 	u32 m_Program                  = 0;
+	int m_ModelMatrixLocation      = -1;
 	int m_ViewMatrixLocation       = -1;
 	int m_ProjectionMatrixLocation = -1;
 

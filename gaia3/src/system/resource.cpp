@@ -25,6 +25,9 @@ void Resource::SetPath( std::string_view path )
 
 bool Resource::Load()
 {
+	if( m_State == ResourceState::Loaded )
+		return true;
+
 	if( m_State == ResourceState::NotLoaded )
 	{
 		m_State = ResourceState::Loading;

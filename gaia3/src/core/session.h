@@ -16,6 +16,8 @@ public:
 	bool   SaveCurrentLevelAs( std::string_view fileName );
 	Level* GetCurrentLevel() { return m_CurrentLevel.get(); }
 
+	ResourceManager& GetResourceManager() { return m_ResourceManager; }
+
 private:
 	ResourceManager m_ResourceManager;
 	shared<Level>   m_CurrentLevel = nullptr;

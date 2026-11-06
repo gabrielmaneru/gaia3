@@ -21,25 +21,11 @@ Quat& Quat::operator*=( const Quat& rhs )
 {
 	const Quat lhs( *this );
 
-	if( false )
-	{
-		const Vec3 v1( lhs.x, lhs.y, lhs.z );
-		const Vec3 v2( rhs.x, rhs.y, rhs.z );
-
-		const Vec3 term1 = v2 * Scalar( lhs.w );
-		const Vec3 term2 = v1 * Scalar( rhs.w );
-		const Vec3 term3 = Cross( v1, v2 );
-
-		x = term1.x + term2.x + term3.x;
-		y = term1.y + term2.y + term3.y;
-		z = term1.z + term2.z + term3.z;
-		w = w * rhs.w - Dot( v1, v2 );
-	}
-
-	x = lhs.w * lhs.x + rhs.x * lhs.w + rhs.y * lhs.z - rhs.z * lhs.y;
-	y = lhs.w * lhs.y + rhs.y * lhs.w + rhs.z * lhs.x - rhs.x * lhs.z;
-	z = lhs.w * lhs.z + rhs.z * lhs.w + rhs.x * lhs.y - rhs.y * lhs.x;
-	w = lhs.w * lhs.w - rhs.x * lhs.x - rhs.y * lhs.y - rhs.z * lhs.z;
+	// Note: Hamilton product, so ( a * b ).Rotate( v ) applies b first, matching matrix multiplication
+	x = lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y;
+	y = lhs.w * rhs.y + lhs.y * rhs.w + lhs.z * rhs.x - lhs.x * rhs.z;
+	z = lhs.w * rhs.z + lhs.z * rhs.w + lhs.x * rhs.y - lhs.y * rhs.x;
+	w = lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z;
 	return *this;
 }
 

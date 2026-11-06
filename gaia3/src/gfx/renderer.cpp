@@ -22,11 +22,7 @@ bool Renderer::Init( ProcAddressFn procAddressLoader, rect canvas )
 		return false;
 	}
 
-	if( !InitializeDummyVertexBuffer() )
-	{
-		std::cerr << "Renderer init failed: Failed to create dummy vertex buffer\n";
-		return false;
-	}
+	glEnable( GL_DEPTH_TEST );
 
 	return true;
 }
@@ -37,9 +33,8 @@ void Renderer::Update( rect canvas )
 
 	// Clear buffer
 	glClearColor( 0.1f, 0.1f, 0.1f, 1.0f );
-	glClear( GL_COLOR_BUFFER_BIT );
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-	// Draw dummy mesh
 	glUseProgram( m_Program );
 
 	// Apply Camera Matrices
@@ -57,27 +52,19 @@ void Renderer::Update( rect canvas )
 		glUniformMatrix4fv( m_ProjectionMatrixLocation, 1, GL_FALSE, &Matrix44::V_Identity.m00 );
 	}
 
-	glBindVertexArray( m_VertexArray );
-	glDrawArrays( GL_TRIANGLES, 0, 3 );
-	glBindVertexArray( 0 );
+	for( const Renderable* renderable : m_Renderables )
+	{
+		const Matrix44 model = renderable->GetModelMatrix();
+		glUniformMatrix4fv( m_ModelMatrixLocation, 1, GL_FALSE, &model.m00 );
+
+		renderable->Draw();
+	}
 }
 
 void Renderer::Shutdown()
 {
 	m_Renderables.clear();
 	m_Cameras.clear();
-
-	if( m_VertexBuffer != 0 )
-	{
-		glDeleteBuffers( 1, &m_VertexBuffer );
-		m_VertexBuffer = 0;
-	}
-
-	if( m_VertexArray != 0 )
-	{
-		glDeleteVertexArrays( 1, &m_VertexArray );
-		m_VertexArray = 0;
-	}
 
 	if( m_Program != 0 )
 	{
@@ -91,20 +78,26 @@ bool Renderer::InitializeDummyShaders()
 	constexpr const char* vertexShaderSource = R"(
 		#version 330 core
 		layout (location = 0) in vec3 aPos;
+		layout (location = 1) in vec3 aNormal;
+		uniform mat4 u_Model;
 		uniform mat4 u_View;
 		uniform mat4 u_Projection;
+		out vec3 vNormal;
 		void main()
 		{
-			gl_Position = u_Projection * u_View * vec4(aPos, 1.0);
+			vNormal = aNormal;
+			gl_Position = u_Projection * u_View * u_Model * vec4(aPos, 1.0);
 		}
 	)";
 
+	// Note: Faces are colored by normal so the shape is readable without lighting
 	constexpr const char* fragmentShaderSource = R"(
 		#version 330 core
+		in vec3 vNormal;
 		out vec4 FragColor;
 		void main()
 		{
-			FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+			FragColor = vec4(vNormal * 0.5 + 0.5, 1.0);
 		}
 	)";
 
@@ -164,39 +157,14 @@ bool Renderer::InitializeDummyShaders()
 	glDeleteShader( vertexShader );
 	glDeleteShader( fragmentShader );
 
+	m_ModelMatrixLocation      = glGetUniformLocation( m_Program, "u_Model" );
 	m_ViewMatrixLocation       = glGetUniformLocation( m_Program, "u_View" );
 	m_ProjectionMatrixLocation = glGetUniformLocation( m_Program, "u_Projection" );
-	if( m_ViewMatrixLocation < 0 || m_ProjectionMatrixLocation < 0 )
+	if( m_ModelMatrixLocation < 0 || m_ViewMatrixLocation < 0 || m_ProjectionMatrixLocation < 0 )
 	{
-		std::cerr << "Renderer init failed: Camera matrix uniform lookup failed\n";
+		std::cerr << "Renderer init failed: Matrix uniform lookup failed\n";
 		return false;
 	}
-
-	return true;
-}
-
-bool Renderer::InitializeDummyVertexBuffer()
-{
-	constexpr float triangleVertices[] = {
-	    // clang-format off
-		0.0f,  0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		-0.5f, -0.5f, 0.0f,
-	    // clang-format on
-	};
-
-	glGenVertexArrays( 1, &m_VertexArray );
-	glGenBuffers( 1, &m_VertexBuffer );
-
-	glBindVertexArray( m_VertexArray );
-	glBindBuffer( GL_ARRAY_BUFFER, m_VertexBuffer );
-	glBufferData( GL_ARRAY_BUFFER, sizeof( triangleVertices ), triangleVertices, GL_STATIC_DRAW );
-
-	glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof( float ), nullptr );
-	glEnableVertexAttribArray( 0 );
-
-	glBindBuffer( GL_ARRAY_BUFFER, 0 );
-	glBindVertexArray( 0 );
 
 	return true;
 }

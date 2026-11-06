@@ -31,6 +31,12 @@ float Ramp( float value, float minValue, float maxValue )
 	return Clamp( ( value - minValue ) / ( maxValue - minValue ), 0.0f, 1.0f );
 }
 
+bool IsClose( const Vec2& a, const Vec2& b, float epsilon )
+{
+	return fabsf( a.x - b.x ) <= epsilon
+	       && fabsf( a.y - b.y ) <= epsilon;
+}
+
 bool IsClose( const Vec3& a, const Vec3& b, float epsilon )
 {
 	return fabsf( a.x - b.x ) <= epsilon

@@ -3,6 +3,8 @@
 #include <math/mathHelpers.h>
 #include <math/transform.h>
 
+#include <math.h>
+
 TEST( TransformTests, MultiplyWithIdentityPreservesValues )
 {
 	const Transform t( Vec3( 1.0f, 2.0f, 3.0f ), Quat( 0.0f, 0.0f, 0.0f, 1.0f ), Vec3( 2.0f, 3.0f, 4.0f ) );
@@ -187,4 +189,29 @@ TEST( TransformTests, InverseToMatrix44CancelsOriginalMatrix )
 	EXPECT_NEAR( right.GetRow( 3 ).x, 0.0f, 1e-4f );
 	EXPECT_NEAR( right.GetRow( 3 ).y, 0.0f, 1e-4f );
 	EXPECT_NEAR( right.GetRow( 3 ).z, 0.0f, 1e-4f );
+}
+
+TEST( TransformTests, InverseCancelsRotationAndTranslationForUniformScale )
+{
+	const Transform t( Vec3( 3.0f, 4.0f, -2.0f ), Quat( 0.1f, 0.2f, 0.3f, 0.9f ).Normalized(), Vec3( 2.0f, 2.0f, 2.0f ) );
+
+	const Transform identity = t * t.Inverse();
+
+	EXPECT_TRUE( IsClose( identity.position, Vec3::V_Zero, 1e-4f ) );
+	EXPECT_NEAR( fabsf( identity.rotation.w ), 1.0f, 1e-5f );
+	EXPECT_TRUE( IsClose( identity.scale, Vec3::V_One, 1e-5f ) );
+}
+
+TEST( TransformTests, ComposingTransformsMatchesMultiplyingTheirMatrices )
+{
+	const Transform a( Vec3( 1.0f, 2.0f, 3.0f ), Quat( 0.0f, 0.5f, 0.0f, 0.8660254f ), Vec3( 2.0f, 2.0f, 2.0f ) );
+	const Transform b( Vec3( -4.0f, 0.5f, 2.0f ), Quat( 0.5f, 0.0f, 0.0f, 0.8660254f ), Vec3( 0.5f, 0.5f, 0.5f ) );
+
+	const Matrix44 composed   = ( a * b ).ToMatrix44();
+	const Matrix44 multiplied = a.ToMatrix44() * b.ToMatrix44();
+
+	for( int row = 0; row < 4; ++row )
+	{
+		EXPECT_TRUE( IsClose( composed.GetRow( row ), multiplied.GetRow( row ), 1e-4f ) );
+	}
 }

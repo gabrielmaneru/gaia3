@@ -10,6 +10,26 @@
 namespace rtti
 {
 
+bool ValueToJson( const Vec2& value, Json::Value& outValue )
+{
+	outValue      = Json::Value( Json::objectValue );
+	outValue["x"] = value.x;
+	outValue["y"] = value.y;
+	return true;
+}
+
+bool ValueFromJson( const Json::Value& inValue, Vec2& outValue )
+{
+	if( !inValue.isObject() )
+		return false;
+
+	if( !inValue.isMember( "x" ) || !inValue.isMember( "y" ) )
+		return false;
+
+	return ValueFromJson( inValue["x"], outValue.x )
+	       && ValueFromJson( inValue["y"], outValue.y );
+}
+
 bool ValueToJson( const Vec3& value, Json::Value& outValue )
 {
 	outValue      = Json::Value( Json::objectValue );

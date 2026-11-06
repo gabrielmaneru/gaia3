@@ -13,8 +13,8 @@ Level::Level()
 {
 }
 
-Level::Level( std::string_view levelPath, ResourceState state )
-    : Resource( levelPath, state )
+Level::Level( std::string_view path, ResourceState state )
+    : Resource( path, state )
 {
 }
 

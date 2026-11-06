@@ -16,6 +16,11 @@ Vec4 Cross( const Vec4& a, const Vec4& b )
 	             0.0f );
 }
 
+float Dot( const Vec2& a, const Vec2& b )
+{
+	return ( a.x * b.x ) + ( a.y * b.y );
+}
+
 float Dot( const Vec3& a, const Vec3& b )
 {
 	return ( a.x * b.x ) + ( a.y * b.y ) + ( a.z * b.z );

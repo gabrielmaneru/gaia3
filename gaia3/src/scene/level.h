@@ -13,7 +13,7 @@ class Level : public Resource
 	RTTI_DECLARE_RESOURCE( Level )
 public:
 	Level();
-	explicit Level( std::string_view levelPath, ResourceState state = ResourceState::NotLoaded );
+	explicit Level( std::string_view path, ResourceState state = ResourceState::NotLoaded );
 	~Level();
 
 	void Update();

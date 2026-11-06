@@ -4,6 +4,112 @@
 #include <math/vector.h>
 #include <math/vectorTransforms.h>
 
+TEST( Vec2Tests, UnaryMinusAndEquality )
+{
+	const Vec2 a( 1.0f, -2.0f );
+	const Vec2 b = -a;
+
+	EXPECT_FLOAT_EQ( b.x, -1.0f );
+	EXPECT_FLOAT_EQ( b.y, 2.0f );
+	EXPECT_TRUE( a == Vec2( 1.0f, -2.0f ) );
+	EXPECT_TRUE( a != b );
+	EXPECT_TRUE( a != Vec2( 1.0f, 2.0f ) );
+}
+
+TEST( Vec2Tests, DefaultAndConstants )
+{
+	const Vec2 def;
+	EXPECT_FLOAT_EQ( def.x, 0.0f );
+	EXPECT_FLOAT_EQ( def.y, 0.0f );
+	EXPECT_TRUE( def == Vec2::V_Zero );
+
+	EXPECT_TRUE( Vec2::V_One == Vec2( 1.0f, 1.0f ) );
+	EXPECT_TRUE( Vec2::V_Right == Vec2( 1.0f, 0.0f ) );
+	EXPECT_TRUE( Vec2::V_Up == Vec2( 0.0f, 1.0f ) );
+}
+
+TEST( Vec2Tests, AddSubtractMultiply )
+{
+	const Vec2 a( 1.0f, 2.0f );
+	const Vec2 b( 4.0f, 6.0f );
+
+	const Vec2 sum = a + b;
+	EXPECT_FLOAT_EQ( sum.x, 5.0f );
+	EXPECT_FLOAT_EQ( sum.y, 8.0f );
+
+	const Vec2 diff = b - a;
+	EXPECT_FLOAT_EQ( diff.x, 3.0f );
+	EXPECT_FLOAT_EQ( diff.y, 4.0f );
+
+	const Vec2 scaled = a * Scalar( 2.5f );
+	EXPECT_FLOAT_EQ( scaled.x, 2.5f );
+	EXPECT_FLOAT_EQ( scaled.y, 5.0f );
+
+	Vec2 c = a;
+	c += b;
+	EXPECT_TRUE( c == sum );
+	c -= b;
+	EXPECT_TRUE( c == a );
+	c *= Scalar( 2.5f );
+	EXPECT_TRUE( c == scaled );
+}
+
+TEST( Vec2Tests, ComponentWiseMultiplyAssignAndConversions )
+{
+	Vec2       a( 2.0f, 3.0f );
+	const Vec2 b( 5.0f, 6.0f );
+
+	const Vec2 multiplied = a * b;
+	EXPECT_FLOAT_EQ( multiplied.x, 10.0f );
+	EXPECT_FLOAT_EQ( multiplied.y, 18.0f );
+
+	a *= b;
+	EXPECT_FLOAT_EQ( a.x, multiplied.x );
+	EXPECT_FLOAT_EQ( a.y, multiplied.y );
+
+	const Vec3 toVec3( Vec2( 1.0f, 2.0f ), 3.0f );
+	EXPECT_TRUE( toVec3 == Vec3( 1.0f, 2.0f, 3.0f ) );
+
+	const Vec3 toVec3DefaultZ( Vec2( 1.0f, 2.0f ) );
+	EXPECT_FLOAT_EQ( toVec3DefaultZ.z, 0.0f );
+
+	const Vec4 toVec4( Vec2( 1.0f, 2.0f ), 3.0f, 4.0f );
+	EXPECT_TRUE( toVec4 == Vec4( 1.0f, 2.0f, 3.0f, 4.0f ) );
+
+	const Vec4 toVec4Defaults( Vec2( 1.0f, 2.0f ) );
+	EXPECT_FLOAT_EQ( toVec4Defaults.z, 0.0f );
+	EXPECT_FLOAT_EQ( toVec4Defaults.w, 0.0f );
+}
+
+TEST( Vec2Tests, NormalizeAndNormalized )
+{
+	Vec2       v( 3.0f, 4.0f );
+	const Vec2 copy = v;
+	const Vec2 n    = v.Normalized();
+
+	EXPECT_FLOAT_EQ( v.LengthSq(), 25.0f );
+	EXPECT_NEAR( n.LengthSq(), 1.0f, 1e-5f );
+	EXPECT_NEAR( n.x, 0.6f, 1e-6f );
+	EXPECT_NEAR( n.y, 0.8f, 1e-6f );
+	EXPECT_FLOAT_EQ( copy.x, v.x );
+	EXPECT_FLOAT_EQ( copy.y, v.y );
+
+	v.Normalize();
+	EXPECT_NEAR( v.LengthSq(), 1.0f, 1e-5f );
+
+	Vec2 zero = Vec2::V_Zero;
+	zero.Normalize();
+	EXPECT_TRUE( zero == Vec2::V_Zero );
+}
+
+TEST( Vec2Tests, IsClose )
+{
+	const Vec2 a( 1.0f, 2.0f );
+	EXPECT_TRUE( IsClose( a, Vec2( 1.0f + 1e-7f, 2.0f - 1e-7f ), eps_6 ) );
+	EXPECT_FALSE( IsClose( a, Vec2( 1.0f, 2.1f ), eps_6 ) );
+	EXPECT_FALSE( IsClose( a, Vec2( 1.1f, 2.0f ), eps_6 ) );
+}
+
 TEST( Vec3Tests, UnaryMinusAndEquality )
 {
 	const Vec3 a( 1.0f, -2.0f, 3.0f );
@@ -133,6 +239,18 @@ TEST( Vec4Tests, EqualityUnaryAndComponentWiseMultiply )
 	EXPECT_FLOAT_EQ( fromVec3.y, 4.0f );
 	EXPECT_FLOAT_EQ( fromVec3.z, 6.0f );
 	EXPECT_FLOAT_EQ( fromVec3.w, 8.0f );
+}
+
+TEST( VectorTransformsTests, DotVec2 )
+{
+	const Vec2 xAxis = Vec2::V_Right;
+	const Vec2 yAxis = Vec2::V_Up;
+	const Vec2 a( 2.0f, 3.0f );
+	const Vec2 b( -1.0f, 4.0f );
+
+	EXPECT_FLOAT_EQ( Dot( xAxis, yAxis ), 0.0f );
+	EXPECT_FLOAT_EQ( Dot( xAxis, xAxis ), 1.0f );
+	EXPECT_FLOAT_EQ( Dot( a, b ), 10.0f );
 }
 
 TEST( VectorTransformsTests, CrossAndDotVec3 )

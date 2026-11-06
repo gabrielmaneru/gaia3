@@ -6,6 +6,8 @@ add_library(gaia3 STATIC
     src/core/session.cpp
     src/core/serializationTypes.cpp
     src/gaia3_pch.cpp
+    src/gfx/meshObj.cpp
+    src/gfx/model.cpp
     src/gfx/renderer.cpp
     src/gfx/rendererTypes.cpp
     src/math/mathHelpers.cpp

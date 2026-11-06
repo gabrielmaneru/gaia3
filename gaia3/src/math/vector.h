@@ -2,8 +2,42 @@
 
 #include <math/scalar.h>
 
+struct Vec2;
 struct Vec3;
 struct Vec4;
+
+struct Vec2
+{
+	Vec2() = default;
+	explicit Vec2( float _x, float _y )
+	    : x( _x ), y( _y )
+	{
+	}
+
+	Vec2  operator-() const;
+	bool  operator==( const Vec2& rhs ) const;
+	bool  operator!=( const Vec2& rhs ) const;
+	Vec2  operator+( const Vec2& rhs ) const;
+	Vec2& operator+=( const Vec2& rhs );
+	Vec2  operator-( const Vec2& rhs ) const;
+	Vec2& operator-=( const Vec2& rhs );
+	Vec2  operator*( const Vec2& rhs ) const;
+	Vec2& operator*=( const Vec2& rhs );
+	Vec2  operator*( const Scalar& s ) const;
+	Vec2& operator*=( const Scalar& s );
+
+	static const Vec2 V_Zero;
+	static const Vec2 V_One;
+	static const Vec2 V_Right;
+	static const Vec2 V_Up;
+
+	float x = 0.0f;
+	float y = 0.0f;
+
+	float LengthSq() const;
+	void  Normalize();
+	Vec2  Normalized() const;
+};
 
 struct Vec3
 {
@@ -12,6 +46,7 @@ struct Vec3
 	    : x( _x ), y( _y ), z( _z )
 	{
 	}
+	explicit Vec3( const Vec2& _v, float _z = 0.0f );
 	explicit Vec3( const Vec4& _v );
 
 	Vec3  operator-() const;
@@ -48,6 +83,7 @@ struct Vec4
 	    : x( _x ), y( _y ), z( _z ), w( _w )
 	{
 	}
+	explicit Vec4( const Vec2& _v, float _z = 0.0f, float _w = 0.0f );
 	explicit Vec4( const Vec3& _v, float _w = 0.0f );
 
 	Vec4  operator-() const;

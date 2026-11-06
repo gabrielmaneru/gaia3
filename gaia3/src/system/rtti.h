@@ -6,6 +6,7 @@
 #include <json/json.h>
 
 #include <cstddef>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -176,21 +177,26 @@ bool ValueFromJson( const Json::Value& inValue, T& outValue )
 	}
 	else if constexpr( std::is_integral_v<ValueType> && std::is_unsigned_v<ValueType> )
 	{
-		if( !inValue.isUInt64() && !inValue.isUInt() && !inValue.isIntegral() )
+		if( !inValue.isUInt64() )
 			return false;
 
-		if( inValue.isInt64() && inValue.asInt64() < 0 )
+		const Json::UInt64 parsedValue = inValue.asUInt64();
+		if( parsedValue > std::numeric_limits<ValueType>::max() )
 			return false;
 
-		outValue = static_cast<ValueType>( inValue.asUInt64() );
+		outValue = static_cast<ValueType>( parsedValue );
 		return true;
 	}
 	else if constexpr( std::is_integral_v<ValueType> )
 	{
-		if( !inValue.isInt64() && !inValue.isInt() && !inValue.isIntegral() )
+		if( !inValue.isInt64() )
 			return false;
 
-		outValue = static_cast<ValueType>( inValue.asInt64() );
+		const Json::Int64 parsedValue = inValue.asInt64();
+		if( parsedValue < std::numeric_limits<ValueType>::min() || parsedValue > std::numeric_limits<ValueType>::max() )
+			return false;
+
+		outValue = static_cast<ValueType>( parsedValue );
 		return true;
 	}
 	else if constexpr( std::is_floating_point_v<ValueType> )
@@ -283,19 +289,20 @@ public:                                              \
                                                      \
 private:
 
-#define RTTI_DEFINE_TYPE( TypeName, ... )                                                   \
-	const ::rtti::TypeInfo& TypeName::StaticTypeInfo()                                      \
-	{                                                                                       \
-		using ThisType                                  = TypeName;                         \
-		static const ::rtti::PropertyInfo kProperties[] = { __VA_ARGS__ };                  \
-		static const ::rtti::TypeInfo     kTypeInfo     = ::rtti::CreateTypeInfo<TypeName>( \
-		    #TypeName, kProperties, sizeof( kProperties ) / sizeof( kProperties[0] ) );     \
-		static const bool kRegistered = []() {                                              \
-			::rtti::Registry::Instance().Register( kTypeInfo );                             \
-			return true;                                                                    \
-		}();                                                                                \
-		(void)kRegistered;                                                                  \
-		return kTypeInfo;                                                                   \
+// The property list may be empty: a type can be registered with no properties.
+#define RTTI_DEFINE_TYPE( TypeName, ... )                                                                  \
+	const ::rtti::TypeInfo& TypeName::StaticTypeInfo()                                                     \
+	{                                                                                                      \
+		using ThisType                                             = TypeName;                             \
+		static const std::vector<::rtti::PropertyInfo> kProperties = { __VA_ARGS__ };                      \
+		static const ::rtti::TypeInfo                  kTypeInfo   = ::rtti::CreateTypeInfo<TypeName>(     \
+		    #TypeName, kProperties.data(), kProperties.size() );                                           \
+		static const bool kRegistered = []() {                                                             \
+			::rtti::Registry::Instance().Register( kTypeInfo );                                            \
+			return true;                                                                                   \
+		}();                                                                                               \
+		(void)kRegistered;                                                                                 \
+		return kTypeInfo;                                                                                  \
 	}
 
 #define RTTI_PROPERTY( MemberName ) ::rtti::MakeProperty<decltype( ThisType::MemberName )>( #MemberName, offsetof( ThisType, MemberName ) )

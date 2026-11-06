@@ -1,0 +1,260 @@
+#include "testHelpers.h"
+
+#include <system/resourceManager.h>
+
+namespace
+{
+// Note: Files named "broken" fail to load, so tests can trigger a load failure from disk
+class ManagedResource : public Resource
+{
+	RTTI_DECLARE_RESOURCE( ManagedResource )
+public:
+	explicit ManagedResource( std::string_view path, ResourceState state = ResourceState::NotLoaded )
+	    : Resource( path, state )
+	{
+	}
+
+protected:
+	bool LoadInternal() override { return GetName() != "broken"; }
+};
+
+RTTI_DEFINE_RESOURCE( ManagedResource,
+                      RTTI_RESOURCE_EXTENSIONS( ".managed" ) )
+
+class OtherManagedResource : public Resource
+{
+	RTTI_DECLARE_RESOURCE( OtherManagedResource )
+public:
+	explicit OtherManagedResource( std::string_view path, ResourceState state = ResourceState::NotLoaded )
+	    : Resource( path, state )
+	{
+	}
+};
+
+RTTI_DEFINE_RESOURCE( OtherManagedResource,
+                      RTTI_RESOURCE_EXTENSIONS( ".othermanaged" ) )
+} // namespace
+
+TEST( ResourceManagerTests, FindsResourcesWithOrWithoutExtension )
+{
+	ScopedTempDir directory;
+	directory.Write( "item.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	EXPECT_NE( manager.FindResource<ManagedResource>( "item" ), nullptr );
+	EXPECT_NE( manager.FindResource<ManagedResource>( "item.managed" ), nullptr );
+}
+
+TEST( ResourceManagerTests, ScansSubfoldersAndFindsByRelativePathOrName )
+{
+	ScopedTempDir directory;
+	directory.Write( "models/props/crate.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	shared<ManagedResource> byPath = manager.FindResource<ManagedResource>( "models/props/crate" );
+	shared<ManagedResource> byName = manager.FindResource<ManagedResource>( "crate.managed" );
+
+	ASSERT_NE( byPath, nullptr );
+	EXPECT_EQ( byPath, byName );
+}
+
+TEST( ResourceManagerTests, ExtensionsMatchIgnoringCaseWhenScanning )
+{
+	ScopedTempDir directory;
+	directory.Write( "upper.MANAGED", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	EXPECT_NE( manager.FindResource<ManagedResource>( "upper" ), nullptr );
+}
+
+TEST( ResourceManagerTests, IgnoresFilesWithUnknownExtensions )
+{
+	ScopedTempDir directory;
+	directory.Write( "notes.unknownextension", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	EXPECT_EQ( manager.FindResource<ManagedResource>( "notes" ), nullptr );
+}
+
+TEST( ResourceManagerTests, MissingFoldersAreNotAnError )
+{
+	ScopedTempDir directory;
+
+	ResourceManager manager;
+	EXPECT_TRUE( manager.Init( directory.PathTo( "missing_common" ), directory.PathTo( "missing_app" ) ) );
+	EXPECT_EQ( manager.FindResource<ManagedResource>( "anything" ), nullptr );
+}
+
+TEST( ResourceManagerTests, UnknownResourcesAreNotFound )
+{
+	ScopedTempDir directory;
+	directory.Write( "item.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	EXPECT_EQ( manager.FindResource<ManagedResource>( "other" ), nullptr );
+}
+
+TEST( ResourceManagerTests, ResourcesAreSeparatedByType )
+{
+	ScopedTempDir directory;
+	directory.Write( "shared.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	EXPECT_NE( manager.FindResource<ManagedResource>( "shared" ), nullptr );
+	EXPECT_EQ( manager.FindResource<OtherManagedResource>( "shared" ), nullptr );
+}
+
+TEST( ResourceManagerTests, AppResourcesOverrideCommonResources )
+{
+	ScopedTempDir directory;
+	directory.Write( "common/item.managed", "" );
+	const std::string appFile = directory.Write( "app/item.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( directory.PathTo( "common" ), directory.PathTo( "app" ) ) );
+
+	shared<ManagedResource> resource = manager.FindResource<ManagedResource>( "item" );
+	ASSERT_NE( resource, nullptr );
+	EXPECT_TRUE( std::filesystem::equivalent( resource->GetPath(), appFile ) );
+}
+
+TEST( ResourceManagerTests, ResourcesStayUnloadedWithoutForceLoad )
+{
+	ScopedTempDir directory;
+	directory.Write( "item.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	shared<ManagedResource> resource = manager.FindResource<ManagedResource>( "item" );
+	ASSERT_NE( resource, nullptr );
+	EXPECT_FALSE( resource->IsLoaded() );
+}
+
+TEST( ResourceManagerTests, ForceLoadLoadsTheResource )
+{
+	ScopedTempDir directory;
+	directory.Write( "item.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	shared<ManagedResource> resource = manager.FindResource<ManagedResource>( "item", true );
+	ASSERT_NE( resource, nullptr );
+	EXPECT_TRUE( resource->IsLoaded() );
+}
+
+TEST( ResourceManagerTests, ForceLoadReturnsTheSameResourceEveryTime )
+{
+	ScopedTempDir directory;
+	directory.Write( "item.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	shared<ManagedResource> first  = manager.FindResource<ManagedResource>( "item", true );
+	shared<ManagedResource> second = manager.FindResource<ManagedResource>( "item", true );
+
+	ASSERT_NE( first, nullptr );
+	EXPECT_EQ( first, second );
+}
+
+TEST( ResourceManagerTests, ForceLoadReturnsNullWhenLoadingFails )
+{
+	ScopedTempDir directory;
+	directory.Write( "broken.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	EXPECT_EQ( manager.FindResource<ManagedResource>( "broken", true ), nullptr );
+	EXPECT_NE( manager.FindResource<ManagedResource>( "broken" ), nullptr );
+}
+
+TEST( ResourceManagerTests, ShutdownUnloadsAndForgetsResources )
+{
+	ScopedTempDir directory;
+	directory.Write( "item.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	shared<ManagedResource> resource = manager.FindResource<ManagedResource>( "item", true );
+	ASSERT_NE( resource, nullptr );
+
+	manager.Shutdown();
+
+	EXPECT_FALSE( resource->IsLoaded() );
+	EXPECT_EQ( manager.FindResource<ManagedResource>( "item" ), nullptr );
+}
+
+TEST( ResourceManagerTests, InitForgetsThePreviousScan )
+{
+	ScopedTempDir directory;
+	directory.Write( "first/one.managed", "" );
+	directory.Write( "second/two.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.PathTo( "first" ) ) );
+	ASSERT_TRUE( manager.Init( "", directory.PathTo( "second" ) ) );
+
+	EXPECT_EQ( manager.FindResource<ManagedResource>( "one" ), nullptr );
+	EXPECT_NE( manager.FindResource<ManagedResource>( "two" ), nullptr );
+}
+
+TEST( ResourceManagerTests, SavedResourcesCanBeFoundByTheirNewName )
+{
+	ScopedTempDir directory;
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	shared<ManagedResource> resource = new_shared<ManagedResource>( "", ResourceState::New );
+	ASSERT_TRUE( manager.SaveResourceAs<ManagedResource>( resource, "saved.managed" ) );
+
+	EXPECT_EQ( manager.FindResource<ManagedResource>( "saved" ), resource );
+	EXPECT_TRUE( resource->IsLoaded() );
+}
+
+TEST( ResourceManagerTests, SavingUnderANewNameDropsTheOldName )
+{
+	ScopedTempDir directory;
+	directory.Write( "old.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	shared<ManagedResource> resource = manager.FindResource<ManagedResource>( "old", true );
+	ASSERT_NE( resource, nullptr );
+	ASSERT_TRUE( manager.SaveResourceAs<ManagedResource>( resource, "new.managed" ) );
+
+	EXPECT_EQ( manager.FindResource<ManagedResource>( "old" ), nullptr );
+	EXPECT_EQ( manager.FindResource<ManagedResource>( "new" ), resource );
+}
+
+TEST( ResourceManagerTests, SaveFailsWithoutResourceNameOrAppPath )
+{
+	ScopedTempDir directory;
+	shared<ManagedResource> resource = new_shared<ManagedResource>( "", ResourceState::New );
+
+	ResourceManager noAppPath;
+	ASSERT_TRUE( noAppPath.Init( "", "" ) );
+	EXPECT_FALSE( noAppPath.SaveResourceAs<ManagedResource>( resource, "file.managed" ) );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+	EXPECT_FALSE( manager.SaveResourceAs<ManagedResource>( nullptr, "file.managed" ) );
+	EXPECT_FALSE( manager.SaveResourceAs<ManagedResource>( resource, "" ) );
+}

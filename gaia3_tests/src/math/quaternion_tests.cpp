@@ -4,6 +4,7 @@
 #include <math/matrixTransforms.h>
 #include <math/quaternion.h>
 #include <math/quaternionTransforms.h>
+#include <math/transform.h>
 
 #include <math.h>
 
@@ -130,4 +131,81 @@ TEST( QuatTransformsTests, LookAtQuatMatchesMatrixLookAtOrientation )
 	EXPECT_NEAR( lookAtQuat.LengthSq(), 1.0f, 1e-5f );
 	EXPECT_NEAR( fromMatrix.LengthSq(), 1.0f, 1e-5f );
 	EXPECT_NEAR( fabsf( Dot( lookAtQuat, fromMatrix ) ), 1.0f, 1e-5f );
+}
+
+TEST( QuatTests, InverseCancelsRotation )
+{
+	const Quat q   = Quat( 0.1f, 0.2f, 0.3f, 0.9f ).Normalized();
+	const Quat id  = q * q.Inverse();
+	const Vec3 v( 1.0f, -2.0f, 3.0f );
+
+	EXPECT_NEAR( id.x, 0.0f, 1e-5f );
+	EXPECT_NEAR( id.y, 0.0f, 1e-5f );
+	EXPECT_NEAR( id.z, 0.0f, 1e-5f );
+	EXPECT_NEAR( id.w, 1.0f, 1e-5f );
+	EXPECT_TRUE( IsClose( q.Inverse().Rotate( q.Rotate( v ) ), v, 1e-4f ) );
+}
+
+TEST( QuatTests, MultiplyByIdentityPreservesRotation )
+{
+	const Quat q = Quat( 0.1f, 0.2f, 0.3f, 0.9f ).Normalized();
+
+	const Quat left  = Quat::V_Identity * q;
+	const Quat right = q * Quat::V_Identity;
+
+	EXPECT_FLOAT_EQ( left.x, q.x );
+	EXPECT_FLOAT_EQ( left.w, q.w );
+	EXPECT_FLOAT_EQ( right.x, q.x );
+	EXPECT_FLOAT_EQ( right.w, q.w );
+}
+
+TEST( QuatTests, ProductAppliesRightRotationFirst )
+{
+	const Quat a = Quat( 0.1f, 0.2f, 0.3f, 0.9f ).Normalized();
+	const Quat b = Quat( 0.5f, 0.0f, 0.0f, 0.6f ).Normalized();
+	const Vec3 v( 1.0f, 2.0f, 3.0f );
+
+	EXPECT_TRUE( IsClose( ( a * b ).Rotate( v ), a.Rotate( b.Rotate( v ) ), 1e-4f ) );
+}
+
+TEST( QuatTransformsTests, QuatFromMatrix33MatchesRotationsInEveryBranch )
+{
+	const Quat rotations[] = {
+	    Quat( 0.1f, 0.2f, 0.3f, 0.9f ),
+	    Quat( 0.99f, 0.05f, 0.1f, 0.05f ),
+	    Quat( 0.05f, 0.99f, 0.1f, 0.05f ),
+	    Quat( 0.05f, 0.1f, 0.99f, 0.05f ),
+	};
+
+	const Vec3 v( 1.0f, -2.0f, 3.0f );
+	for( const Quat& rotation : rotations )
+	{
+		const Quat     expected = rotation.Normalized();
+		const Matrix44 matrix   = Transform( Vec3::V_Zero, expected, Vec3::V_One ).ToMatrix44();
+		const Matrix33 basis( Vec3( matrix.col[0] ), Vec3( matrix.col[1] ), Vec3( matrix.col[2] ) );
+
+		const Quat result = QuatFromMatrix33( basis );
+
+		EXPECT_NEAR( result.LengthSq(), 1.0f, 1e-5f );
+		EXPECT_TRUE( IsClose( result.Rotate( v ), expected.Rotate( v ), 1e-4f ) );
+	}
+}
+
+TEST( QuatTransformsTests, QuatFromMatrix33HandlesHalfTurns )
+{
+	Matrix33 aroundX;
+	aroundX.SetRow( 1, Vec3( 0.0f, -1.0f, 0.0f ) );
+	aroundX.SetRow( 2, Vec3( 0.0f, 0.0f, -1.0f ) );
+
+	Matrix33 aroundY;
+	aroundY.SetRow( 0, Vec3( -1.0f, 0.0f, 0.0f ) );
+	aroundY.SetRow( 2, Vec3( 0.0f, 0.0f, -1.0f ) );
+
+	Matrix33 aroundZ;
+	aroundZ.SetRow( 0, Vec3( -1.0f, 0.0f, 0.0f ) );
+	aroundZ.SetRow( 1, Vec3( 0.0f, -1.0f, 0.0f ) );
+
+	EXPECT_NEAR( fabsf( QuatFromMatrix33( aroundX ).x ), 1.0f, 1e-5f );
+	EXPECT_NEAR( fabsf( QuatFromMatrix33( aroundY ).y ), 1.0f, 1e-5f );
+	EXPECT_NEAR( fabsf( QuatFromMatrix33( aroundZ ).z ), 1.0f, 1e-5f );
 }

@@ -1,11 +1,13 @@
 #pragma once
 
+#include <core/types.h>
 #include <math/matrix.h>
 
 class Renderable
 {
 public:
-	virtual void Draw() const = 0;
+	virtual Matrix44 GetModelMatrix() const = 0;
+	virtual void     Draw() const           = 0;
 
 protected:
 	virtual ~Renderable() = default;

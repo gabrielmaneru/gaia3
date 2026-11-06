@@ -1,5 +1,6 @@
 #pragma once
 
+#include <system/rtti.h>
 #include <system/type_id.h>
 
 #include <string>

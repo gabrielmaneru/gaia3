@@ -3,21 +3,24 @@
 #include <components/cameraComponent.h>
 #include <components/modelComponent.h>
 
+namespace
+{
 void createDefaultLevel( Level* pLevel )
 {
 	// Create camera
 	Entity* pCamera = pLevel->CreateEntity( "Camera" );
 	{
-		pCamera->GetTransformRef().position = Vec3( 0.0f, 0.0f, -4.12f );
+		pCamera->GetTransformRef().position = Vec3( 1.0f, 1.0f, -4.12f );
 		pCamera->AddComponent<CameraComponent>();
 	}
 
-	// Create triangle in the middle
-	Entity* pTriangle = pLevel->CreateEntity( "Triangle" );
+	// Create cube in the middle
+	Entity* pCube = pLevel->CreateEntity( "Cube" );
 	{
-		pTriangle->AddComponent<ModelComponent>();
+		pCube->AddComponent<ModelComponent>( "cube.obj" );
 	}
 }
+} // namespace
 
 int main()
 {
@@ -26,6 +29,7 @@ int main()
 	config.title      = "Sandbox";
 	config.startLevel = "test.lvl";
 	config.appPath    = R"(.\assets\)";
+	config.commonPath = GAIA3_ASSETS_PATH;
 
 	if( !App::Init( config ) )
 		return 1;
