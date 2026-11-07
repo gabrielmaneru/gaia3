@@ -16,6 +16,7 @@ public:
 };
 
 RTTI_DEFINE_RESOURCE( ReferencedResource,
+                      RTTI_RESOURCE_FOLDER( "referenced" ),
                       RTTI_RESOURCE_EXTENSIONS( ".referenced" ) )
 
 class ReferenceHolder

@@ -5,6 +5,7 @@
 #include <json/json.h>
 
 RTTI_DEFINE_RESOURCE( Level,
+                      RTTI_RESOURCE_FOLDER( "levels" ),
                       RTTI_RESOURCE_EXTENSIONS( ".level", ".lvl" ),
                       RTTI_PROPERTY( m_Entities ) )
 

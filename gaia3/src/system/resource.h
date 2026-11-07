@@ -39,11 +39,13 @@ public:
 	{
 		using CreateFunc = shared<Resource> ( * )( std::string_view );
 		u64                      TypeId;
+		std::string              Folder;
 		std::vector<std::string> Extensions;
 		CreateFunc               Create;
-		bool                     IsValid() const { return TypeId != 0 && Create != nullptr && !Extensions.empty(); }
+		bool                     IsValid() const { return TypeId != 0 && !Folder.empty() && Create != nullptr && !Extensions.empty(); }
 	};
 	static const TypeDescriptor* FindResourceTypeByExtension( std::string_view extension );
+	static const TypeDescriptor* FindResourceTypeById( u64 typeId );
 	static bool                  RegisterResourceType( const TypeDescriptor& descriptor );
 
 protected:
@@ -61,16 +63,19 @@ private:
 
 #define RTTI_DECLARE_RESOURCE( ... ) RTTI_DECLARE_TYPE( __VA_ARGS__ )
 
-#define REGISTER_RESOURCE_TYPE( TypeName, FactoryFn, ... )                               \
-	namespace                                                                            \
-	{                                                                                    \
-	const bool s_##TypeName##ResourceRegistered = Resource::RegisterResourceType(        \
-	    Resource::TypeDescriptor{ GetTypeId<TypeName>(), { __VA_ARGS__ }, FactoryFn } ); \
+#define REGISTER_RESOURCE_TYPE( TypeName, FactoryFn, Folder, ... )                               \
+	namespace                                                                                    \
+	{                                                                                            \
+	const bool s_##TypeName##ResourceRegistered = Resource::RegisterResourceType(                \
+	    Resource::TypeDescriptor{ GetTypeId<TypeName>(), Folder, { __VA_ARGS__ }, FactoryFn } ); \
 	}
+
+// Note: The folder of a type is where it saves, and files inside it are named without it
+#define RTTI_RESOURCE_FOLDER( Folder ) Folder
 
 #define RTTI_RESOURCE_EXTENSIONS( ... ) __VA_ARGS__
 
-#define RTTI_DEFINE_RESOURCE( TypeName, Extensions, ... )                \
+#define RTTI_DEFINE_RESOURCE( TypeName, Folder, Extensions, ... )        \
 	RTTI_DEFINE_TYPE( TypeName, __VA_ARGS__ )                            \
 	namespace                                                            \
 	{                                                                    \
@@ -79,4 +84,4 @@ private:
 		return new_shared<TypeName>( path, ResourceState::NotLoaded );   \
 	}                                                                    \
 	}                                                                    \
-	REGISTER_RESOURCE_TYPE( TypeName, &Create##TypeName##Resource, Extensions )
+	REGISTER_RESOURCE_TYPE( TypeName, &Create##TypeName##Resource, Folder, Extensions )

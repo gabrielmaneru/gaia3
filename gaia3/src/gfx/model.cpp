@@ -6,6 +6,7 @@
 #include <glad/glad.h>
 
 RTTI_DEFINE_RESOURCE( Model,
+                      RTTI_RESOURCE_FOLDER( "models" ),
                       RTTI_RESOURCE_EXTENSIONS( ".obj" ) )
 
 namespace

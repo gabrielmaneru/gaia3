@@ -160,17 +160,30 @@ TEST( ResourceTests, FailedSaveAsKeepsStateAndPath )
 
 TEST( ResourceTests, RegisterRejectsIncompleteDescriptors )
 {
-	EXPECT_FALSE( Resource::RegisterResourceType( Resource::TypeDescriptor{ 0, { ".bad" }, &CreateNothing } ) );
-	EXPECT_FALSE( Resource::RegisterResourceType( Resource::TypeDescriptor{ 1, {}, &CreateNothing } ) );
-	EXPECT_FALSE( Resource::RegisterResourceType( Resource::TypeDescriptor{ 1, { ".bad" }, nullptr } ) );
+	EXPECT_FALSE( Resource::RegisterResourceType( Resource::TypeDescriptor{ 0, "bad", { ".bad" }, &CreateNothing } ) );
+	EXPECT_FALSE( Resource::RegisterResourceType( Resource::TypeDescriptor{ 1, "", { ".bad" }, &CreateNothing } ) );
+	EXPECT_FALSE( Resource::RegisterResourceType( Resource::TypeDescriptor{ 1, "bad", {}, &CreateNothing } ) );
+	EXPECT_FALSE( Resource::RegisterResourceType( Resource::TypeDescriptor{ 1, "bad", { ".bad" }, nullptr } ) );
 
 	EXPECT_EQ( Resource::FindResourceTypeByExtension( ".bad" ), nullptr );
+}
+
+TEST( ResourceTests, TypesAreFoundByTheirId )
+{
+	const u64 typeId = 0x5678;
+	ASSERT_TRUE( Resource::RegisterResourceType( Resource::TypeDescriptor{ typeId, "byid", { ".byid" }, &CreateNothing } ) );
+
+	const Resource::TypeDescriptor* descriptor = Resource::FindResourceTypeById( typeId );
+
+	ASSERT_NE( descriptor, nullptr );
+	EXPECT_EQ( descriptor->Folder, "byid" );
+	EXPECT_EQ( Resource::FindResourceTypeById( 0x9999 ), nullptr );
 }
 
 TEST( ResourceTests, ExtensionsMatchIgnoringCase )
 {
 	const u64 typeId = 0x1234;
-	ASSERT_TRUE( Resource::RegisterResourceType( Resource::TypeDescriptor{ typeId, { ".MixedCase", ".second" }, &CreateNothing } ) );
+	ASSERT_TRUE( Resource::RegisterResourceType( Resource::TypeDescriptor{ typeId, "mixed", { ".MixedCase", ".second" }, &CreateNothing } ) );
 
 	const Resource::TypeDescriptor* lowerCase = Resource::FindResourceTypeByExtension( ".mixedcase" );
 	const Resource::TypeDescriptor* upperCase = Resource::FindResourceTypeByExtension( ".MIXEDCASE" );

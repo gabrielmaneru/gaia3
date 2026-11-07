@@ -1,8 +1,19 @@
 #include "testHelpers.h"
 
 #include <core/session.h>
+#include <gfx/model.h>
 
 #include <filesystem>
+
+namespace
+{
+void SaveLevelWithEntity( const std::string& path, std::string_view entityName )
+{
+	Level level;
+	level.CreateEntity( entityName );
+	ASSERT_TRUE( level.SaveAs( path ) );
+}
+} // namespace
 
 TEST( SessionTests, MissingStartLevelCreatesANewLevel )
 {
@@ -56,10 +67,74 @@ TEST( SessionTests, SaveCurrentLevelAsWritesAndRegistersTheLevel )
 	EXPECT_TRUE( session.SaveCurrentLevelAs( "saved.lvl" ) );
 
 	EXPECT_FALSE( session.GetCurrentLevel()->IsNew() );
-	EXPECT_TRUE( std::filesystem::exists( directory.PathTo( "saved.lvl" ) ) );
+	EXPECT_TRUE( std::filesystem::exists( directory.PathTo( "levels/saved.lvl" ) ) );
 
 	const shared<Level> found = session.GetResourceManager().FindResource<Level>( "saved" );
 	EXPECT_EQ( found.get(), session.GetCurrentLevel() );
+}
+
+TEST( SessionTests, LevelsInTheLevelsFolderAreFoundByName )
+{
+	ScopedTempDir directory;
+	SaveLevelWithEntity( directory.PathTo( "levels/town.lvl" ), "Saved" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "town", "", directory.GetPath() ) );
+
+	EXPECT_EQ( session.GetCurrentLevel()->GetEntities().size(), 1u );
+
+	const std::vector<std::string> expected = { "town" };
+	EXPECT_EQ( session.GetResourceManager().GetResourceNames<Level>(), expected );
+}
+
+TEST( SessionTests, LevelsInAnotherFolderLoadAndShowThatFolder )
+{
+	ScopedTempDir directory;
+	SaveLevelWithEntity( directory.PathTo( "models/stray.lvl" ), "Saved" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "", "", directory.GetPath() ) );
+
+	const std::vector<std::string> expected = { "models/stray" };
+	EXPECT_EQ( session.GetResourceManager().GetResourceNames<Level>(), expected );
+
+	ASSERT_TRUE( session.OpenLevel( "models/stray" ) );
+	EXPECT_EQ( session.GetCurrentLevel()->GetEntities().size(), 1u );
+}
+
+TEST( SessionTests, SavingALevelFromAnotherFolderKeepsItThere )
+{
+	ScopedTempDir directory;
+	const std::string path = directory.PathTo( "models/stray.lvl" );
+	SaveLevelWithEntity( path, "Saved" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "models/stray", "", directory.GetPath() ) );
+	session.GetCurrentLevel()->CreateEntity( "Added" );
+
+	EXPECT_TRUE( session.SaveCurrentLevel() );
+
+	EXPECT_FALSE( std::filesystem::exists( directory.PathTo( "levels/stray.lvl" ) ) );
+
+	Level reloaded( path );
+	ASSERT_TRUE( reloaded.Load() );
+	EXPECT_EQ( reloaded.GetEntities().size(), 2u );
+}
+
+TEST( SessionTests, ModelsInTheModelsFolderAreFoundByName )
+{
+	ScopedTempDir directory;
+	directory.Write( "models/cube.obj", "" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "", "", directory.GetPath() ) );
+
+	ResourceManager& manager = session.GetResourceManager();
+
+	const std::vector<std::string> expected = { "cube" };
+	EXPECT_EQ( manager.GetResourceNames<Model>(), expected );
+	EXPECT_NE( manager.FindResource<Model>( "cube" ), nullptr );
+	EXPECT_EQ( manager.FindResource<Model>( "models/cube" ), manager.FindResource<Model>( "cube" ) );
 }
 
 TEST( SessionTests, SaveFailsWithoutALevel )
@@ -80,16 +155,6 @@ TEST( SessionTests, ShutdownReleasesTheLevel )
 
 	EXPECT_EQ( session.GetCurrentLevel(), nullptr );
 }
-
-namespace
-{
-void SaveLevelWithEntity( const std::string& path, std::string_view entityName )
-{
-	Level level;
-	level.CreateEntity( entityName );
-	ASSERT_TRUE( level.SaveAs( path ) );
-}
-} // namespace
 
 TEST( SessionTests, OpenLevelSwitchesTheCurrentLevel )
 {

@@ -320,7 +320,7 @@ TEST( EditorLevelTests, SaveLevelAsAddsTheLevelExtension )
 	Editor editor;
 
 	EXPECT_TRUE( editor.SaveLevelAs( "named" ) );
-	EXPECT_TRUE( std::filesystem::exists( directory.PathTo( "named.lvl" ) ) );
+	EXPECT_TRUE( std::filesystem::exists( directory.PathTo( "levels/named.lvl" ) ) );
 
 	App::GetSession().Shutdown();
 }
@@ -333,7 +333,7 @@ TEST( EditorLevelTests, SaveLevelAsKeepsAnExistingExtension )
 	Editor editor;
 
 	EXPECT_TRUE( editor.SaveLevelAs( "named.level" ) );
-	EXPECT_TRUE( std::filesystem::exists( directory.PathTo( "named.level" ) ) );
+	EXPECT_TRUE( std::filesystem::exists( directory.PathTo( "levels/named.level" ) ) );
 
 	App::GetSession().Shutdown();
 }

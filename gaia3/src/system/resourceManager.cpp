@@ -15,7 +15,14 @@ std::string ToLower( std::string value )
 	return value;
 }
 
-std::string BuildResourceKey( const std::filesystem::path& rootPath, const std::filesystem::path& filePath )
+std::string RemoveTypeFolder( const std::string& resourceKey, const std::string& folder )
+{
+	const std::string folderPrefix = folder + "/";
+	return resourceKey.starts_with( folderPrefix ) ? resourceKey.substr( folderPrefix.size() ) : resourceKey;
+}
+
+// Note: Files inside the folder of their type are named without it, any other file keeps its whole relative path
+std::string BuildResourceKey( const std::filesystem::path& rootPath, const std::filesystem::path& filePath, const std::string& folder )
 {
 	std::error_code       ec;
 	std::filesystem::path relativePath = std::filesystem::relative( filePath, rootPath, ec );
@@ -23,7 +30,7 @@ std::string BuildResourceKey( const std::filesystem::path& rootPath, const std::
 		relativePath = filePath.filename();
 
 	relativePath.replace_extension();
-	return relativePath.generic_string();
+	return RemoveTypeFolder( relativePath.generic_string(), folder );
 }
 } // namespace
 
@@ -57,9 +64,12 @@ bool ResourceManager::Init( std::string_view commonPath, std::string_view appPat
 			if( descriptor == nullptr )
 				continue;
 
-			std::string resourceKey = BuildResourceKey( root, filePath );
+			std::string resourceKey = BuildResourceKey( root, filePath, descriptor->Folder );
 			if( resourceKey.empty() )
 				resourceKey = filePath.stem().string();
+
+			if( !WinsNameClash( *descriptor, resourceKey, filePath.string() ) )
+				continue;
 
 			RegisterResource( descriptor->TypeId, resourceKey, descriptor->Create( filePath.string() ) );
 			++resourceCount;
@@ -90,20 +100,25 @@ void ResourceManager::Shutdown()
 
 bool ResourceManager::SaveResourceAsType( u64 typeId, const shared<Resource>& resource, std::string_view fileName )
 {
-	if( resource == nullptr || fileName.empty() || m_AppPath.empty() )
+	const Resource::TypeDescriptor* descriptor = Resource::FindResourceTypeById( typeId );
+	if( resource == nullptr || descriptor == nullptr || fileName.empty() || m_AppPath.empty() )
 	{
-		GAIA_ERROR( "ResourceManager: cannot save a resource without a resource, file name and app path" );
+		GAIA_ERROR( "ResourceManager: cannot save a resource without a resource, registered type, file name and app path" );
 		return false;
 	}
 
 	const std::string     previousPath( resource->GetPath() );
-	std::filesystem::path outputPath = std::filesystem::path( m_AppPath ) / std::string( fileName );
+	std::filesystem::path outputPath = std::filesystem::path( m_AppPath ) / descriptor->Folder / std::string( fileName );
+
+	std::error_code ec;
+	std::filesystem::create_directories( outputPath.parent_path(), ec );
+
 	if( !resource->SaveAs( outputPath.string() ) )
 		return false;
 
 	ReleaseResourceEntries( typeId, resource, previousPath );
 
-	std::string resourceKey = BuildResourceKey( std::filesystem::path( m_AppPath ), outputPath );
+	std::string resourceKey = BuildResourceKey( std::filesystem::path( m_AppPath ), outputPath, descriptor->Folder );
 	if( resourceKey.empty() )
 		resourceKey = outputPath.stem().string();
 
@@ -156,6 +171,14 @@ shared<Resource> ResourceManager::FindResourceByTypeId( u64 typeId, std::string_
 	{
 		if( shared<Resource> resource = tryFindKey( requestedKeyNoExt ) )
 			return resource;
+
+		// Note: The folder of the type can still be written, older levels reference resources like "models/cube"
+		const Resource::TypeDescriptor* descriptor = Resource::FindResourceTypeById( typeId );
+		if( descriptor != nullptr )
+		{
+			if( shared<Resource> resource = tryFindKey( RemoveTypeFolder( requestedKeyNoExt, descriptor->Folder ) ) )
+				return resource;
+		}
 	}
 
 	const std::string requestedNameNoExt = requestedPath.stem().string();
@@ -188,6 +211,43 @@ std::vector<std::string> ResourceManager::GetResourceNamesByTypeId( u64 typeId )
 
 	std::sort( names.begin(), names.end() );
 	return names;
+}
+
+bool ResourceManager::IsInTypeFolder( std::string_view filePath, const std::string& folder ) const
+{
+	const std::string folderPrefix = folder + "/";
+	for( const std::string& root : { m_CommonPath, m_AppPath } )
+	{
+		if( !root.empty() && std::filesystem::path( filePath ).lexically_relative( root ).generic_string().starts_with( folderPrefix ) )
+			return true;
+	}
+
+	return false;
+}
+
+bool ResourceManager::WinsNameClash( const Resource::TypeDescriptor& descriptor, const std::string& resourceKey, const std::string& filePath ) const
+{
+	auto mapIt = m_ResourceMaps.find( descriptor.TypeId );
+	if( mapIt == m_ResourceMaps.end() )
+		return true;
+
+	auto resourceIt = mapIt->second.find( resourceKey );
+	if( resourceIt == mapIt->second.end() )
+		return true;
+
+	// Note: The type folder takes precedence whatever the scan order is, and otherwise the app overrides common
+	const std::string existingPath( resourceIt->second->GetPath() );
+	const bool        bExistingInFolder = IsInTypeFolder( existingPath, descriptor.Folder );
+	const bool        bNewInFolder      = IsInTypeFolder( filePath, descriptor.Folder );
+	if( bExistingInFolder == bNewInFolder )
+		return true;
+
+	GAIA_WARN( "ResourceManager: ignoring {}, {} uses the name {} from the {} folder",
+	           bNewInFolder ? existingPath : filePath,
+	           bNewInFolder ? filePath : existingPath,
+	           resourceKey,
+	           descriptor.Folder );
+	return bNewInFolder;
 }
 
 void ResourceManager::RegisterResource( u64 typeId, const std::string& resourceKey, shared<Resource> resource )

@@ -114,6 +114,17 @@ const Resource::TypeDescriptor* Resource::FindResourceTypeByExtension( std::stri
 	return nullptr;
 }
 
+const Resource::TypeDescriptor* Resource::FindResourceTypeById( u64 typeId )
+{
+	for( const TypeDescriptor& descriptor : GetTypeDescriptorsRef() )
+	{
+		if( descriptor.TypeId == typeId )
+			return &descriptor;
+	}
+
+	return nullptr;
+}
+
 std::vector<Resource::TypeDescriptor>& Resource::GetTypeDescriptorsRef()
 {
 	static std::vector<Resource::TypeDescriptor> typeDescriptors;

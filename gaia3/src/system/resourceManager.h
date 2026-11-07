@@ -29,6 +29,9 @@ private:
 	shared<Resource> FindResourceByTypeId( u64 typeId, std::string_view resourceId, bool forceLoad );
 	bool             SaveResourceAsType( u64 typeId, const shared<Resource>& resource, std::string_view fileName );
 
+	bool IsInTypeFolder( std::string_view filePath, const std::string& folder ) const;
+	bool WinsNameClash( const Resource::TypeDescriptor& descriptor, const std::string& resourceKey, const std::string& filePath ) const;
+
 	void RegisterResource( u64 typeId, const std::string& resourceKey, shared<Resource> resource );
 	void ReleaseResourceEntries( u64 typeId, const shared<Resource>& resource, std::string_view previousPath );
 
