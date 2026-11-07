@@ -86,6 +86,7 @@ void Vec2::Normalize()
 	const float lengthSq = LengthSq();
 	if( lengthSq <= 0.0f )
 	{
+		GAIA_WARN( "Vec2: normalizing a zero vector, the result stays zero" );
 		*this = Vec2::V_Zero;
 	}
 	else
@@ -200,6 +201,7 @@ void Vec3::Normalize()
 	const float lengthSq = LengthSq();
 	if( lengthSq <= 0.0f )
 	{
+		GAIA_WARN( "Vec3: normalizing a zero vector, the result stays zero" );
 		*this = Vec3::V_Zero;
 	}
 	else
@@ -311,6 +313,7 @@ void Vec4::Normalize()
 	const float lengthSq = LengthSq();
 	if( lengthSq <= 0.0f )
 	{
+		GAIA_WARN( "Vec4: normalizing a zero vector, the result stays zero" );
 		*this = Vec4::V_Zero;
 	}
 	else

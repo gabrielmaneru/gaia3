@@ -39,6 +39,7 @@ bool Level::LoadInternal()
 	std::ifstream inputFile( GetPath().data() );
 	if( !inputFile.is_open() )
 	{
+		GAIA_ERROR( "Level {}: failed to open {}", GetName(), GetPath() );
 		return false;
 	}
 
@@ -47,17 +48,22 @@ bool Level::LoadInternal()
 	std::string             parseErrors;
 	if( !Json::parseFromStream( readerBuilder, inputFile, &levelJson, &parseErrors ) )
 	{
+		GAIA_ERROR( "Level {}: invalid JSON: {}", GetName(), parseErrors );
 		return false;
 	}
 
 	if( !rtti::Deserialize( *this, levelJson ) )
 	{
+		GAIA_ERROR( "Level {}: invalid level data", GetName() );
 		return false;
 	}
 
 	const Json::Value& entitiesJson = levelJson["m_Entities"];
 	if( !entitiesJson.isArray() )
+	{
+		GAIA_ERROR( "Level {}: missing entity list", GetName() );
 		return false;
+	}
 
 	for( size_t i = 0; i < m_Entities.size(); ++i )
 	{
@@ -78,7 +84,17 @@ bool Level::LoadInternal()
 			continue;
 
 		if( !entity->DeserializeComponents( serializedComponentsJson ) )
+		{
+			GAIA_ERROR( "Level {}: failed to restore the components of entity {}", GetName(), entity->GetName() );
 			return false;
+		}
+	}
+
+	GAIA_INFO( "Level {}: {} entities", GetName(), m_Entities.size() );
+	for( const unique<Entity>& entity : m_Entities )
+	{
+		if( entity != nullptr )
+			GAIA_INFO( "  Entity {}: {} components", entity->GetName(), entity->GetComponents().size() );
 	}
 
 	return true;
@@ -88,7 +104,10 @@ bool Level::SaveAsInternal( std::string_view path )
 {
 	std::filesystem::path filePath( path );
 	if( filePath.empty() )
+	{
+		GAIA_ERROR( "Level: cannot save without a path" );
 		return false;
+	}
 
 	std::error_code ec;
 	std::filesystem::create_directories( filePath.parent_path(), ec );
@@ -96,11 +115,17 @@ bool Level::SaveAsInternal( std::string_view path )
 	Json::Value levelJson;
 
 	if( !rtti::Serialize( *this, levelJson ) )
+	{
+		GAIA_ERROR( "Level {}: failed to serialize level data", GetName() );
 		return false;
+	}
 
 	Json::Value& entitiesJson = levelJson["m_Entities"];
 	if( !entitiesJson.isArray() )
+	{
+		GAIA_ERROR( "Level {}: missing entity list", GetName() );
 		return false;
+	}
 
 	for( Json::ArrayIndex i = 0; i < entitiesJson.size(); ++i )
 	{
@@ -109,18 +134,27 @@ bool Level::SaveAsInternal( std::string_view path )
 
 		Json::Value serializedComponents;
 		if( !m_Entities[i]->SerializeComponents( serializedComponents ) )
+		{
+			GAIA_ERROR( "Level {}: failed to serialize the components of entity {}", GetName(), m_Entities[i]->GetName() );
 			return false;
+		}
 
 		entitiesJson[i]["m_SerializedComponents"] = std::move( serializedComponents );
 	}
 
 	std::ofstream outputFile( filePath );
 	if( !outputFile.is_open() )
+	{
+		GAIA_ERROR( "Level: failed to open {} for writing", path );
 		return false;
+	}
 
 	outputFile << levelJson;
 	if( !outputFile.good() )
+	{
+		GAIA_ERROR( "Level: failed to write {}", path );
 		return false;
+	}
 
 	return true;
 }

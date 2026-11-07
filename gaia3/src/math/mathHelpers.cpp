@@ -26,7 +26,10 @@ float Clamp( float value, float minValue, float maxValue )
 float Ramp( float value, float minValue, float maxValue )
 {
 	if( maxValue <= minValue )
+	{
+		GAIA_WARN( "Ramp: empty range {} to {}, using zero", minValue, maxValue );
 		return 0.0f;
+	}
 
 	return Clamp( ( value - minValue ) / ( maxValue - minValue ), 0.0f, 1.0f );
 }

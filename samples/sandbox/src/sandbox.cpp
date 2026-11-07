@@ -28,7 +28,7 @@ int main()
 	config.canvas     = { 1920, 1080 };
 	config.title      = "Sandbox";
 	config.startLevel = "test.lvl";
-	config.appPath    = R"(.\assets\)";
+	config.appPath    = SANDBOX_ASSETS_PATH;
 	config.commonPath = GAIA3_ASSETS_PATH;
 
 	if( !App::Init( config ) )
@@ -37,7 +37,7 @@ int main()
 	// If New, create a default sandbox level
 	{
 		Level* pLevel = App::GetSession().GetCurrentLevel();
-		assert( pLevel != nullptr );
+		GAIA_ASSERT( pLevel != nullptr );
 		if( pLevel->IsNew() )
 		{
 			createDefaultLevel( pLevel );

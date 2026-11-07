@@ -97,7 +97,7 @@ MeshObj::MeshObj( std::string_view path )
 	std::ifstream inputFile( path.data() );
 	if( !inputFile.is_open() )
 	{
-		std::cerr << "MeshObj: failed to open " << path << '\n';
+		GAIA_ERROR( "MeshObj: failed to open {}", path );
 		return;
 	}
 
@@ -163,15 +163,20 @@ MeshObj::MeshObj( std::string_view path )
 
 		if( !bLineValid )
 		{
-			std::cerr << "MeshObj: invalid data at " << path << ':' << lineNumber << '\n';
+			GAIA_ERROR( "MeshObj: invalid data at {}:{}", path, lineNumber );
 			return;
 		}
 	}
 
 	if( tempIndices.empty() )
 	{
-		std::cerr << "MeshObj: no faces found in " << path << '\n';
+		GAIA_ERROR( "MeshObj: no faces found in {}", path );
 		return;
+	}
+
+	if( tempNormals.empty() )
+	{
+		GAIA_WARN( "MeshObj: {} has no normals, using zero normals", path );
 	}
 
 	// Note: build the vertex buffer and indices, sharing corners with the same position, UV and normal

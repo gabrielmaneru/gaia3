@@ -7,7 +7,7 @@ Input* Input::s_Instance = nullptr;
 
 bool Input::Init( GLFWwindow* windowHandle )
 {
-	assert( windowHandle != nullptr );
+	GAIA_ASSERT( windowHandle != nullptr );
 	s_Instance = this;
 
 	glfwSetKeyCallback( windowHandle, &Input::KeyCallback );
@@ -41,53 +41,53 @@ void Input::Update()
 
 bool Input::IsKeyDown( eInputKeys inputKey ) const
 {
-	assert( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
+	GAIA_ASSERT( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
 	const eInputState state = m_KeyStates[(u16)inputKey];
 	return state == eInputState::DOWN || state == eInputState::TRIGGERED;
 }
 
 bool Input::IsKeyUp( eInputKeys inputKey ) const
 {
-	assert( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
+	GAIA_ASSERT( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
 	const eInputState state = m_KeyStates[(u16)inputKey];
 	return state == eInputState::UP || state == eInputState::RELEASED;
 }
 
 bool Input::IsKeyTriggered( eInputKeys inputKey ) const
 {
-	assert( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
+	GAIA_ASSERT( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
 	return m_KeyStates[(u16)inputKey] == eInputState::TRIGGERED;
 }
 
 bool Input::IsKeyReleased( eInputKeys inputKey ) const
 {
-	assert( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
+	GAIA_ASSERT( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
 	return m_KeyStates[(u16)inputKey] == eInputState::RELEASED;
 }
 
 bool Input::IsMouseButtonDown( eInputMouseButtons inputButton ) const
 {
-	assert( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
+	GAIA_ASSERT( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
 	const eInputState state = m_MouseButtonStates[(u16)inputButton];
 	return state == eInputState::DOWN || state == eInputState::TRIGGERED;
 }
 
 bool Input::IsMouseButtonUp( eInputMouseButtons inputButton ) const
 {
-	assert( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
+	GAIA_ASSERT( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
 	const eInputState state = m_MouseButtonStates[(u16)inputButton];
 	return state == eInputState::UP || state == eInputState::RELEASED;
 }
 
 bool Input::IsMouseButtonTriggered( eInputMouseButtons inputButton ) const
 {
-	assert( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
+	GAIA_ASSERT( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
 	return m_MouseButtonStates[(u16)inputButton] == eInputState::TRIGGERED;
 }
 
 bool Input::IsMouseButtonReleased( eInputMouseButtons inputButton ) const
 {
-	assert( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
+	GAIA_ASSERT( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
 	return m_MouseButtonStates[(u16)inputButton] == eInputState::RELEASED;
 }
 
@@ -96,7 +96,7 @@ void Input::KeyCallback( GLFWwindow* windowHandle, int key, int, int action, int
 	if( windowHandle == nullptr || s_Instance == nullptr )
 		return;
 
-	assert( (u16)key < (u16)eInputKeys::_KEY_COUNT );
+	GAIA_ASSERT( (u16)key < (u16)eInputKeys::_KEY_COUNT );
 
 	if( action == GLFW_PRESS )
 		s_Instance->m_KeyStates[key] = eInputState::TRIGGERED;
@@ -109,7 +109,7 @@ void Input::MouseButtonCallback( GLFWwindow* windowHandle, int button, int actio
 	if( windowHandle == nullptr || s_Instance == nullptr )
 		return;
 
-	assert( (u16)button < (u16)eInputMouseButtons::_BUTTON_COUNT );
+	GAIA_ASSERT( (u16)button < (u16)eInputMouseButtons::_BUTTON_COUNT );
 
 	if( action == GLFW_PRESS )
 		s_Instance->m_MouseButtonStates[button] = eInputState::TRIGGERED;

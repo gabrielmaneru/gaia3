@@ -54,6 +54,7 @@ void Quat::Normalize()
 	const float lengthSq = LengthSq();
 	if( lengthSq <= 0.0f )
 	{
+		GAIA_WARN( "Quat: normalizing a zero quaternion, using identity" );
 		*this = Quat::V_Identity;
 	}
 	else

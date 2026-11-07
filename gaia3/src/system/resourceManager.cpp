@@ -39,8 +39,12 @@ bool ResourceManager::Init( std::string_view commonPath, std::string_view appPat
 
 		std::filesystem::path root( rootPath );
 		if( !std::filesystem::exists( root ) || !std::filesystem::is_directory( root ) )
+		{
+			GAIA_WARN( "ResourceManager: folder {} not found, skipping it", rootPath );
 			return;
+		}
 
+		u64 resourceCount = 0;
 		for( const std::filesystem::directory_entry& entry :
 		     std::filesystem::recursive_directory_iterator( root, std::filesystem::directory_options::skip_permission_denied ) )
 		{
@@ -58,7 +62,10 @@ bool ResourceManager::Init( std::string_view commonPath, std::string_view appPat
 				resourceKey = filePath.stem().string();
 
 			RegisterResource( descriptor->TypeId, resourceKey, descriptor->Create( filePath.string() ) );
+			++resourceCount;
 		}
+
+		GAIA_INFO( "ResourceManager: found {} resources in {}", resourceCount, rootPath );
 	};
 
 	scanPath( commonPath );
@@ -84,7 +91,10 @@ void ResourceManager::Shutdown()
 bool ResourceManager::SaveResourceAsType( u64 typeId, const shared<Resource>& resource, std::string_view fileName )
 {
 	if( resource == nullptr || fileName.empty() || m_AppPath.empty() )
+	{
+		GAIA_ERROR( "ResourceManager: cannot save a resource without a resource, file name and app path" );
 		return false;
+	}
 
 	std::filesystem::path outputPath = std::filesystem::path( m_AppPath ) / std::string( fileName );
 	if( !resource->SaveAs( outputPath.string() ) )

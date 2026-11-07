@@ -70,6 +70,8 @@ bool Model::LoadInternal()
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );
 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
 
+	GAIA_INFO( "Model {}: {} vertices, {} triangles", GetName(), rawMesh.vertexBuffer.positions.size(), rawMesh.indices.size() / 3 );
+
 	return true;
 }
 

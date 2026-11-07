@@ -34,6 +34,7 @@ bool Resource::Load()
 		if( LoadInternal() )
 		{
 			m_State = ResourceState::Loaded;
+			GAIA_INFO( "Loaded resource {}", m_Path );
 			return true;
 		}
 		else
@@ -41,6 +42,8 @@ bool Resource::Load()
 			m_State = ResourceState::NotLoaded;
 		}
 	}
+
+	GAIA_ERROR( "Failed to load resource {}", m_Path );
 	return false;
 }
 
@@ -54,6 +57,8 @@ bool Resource::Unload()
 			m_State = ResourceState::NotLoaded;
 			return true;
 		}
+
+		GAIA_ERROR( "Failed to unload resource {}", m_Path );
 	}
 	return false;
 }
@@ -64,8 +69,11 @@ bool Resource::SaveAs( std::string_view path )
 	{
 		SetPath( path );
 		m_State = ResourceState::Loaded;
+		GAIA_INFO( "Saved resource {}", m_Path );
 		return true;
 	}
+
+	GAIA_ERROR( "Failed to save resource as {}", path );
 	return false;
 }
 

@@ -1,8 +1,7 @@
 #pragma once
 
+#include <core/log.h>
 #include <core/types.h>
-
-#include <cassert>
 
 enum class eInputKeys : u16
 {
@@ -184,7 +183,7 @@ public:
 
 	static Input* _GetInstance()
 	{
-		assert( s_Instance != nullptr );
+		GAIA_ASSERT( s_Instance != nullptr );
 		return s_Instance;
 	}
 

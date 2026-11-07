@@ -12,7 +12,10 @@ target_include_directories(sandbox PRIVATE
 )
 
 # Note: Absolute so assets are found from any working directory
-target_compile_definitions(sandbox PRIVATE GAIA3_ASSETS_PATH="${CMAKE_SOURCE_DIR}/gaia3/assets/")
+target_compile_definitions(sandbox PRIVATE
+    GAIA3_ASSETS_PATH="${CMAKE_SOURCE_DIR}/gaia3/assets/"
+    SANDBOX_ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets/"
+)
 
 # Link against the core engine
 target_link_libraries(sandbox PRIVATE gaia3)

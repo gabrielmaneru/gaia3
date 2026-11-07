@@ -6,7 +6,6 @@
 #include <scene/level.h>
 
 #include <algorithm>
-#include <cassert>
 
 RTTI_DEFINE_TYPE( Entity,
                   RTTI_PROPERTY( m_Name ),
@@ -65,7 +64,10 @@ bool Entity::SerializeComponents( Json::Value& outComponents ) const
 bool Entity::DeserializeComponents( const Json::Value& inComponents )
 {
 	if( !inComponents.isArray() )
+	{
+		GAIA_ERROR( "Entity {}: component list is not an array", m_Name );
 		return false;
+	}
 
 	bool allComponentsRestored = true;
 	ClearComponents();
@@ -74,6 +76,7 @@ bool Entity::DeserializeComponents( const Json::Value& inComponents )
 	{
 		if( !serializedComponent.isObject() )
 		{
+			GAIA_ERROR( "Entity {}: component entry is not an object", m_Name );
 			allComponentsRestored = false;
 			continue;
 		}
@@ -82,6 +85,7 @@ bool Entity::DeserializeComponents( const Json::Value& inComponents )
 		const Json::Value& componentDataJson = serializedComponent["m_Data"];
 		if( !componentTypeJson.isString() || !componentDataJson.isObject() )
 		{
+			GAIA_ERROR( "Entity {}: component entry has no valid type or data", m_Name );
 			allComponentsRestored = false;
 			continue;
 		}
@@ -89,18 +93,21 @@ bool Entity::DeserializeComponents( const Json::Value& inComponents )
 		shared<Component> component = m_Level != nullptr ? m_Level->GetComponentFactory().Create( componentTypeJson.asString() ) : nullptr;
 		if( component == nullptr )
 		{
+			GAIA_ERROR( "Entity {}: unknown component type {}", m_Name, componentTypeJson.asString() );
 			allComponentsRestored = false;
 			continue;
 		}
 
 		if( !rtti::DeserializeObject( component.get(), component->GetTypeInfo(), componentDataJson ) )
 		{
+			GAIA_ERROR( "Entity {}: invalid data for component {}", m_Name, componentTypeJson.asString() );
 			allComponentsRestored = false;
 			continue;
 		}
 
 		if( !AddComponentInternal( component ) )
 		{
+			GAIA_ERROR( "Entity {}: failed to add component {}", m_Name, componentTypeJson.asString() );
 			allComponentsRestored = false;
 			continue;
 		}
@@ -111,8 +118,8 @@ bool Entity::DeserializeComponents( const Json::Value& inComponents )
 
 void Entity::AttachToLevel( Level* level )
 {
-	assert( level != nullptr );
-	assert( m_Level == nullptr );
+	GAIA_ASSERT( level != nullptr );
+	GAIA_ASSERT( m_Level == nullptr );
 	m_Level = level;
 	OnAddToLevel();
 }

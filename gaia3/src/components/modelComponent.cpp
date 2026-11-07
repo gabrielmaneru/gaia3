@@ -20,7 +20,7 @@ void ModelComponent::OnAddComponent()
 	m_Model = App::GetSession().GetResourceManager().FindResource<Model>( modelName, true );
 	if( m_Model == nullptr )
 	{
-		std::cerr << "ModelComponent: failed to load " << modelName << '\n';
+		GAIA_ERROR( "ModelComponent: failed to load {}", modelName );
 	}
 }
 

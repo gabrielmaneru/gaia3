@@ -11,7 +11,7 @@ bool Window::Init( std::string_view title, rect canvas )
 
 	if( !glfwInit() )
 	{
-		std::cerr << "Failed to initialize GLFW\n";
+		GAIA_ERROR( "Failed to initialize GLFW" );
 		m_WindowHandle = nullptr;
 		return false;
 	}
@@ -24,7 +24,7 @@ bool Window::Init( std::string_view title, rect canvas )
 	m_WindowHandle = glfwCreateWindow( canvas.x, canvas.y, title.data(), nullptr, nullptr );
 	if( m_WindowHandle == nullptr )
 	{
-		std::cerr << "Failed to create GLFW window\n";
+		GAIA_ERROR( "Failed to create GLFW window" );
 		glfwTerminate();
 		return false;
 	}
@@ -37,6 +37,9 @@ bool Window::Init( std::string_view title, rect canvas )
 	glfwGetWindowSize( m_WindowHandle, &currentWidth, &currentHeight );
 	m_Canvas.x = currentWidth > 0 ? currentWidth : 1;
 	m_Canvas.y = currentHeight > 0 ? currentHeight : 1;
+
+	GAIA_INFO( "GLFW version: {}", glfwGetVersionString() );
+	GAIA_INFO( "Window created: {}x{}", m_Canvas.x, m_Canvas.y );
 
 	SetVSyncEnabled( true );
 	return true;

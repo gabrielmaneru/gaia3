@@ -3,6 +3,7 @@ add_library(gaia3 STATIC
     src/components/cameraComponent.cpp
     src/components/modelComponent.cpp
     src/core/app.cpp
+    src/core/log.cpp
     src/core/session.cpp
     src/core/serializationTypes.cpp
     src/gaia3_pch.cpp
@@ -45,10 +46,12 @@ target_include_directories(gaia3 PUBLIC
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(jsoncpp CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 # Link against vcpkg packages
 target_link_libraries(gaia3 PUBLIC
     glfw
     glad::glad
     jsoncpp_lib
+    spdlog::spdlog
 )

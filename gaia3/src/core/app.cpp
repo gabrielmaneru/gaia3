@@ -20,6 +20,7 @@ bool App::Init( const AppConfig& config )
 	if( !m_Session.Init( config.startLevel, config.commonPath, config.appPath ) )
 		return false;
 
+	GAIA_INFO( "{} initialized", config.title );
 	return true;
 }
 

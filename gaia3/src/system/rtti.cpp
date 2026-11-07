@@ -66,7 +66,10 @@ bool rtti::SerializeObject( const void* instance, const TypeInfo& typeInfo, Json
 
 		Json::Value serializedValue;
 		if( !property.Serialize( propertyValue, serializedValue ) )
+		{
+			GAIA_ERROR( "RTTI: failed to serialize {}::{}", typeInfo.Name, property.Name );
 			return false;
+		}
 
 		outObject[property.Name] = std::move( serializedValue );
 	}
@@ -89,7 +92,10 @@ bool rtti::DeserializeObject( void* instance, const TypeInfo& typeInfo, const Js
 		const Json::Value& serializedValue = sourceObject[propertyName];
 		void*              propertyValue   = rawInstance + property->Offset;
 		if( !property->Deserialize( propertyValue, serializedValue ) )
+		{
+			GAIA_ERROR( "RTTI: invalid value for {}::{}", typeInfo.Name, property->Name );
 			return false;
+		}
 	}
 
 	return true;

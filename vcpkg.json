@@ -3,6 +3,7 @@
     "glfw3",
     "glad",
     "gtest",
-    "jsoncpp"
+    "jsoncpp",
+    "spdlog"
   ]
 }

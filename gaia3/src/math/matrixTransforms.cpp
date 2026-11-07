@@ -74,6 +74,10 @@ Matrix44 Perspective( float fovRadians, float aspectRatio, float nearPlane, floa
 	const float clampedAspect = ( aspectRatio <= eps_6 ) ? 1.0f : aspectRatio;
 	const float clampedNear   = ( nearPlane <= eps_6 ) ? 0.01f : nearPlane;
 	const float clampedFar    = ( farPlane <= clampedNear ) ? ( clampedNear + 0.01f ) : farPlane;
+	if( clampedAspect != aspectRatio || clampedNear != nearPlane || clampedFar != farPlane )
+	{
+		GAIA_WARN( "Perspective: invalid aspect {}, near {} or far {}, using clamped values", aspectRatio, nearPlane, farPlane );
+	}
 
 	const float tanHalfFovY = tanf( fovRadians * 0.5f );
 

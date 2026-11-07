@@ -12,6 +12,7 @@ bool Session::Init( std::string_view startLevel, std::string_view commonPath, st
 	}
 	else
 	{
+		GAIA_WARN( "Session: start level {} is not available, using a new level", startLevel );
 		m_CurrentLevel = new_shared<Level>();
 	}
 

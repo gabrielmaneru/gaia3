@@ -30,7 +30,7 @@ Transform Transform::Inverse() const
 {
 	if( fabsf( scale.x ) <= eps_6 || fabsf( scale.y ) <= eps_6 || fabsf( scale.z ) <= eps_6 )
 	{
-		assert( false );
+		GAIA_WARN( "Transform: inverting a zero scale, using identity" );
 		return Transform();
 	}
 

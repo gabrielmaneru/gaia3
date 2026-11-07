@@ -2,10 +2,37 @@
 
 #include <gtest/gtest.h>
 
+#include <core/log.h>
+#include <core/types.h>
+
+#include <spdlog/sinks/ostream_sink.h>
+
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <string_view>
+
+// Note: Messages are captured as "level: message" while this object is alive
+class LogCapture
+{
+public:
+	LogCapture()
+	{
+		m_Sink = new_shared<spdlog::sinks::ostream_sink_mt>( m_Output );
+		m_Sink->set_pattern( "%l: %v" );
+		Log::GetLogger().sinks().push_back( m_Sink );
+	}
+
+	~LogCapture() { Log::GetLogger().sinks().pop_back(); }
+
+	std::string GetOutput() const { return m_Output.str(); }
+	bool        Contains( std::string_view text ) const { return m_Output.str().find( text ) != std::string::npos; }
+
+private:
+	std::ostringstream                     m_Output;
+	shared<spdlog::sinks::ostream_sink_mt> m_Sink;
+};
 
 // Note: Named after the running test so tests running in parallel never share a directory
 class ScopedTempDir

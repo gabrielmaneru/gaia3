@@ -1,9 +1,7 @@
 #pragma once
 
 // Default STD includes
-#include <cassert>
 #include <fstream>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -11,6 +9,7 @@
 #include <algorithm>
 
 // Core types
+#include <core/log.h>
 #include <core/types.h>
 
 // Math

@@ -2,6 +2,8 @@
 add_executable(gaia3_tests
     src/main.cpp
     src/components/components_tests.cpp
+    src/core/log_tests.cpp
+    src/core/logPolicy_tests.cpp
     src/core/serializationTypes_tests.cpp
     src/core/session_tests.cpp
     src/gfx/meshObj_tests.cpp

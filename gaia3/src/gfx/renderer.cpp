@@ -5,20 +5,48 @@
 
 #include <algorithm>
 
+namespace
+{
+void LogOpenGLInfo()
+{
+	auto getString = []( u32 name ) -> const char* {
+		return reinterpret_cast<const char*>( glGetString( name ) );
+	};
+
+	auto getInteger = []( u32 name ) -> int {
+		int value = 0;
+		glGetIntegerv( name, &value );
+		return value;
+	};
+
+	GAIA_INFO( "OpenGL vendor: {}", getString( GL_VENDOR ) );
+	GAIA_INFO( "OpenGL renderer: {}", getString( GL_RENDERER ) );
+	GAIA_INFO( "OpenGL version: {}", getString( GL_VERSION ) );
+	GAIA_INFO( "GLSL version: {}", getString( GL_SHADING_LANGUAGE_VERSION ) );
+	GAIA_INFO( "OpenGL extensions: {}", getInteger( GL_NUM_EXTENSIONS ) );
+	GAIA_INFO( "OpenGL max texture size: {}", getInteger( GL_MAX_TEXTURE_SIZE ) );
+	GAIA_INFO( "OpenGL max texture units: {}", getInteger( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS ) );
+	GAIA_INFO( "OpenGL max vertex attributes: {}", getInteger( GL_MAX_VERTEX_ATTRIBS ) );
+	GAIA_INFO( "OpenGL max uniform block size: {}", getInteger( GL_MAX_UNIFORM_BLOCK_SIZE ) );
+}
+} // namespace
+
 bool Renderer::Init( ProcAddressFn procAddressLoader, rect canvas )
 {
-	assert( procAddressLoader != nullptr );
-	assert( canvas.x > 0 && canvas.y > 0 );
+	GAIA_ASSERT( procAddressLoader != nullptr );
+	GAIA_ASSERT( canvas.x > 0 && canvas.y > 0 );
 
 	if( !gladLoadGLLoader( reinterpret_cast<GLADloadproc>( procAddressLoader ) ) )
 	{
-		std::cerr << "Renderer init failed: GLAD loader initialization failed\n";
+		GAIA_ERROR( "Renderer init failed: GLAD loader initialization failed" );
 		return false;
 	}
 
+	LogOpenGLInfo();
+
 	if( !InitializeDummyShaders() )
 	{
-		std::cerr << "Renderer init failed: Failed to create dummy shaders\n";
+		GAIA_ERROR( "Renderer init failed: Failed to create dummy shaders" );
 		return false;
 	}
 
@@ -112,7 +140,7 @@ bool Renderer::InitializeDummyShaders()
 		{
 			char logBuffer[512] = {};
 			glGetShaderInfoLog( shader, sizeof( logBuffer ), nullptr, logBuffer );
-			std::cerr << "Shader compilation failed: " << logBuffer << '\n';
+			GAIA_ERROR( "Shader compilation failed: {}", logBuffer );
 			glDeleteShader( shader );
 			return 0;
 		}
@@ -145,7 +173,7 @@ bool Renderer::InitializeDummyShaders()
 	{
 		char logBuffer[512] = {};
 		glGetProgramInfoLog( m_Program, sizeof( logBuffer ), nullptr, logBuffer );
-		std::cerr << "Shader link failed: " << logBuffer << '\n';
+		GAIA_ERROR( "Shader link failed: {}", logBuffer );
 		glDeleteProgram( m_Program );
 		m_Program = 0;
 		glDeleteShader( vertexShader );
@@ -162,7 +190,7 @@ bool Renderer::InitializeDummyShaders()
 	m_ProjectionMatrixLocation = glGetUniformLocation( m_Program, "u_Projection" );
 	if( m_ModelMatrixLocation < 0 || m_ViewMatrixLocation < 0 || m_ProjectionMatrixLocation < 0 )
 	{
-		std::cerr << "Renderer init failed: Matrix uniform lookup failed\n";
+		GAIA_ERROR( "Renderer init failed: Matrix uniform lookup failed" );
 		return false;
 	}
 

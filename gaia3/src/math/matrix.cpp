@@ -68,7 +68,7 @@ void Matrix33::SetRow( int row, const Vec3& v )
 		m22 = v.z;
 		break;
 	default:
-		assert( false );
+		GAIA_ASSERT( false );
 		break;
 	}
 }
@@ -84,7 +84,7 @@ Vec3 Matrix33::GetRow( int row ) const
 	case 2:
 		return Vec3( m20, m21, m22 );
 	default:
-		assert( false );
+		GAIA_ASSERT( false );
 		break;
 	}
 
@@ -120,7 +120,7 @@ Matrix33 Matrix33::Inverse() const
 	const float det = m00 * c00 + m01 * c01 + m02 * c02;
 	if( fabsf( det ) <= eps_6 )
 	{
-		assert( false );
+		GAIA_WARN( "Matrix33: inverting a singular matrix, using identity" );
 		return Matrix33();
 	}
 
@@ -215,7 +215,7 @@ void Matrix44::SetRow( int row, const Vec4& v )
 		m33 = v.w;
 		break;
 	default:
-		assert( false );
+		GAIA_ASSERT( false );
 		break;
 	}
 }
@@ -233,7 +233,7 @@ Vec4 Matrix44::GetRow( int row ) const
 	case 3:
 		return Vec4( m30, m31, m32, m33 );
 	default:
-		assert( false );
+		GAIA_ASSERT( false );
 		break;
 	}
 
@@ -302,6 +302,11 @@ Matrix44 Matrix44::Inverse() const
 	Matrix44 inverse( inv0 * signA, inv1 * signB, inv2 * signA, inv3 * signB );
 
 	const float det = Dot( col[0], inverse.GetRow( 0 ) );
+	if( fabsf( det ) <= eps_6 )
+	{
+		GAIA_WARN( "Matrix44: inverting a singular matrix, using identity" );
+		return Matrix44();
+	}
 
 	const Scalar invDet( 1.0f / det );
 
