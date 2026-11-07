@@ -21,13 +21,13 @@ public:
 	bool SaveResourceAs( const shared<TResource>& resource, std::string_view fileName );
 	template <typename TResource>
 	std::vector<std::string> GetResourceNames() const;
+	std::vector<std::string> GetResourceNamesByTypeId( u64 typeId ) const;
 
 private:
 	using ResourceMap = std::unordered_map<std::string, shared<Resource>>;
 
-	shared<Resource>         FindResourceByTypeId( u64 typeId, std::string_view resourceId, bool forceLoad );
-	bool                     SaveResourceAsType( u64 typeId, const shared<Resource>& resource, std::string_view fileName );
-	std::vector<std::string> GetResourceNamesByTypeId( u64 typeId ) const;
+	shared<Resource> FindResourceByTypeId( u64 typeId, std::string_view resourceId, bool forceLoad );
+	bool             SaveResourceAsType( u64 typeId, const shared<Resource>& resource, std::string_view fileName );
 
 	void RegisterResource( u64 typeId, const std::string& resourceKey, shared<Resource> resource );
 	void ReleaseResourceEntries( u64 typeId, const shared<Resource>& resource, std::string_view previousPath );

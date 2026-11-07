@@ -12,6 +12,7 @@ add_executable(gaia3_tests
     src/math/quaternion_tests.cpp
     src/math/transform_tests.cpp
     src/math/vector_tests.cpp
+    src/scene/authoring_tests.cpp
     src/scene/componentFactory_tests.cpp
     src/scene/editor_tests.cpp
     src/scene/entity_tests.cpp
@@ -19,6 +20,7 @@ add_executable(gaia3_tests
     src/scene/testComponents.cpp
     src/system/resource_tests.cpp
     src/system/resourceManager_tests.cpp
+    src/system/resourceRef_tests.cpp
     src/system/rtti_tests.cpp
 )
 

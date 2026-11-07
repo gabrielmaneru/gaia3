@@ -54,15 +54,15 @@ void createDefaultLevel( Level* pLevel )
 	// Create camera
 	Entity* pCamera = pLevel->CreateEntity( "Camera" );
 	{
-		pCamera->GetTransformRef().position = Vec3( 1.0f, 1.0f, -4.12f );
-		pCamera->GetTransformRef().rotation = LookAtQuat( Vec3( 0.0f, 0.0f, 1.0f ), Vec3::V_Up );
+		pCamera->SetPosition( Vec3( 1.0f, 1.0f, -4.12f ));
+		pCamera->SetRotation(LookAtQuat( Vec3( 0.0f, 0.0f, 1.0f ), Vec3::V_Up ));
 		pCamera->AddComponent<CameraComponent>();
 	}
 
 	// Create cube in the middle
 	Entity* pCube = pLevel->CreateEntity( "Cube" );
 	{
-		pCube->AddComponent<ModelComponent>( "cube.obj" );
+		pCube->AddComponent<ModelComponent>( "models/cube" );
 	}
 }
 } // namespace
@@ -82,6 +82,8 @@ int main( int argc, char** argv )
 
 	config.editor.enabled = !options.bNoEditor;
 	config.editor.docked  = !options.bNoDock;
+
+	config.editor.gizmoMode = GizmoMode::Translate;
 
 	if( !App::Init( config ) )
 		return 1;

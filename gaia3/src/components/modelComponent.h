@@ -2,6 +2,7 @@
 
 #include <gfx/rendererTypes.h>
 #include <scene/componentFactory.h>
+#include <system/resourceRef.h>
 
 class Model;
 
@@ -14,12 +15,13 @@ public:
 
 	void OnAddComponent() override;
 	void OnRemoveComponent() override;
+	void OnPropertyChanged( std::string_view propertyName ) override;
 
 	Matrix44 GetModelMatrix() const override;
 
 private:
 	void Draw() const override;
+	void ResolveModel();
 
-	std::string   modelName;
-	shared<Model> m_Model;
+	ResourceRef<Model> m_Model;
 };

@@ -3,9 +3,18 @@
 #include "testComponents.h"
 
 #include <core/app.h>
+#include <math/quaternionTransforms.h>
 
 namespace
 {
+void ExpectSameRotation( const Quat& actual, const Quat& expected )
+{
+	EXPECT_FLOAT_EQ( actual.x, expected.x );
+	EXPECT_FLOAT_EQ( actual.y, expected.y );
+	EXPECT_FLOAT_EQ( actual.z, expected.z );
+	EXPECT_FLOAT_EQ( actual.w, expected.w );
+}
+
 class EditorTests : public testing::Test
 {
 protected:
@@ -15,17 +24,6 @@ protected:
 	Level* GetSessionLevel() { return App::GetSession().GetCurrentLevel(); }
 };
 
-class UnsupportedPropertyHolder
-{
-	RTTI_DECLARE_TYPE( UnsupportedPropertyHolder )
-public:
-	int              first = 1;
-	std::vector<int> unsupported;
-};
-
-RTTI_DEFINE_TYPE( UnsupportedPropertyHolder,
-                  RTTI_PROPERTY( first ),
-                  RTTI_PROPERTY( unsupported ) )
 } // namespace
 
 TEST( EditorDefaultsTests, EditorIsDisabledByDefault )
@@ -62,6 +60,138 @@ TEST( EditorDefaultsTests, DockedEditorDisplaysTheGameInItsViewport )
 	const Editor editor( EditorConfig{ true, true } );
 
 	EXPECT_TRUE( editor.DisplaysRenderTarget() );
+}
+
+TEST( EditorDefaultsTests, GizmoStartsInSelectionMode )
+{
+	const EditorConfig config;
+	const Editor       editor( config );
+
+	EXPECT_EQ( config.gizmoMode, GizmoMode::Selection );
+	EXPECT_EQ( editor.GetGizmoMode(), GizmoMode::Selection );
+}
+
+TEST( EditorDefaultsTests, GizmoStartsInTheConfiguredMode )
+{
+	EditorConfig config;
+	config.gizmoMode = GizmoMode::Translate;
+
+	const Editor editor( config );
+
+	EXPECT_EQ( editor.GetGizmoMode(), GizmoMode::Translate );
+}
+
+TEST( EditorDefaultsTests, GizmoModeCanChange )
+{
+	Editor editor;
+
+	editor.SetGizmoMode( GizmoMode::Scale );
+
+	EXPECT_EQ( editor.GetGizmoMode(), GizmoMode::Scale );
+}
+
+TEST( GizmoMatrixTests, SelectionChangesNothing )
+{
+	const Transform transform( Vec3( 1.0f, 2.0f, 3.0f ), QuatFromEuler( Vec3( 10.0f, 20.0f, 30.0f ) ), Vec3( 2.0f, 3.0f, 4.0f ) );
+
+	const Transform result = ApplyGizmoMatrix( GizmoMode::Selection, transform, Transform().ToMatrix44() );
+
+	EXPECT_EQ( result.position, transform.position );
+	EXPECT_EQ( result.scale, transform.scale );
+	ExpectSameRotation( result.rotation, transform.rotation );
+}
+
+TEST( GizmoMatrixTests, TranslateOnlyChangesThePosition )
+{
+	const Transform transform( Vec3( 1.0f, 2.0f, 3.0f ), QuatFromEuler( Vec3( 10.0f, 20.0f, 30.0f ) ), Vec3( 2.0f, 3.0f, 4.0f ) );
+
+	Transform moved = transform;
+	moved.position  = Vec3( -4.0f, 5.0f, 6.0f );
+
+	const Transform result = ApplyGizmoMatrix( GizmoMode::Translate, transform, moved.ToMatrix44() );
+
+	EXPECT_EQ( result.position, moved.position );
+	ExpectSameRotation( result.rotation, transform.rotation );
+	EXPECT_EQ( result.scale, transform.scale );
+}
+
+TEST( GizmoMatrixTests, RotateOnlyChangesTheRotation )
+{
+	const Transform transform( Vec3( 1.0f, 2.0f, 3.0f ), Quat(), Vec3( 2.0f, 3.0f, 4.0f ) );
+
+	Transform rotated = transform;
+	rotated.rotation  = QuatFromEuler( Vec3( 10.0f, 20.0f, 30.0f ) );
+
+	const Transform result = ApplyGizmoMatrix( GizmoMode::Rotate, transform, rotated.ToMatrix44() );
+
+	const Vec3 expected = rotated.rotation.Rotate( Vec3::V_Right );
+	const Vec3 actual   = result.rotation.Rotate( Vec3::V_Right );
+	EXPECT_NEAR( actual.x, expected.x, 0.001f );
+	EXPECT_NEAR( actual.y, expected.y, 0.001f );
+	EXPECT_NEAR( actual.z, expected.z, 0.001f );
+	EXPECT_EQ( result.position, transform.position );
+	EXPECT_EQ( result.scale, transform.scale );
+}
+
+TEST( GizmoMatrixTests, RotateKeepsAMirroredEntityUsable )
+{
+	const Transform transform( Vec3(), Quat(), Vec3( -2.0f, 1.0f, 1.0f ) );
+
+	Transform rotated = transform;
+	rotated.rotation  = QuatFromEuler( Vec3( 0.0f, 90.0f, 0.0f ) );
+
+	const Transform result = ApplyGizmoMatrix( GizmoMode::Rotate, transform, rotated.ToMatrix44() );
+
+	const Vec3 expected = rotated.rotation.Rotate( Vec3::V_Front );
+	const Vec3 actual   = result.rotation.Rotate( Vec3::V_Front );
+	EXPECT_NEAR( actual.x, expected.x, 0.001f );
+	EXPECT_NEAR( actual.y, expected.y, 0.001f );
+	EXPECT_NEAR( actual.z, expected.z, 0.001f );
+}
+
+TEST( GizmoMatrixTests, RotateKeepsTheRotationOfAZeroScale )
+{
+	const Quat      rotation = QuatFromEuler( Vec3( 10.0f, 20.0f, 30.0f ) );
+	const Transform transform( Vec3(), rotation, Vec3( 0.0f, 1.0f, 1.0f ) );
+
+	const Transform result = ApplyGizmoMatrix( GizmoMode::Rotate, transform, Transform().ToMatrix44() );
+
+	ExpectSameRotation( result.rotation, rotation );
+}
+
+TEST( GizmoMatrixTests, ScaleOnlyChangesTheScale )
+{
+	const Transform transform( Vec3( 1.0f, 2.0f, 3.0f ), QuatFromEuler( Vec3( 10.0f, 20.0f, 30.0f ) ), Vec3( 1.0f, 1.0f, 1.0f ) );
+
+	Transform scaled = transform;
+	scaled.scale     = Vec3( 2.0f, 3.0f, 4.0f );
+
+	const Transform result = ApplyGizmoMatrix( GizmoMode::Scale, transform, scaled.ToMatrix44() );
+
+	EXPECT_NEAR( result.scale.x, 2.0f, 0.001f );
+	EXPECT_NEAR( result.scale.y, 3.0f, 0.001f );
+	EXPECT_NEAR( result.scale.z, 4.0f, 0.001f );
+	EXPECT_EQ( result.position, transform.position );
+	ExpectSameRotation( result.rotation, transform.rotation );
+}
+
+TEST( GizmoMatrixTests, ScaleKeepsAMirroredAxis )
+{
+	const Transform transform( Vec3(), Quat(), Vec3( -1.0f, 1.0f, 1.0f ) );
+
+	Transform scaled = transform;
+	scaled.scale     = Vec3( -3.0f, 1.0f, 1.0f );
+
+	const Transform result = ApplyGizmoMatrix( GizmoMode::Scale, transform, scaled.ToMatrix44() );
+
+	EXPECT_NEAR( result.scale.x, -3.0f, 0.001f );
+}
+
+TEST( RendererCameraTests, NoCameraWithoutARegisteredOne )
+{
+	const Renderer renderer;
+
+	EXPECT_EQ( renderer.GetCamera(), nullptr );
 }
 
 TEST( EditorDefaultsTests, NoLevelMeansNoSelection )
@@ -131,44 +261,6 @@ TEST_F( EditorTests, GetEntitiesListsEntitiesInCreationOrder )
 	ASSERT_EQ( entities.size(), 2u );
 	EXPECT_EQ( entities[0].get(), first );
 	EXPECT_EQ( entities[1].get(), second );
-}
-
-TEST_F( EditorTests, GetPropertiesReadsEntityPropertiesInDeclaredOrder )
-{
-	Entity* entity = GetSessionLevel()->CreateEntity( "Hero" );
-	entity->GetTransformRef().position = Vec3( 1.0f, 2.0f, 3.0f );
-
-	const std::vector<EditorProperty> properties = Editor::GetProperties( entity, Entity::StaticTypeInfo() );
-
-	ASSERT_EQ( properties.size(), 2u );
-	EXPECT_EQ( properties[0].Name, "m_Name" );
-	EXPECT_EQ( properties[0].Value.asString(), "Hero" );
-	EXPECT_EQ( properties[1].Name, "m_Transform" );
-	EXPECT_EQ( properties[1].Value["position"]["y"].asFloat(), 2.0f );
-}
-
-TEST_F( EditorTests, GetPropertiesReadsComponentProperties )
-{
-	Entity* entity = GetSessionLevel()->CreateEntity( "Hero" );
-
-	shared<HealthComponent> health = entity->AddComponent<HealthComponent>( 42 );
-
-	const std::vector<EditorProperty> properties = Editor::GetProperties( health.get(), health->GetTypeInfo() );
-
-	ASSERT_EQ( properties.size(), 1u );
-	EXPECT_EQ( properties[0].Name, "m_Health" );
-	EXPECT_EQ( properties[0].Value.asInt(), 42 );
-}
-
-TEST( EditorPropertiesTests, UnsupportedPropertiesStayNullAndKeepTheRest )
-{
-	const UnsupportedPropertyHolder holder;
-
-	const std::vector<EditorProperty> properties = Editor::GetProperties( &holder, UnsupportedPropertyHolder::StaticTypeInfo() );
-
-	ASSERT_EQ( properties.size(), 2u );
-	EXPECT_EQ( properties[0].Value.asInt(), 1 );
-	EXPECT_TRUE( properties[1].Value.isNull() );
 }
 
 TEST( InputCaptureTests, CapturedKeysAndButtonsReportAsUp )

@@ -79,11 +79,11 @@ void Renderer::Update( rect renderSize )
 	glUseProgram( m_Program );
 
 	// Apply Camera Matrices
-	if( !m_Cameras.empty() )
+	const RenderCamera* camera = GetCamera();
+	if( camera != nullptr )
 	{
-		// Use first camera for now
-		const Matrix44 view       = m_Cameras[0]->GetViewMatrix();
-		const Matrix44 projection = m_Cameras[0]->GetProjectionMatrix( renderSize );
+		const Matrix44 view       = camera->GetViewMatrix();
+		const Matrix44 projection = camera->GetProjectionMatrix( renderSize );
 		glUniformMatrix4fv( m_ViewMatrixLocation, 1, GL_FALSE, &view.m00 );
 		glUniformMatrix4fv( m_ProjectionMatrixLocation, 1, GL_FALSE, &projection.m00 );
 	}

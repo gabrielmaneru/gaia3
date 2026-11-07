@@ -27,7 +27,7 @@ bool App::Init( const AppConfig& config )
 	if( config.editor.enabled )
 	{
 		m_Editor = new_unique<Editor>( config.editor );
-		if( !m_Editor->Init() )
+		if( !m_Editor->Init( config.commonPath ) )
 		{
 			GAIA_ERROR( "Editor failed to initialize, continuing without it" );
 			m_Editor.reset();

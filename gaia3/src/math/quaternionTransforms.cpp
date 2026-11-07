@@ -56,3 +56,40 @@ Quat LookAtQuat( const Vec3& forwardDir, const Vec3& upAxis )
 	const Matrix33 lookAt = LookAt33( forwardDir, upAxis );
 	return QuatFromMatrix33( lookAt );
 }
+
+Quat QuatFromEuler( const Vec3& degrees )
+{
+	const float halfX = ToRadians( degrees.x ) * 0.5f;
+	const float halfY = ToRadians( degrees.y ) * 0.5f;
+	const float halfZ = ToRadians( degrees.z ) * 0.5f;
+
+	const Quat rotationX( sinf( halfX ), 0.0f, 0.0f, cosf( halfX ) );
+	const Quat rotationY( 0.0f, sinf( halfY ), 0.0f, cosf( halfY ) );
+	const Quat rotationZ( 0.0f, 0.0f, sinf( halfZ ), cosf( halfZ ) );
+
+	return ( rotationY * rotationX * rotationZ ).Normalized();
+}
+
+Vec3 EulerFromQuat( const Quat& rotation )
+{
+	const Quat q = rotation.Normalized();
+
+	const float m00 = 1.0f - 2.0f * ( q.y * q.y + q.z * q.z );
+	const float m02 = 2.0f * ( q.x * q.z + q.w * q.y );
+	const float m10 = 2.0f * ( q.x * q.y + q.w * q.z );
+	const float m11 = 1.0f - 2.0f * ( q.x * q.x + q.z * q.z );
+	const float m12 = 2.0f * ( q.y * q.z - q.w * q.x );
+	const float m20 = 2.0f * ( q.x * q.z - q.w * q.y );
+	const float m22 = 1.0f - 2.0f * ( q.x * q.x + q.y * q.y );
+
+	// Note: Subtracting from zero avoids showing -0 for an unrotated axis
+	const float angleX = asinf( Clamp( 0.0f - m12, -1.0f, 1.0f ) );
+
+	// Note: Looking straight up or down, y and z spin around the same axis, so z is left at zero
+	if( fabsf( m12 ) > 0.9999f )
+	{
+		return Vec3( ToDegrees( angleX ), ToDegrees( atan2f( -m20, m00 ) ), 0.0f );
+	}
+
+	return Vec3( ToDegrees( angleX ), ToDegrees( atan2f( m02, m22 ) ), ToDegrees( atan2f( m10, m11 ) ) );
+}

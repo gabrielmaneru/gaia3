@@ -15,6 +15,9 @@ public:
 
 	const Framebuffer& GetRenderTarget() const { return m_RenderTarget; }
 
+	// Note: Supports 0 or 1 cameras, extra ones are ignored until the camera component can select a render target
+	const RenderCamera* GetCamera() const { return m_Cameras.empty() ? nullptr : m_Cameras[0]; }
+
 private:
 	bool InitializeDummyShaders();
 

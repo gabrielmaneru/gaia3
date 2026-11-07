@@ -8,6 +8,24 @@ RTTI_DEFINE_RESOURCE( Level,
                       RTTI_RESOURCE_EXTENSIONS( ".level", ".lvl" ),
                       RTTI_PROPERTY( m_Entities ) )
 
+namespace
+{
+// Note: Turns "Crate (1)" into "Crate", any name without a number at the end stays the same
+std::string_view RemoveCloneNumber( std::string_view name )
+{
+	const size_t numberStart = name.rfind( " (" );
+	if( numberStart == std::string_view::npos || numberStart == 0 || name.back() != ')' )
+		return name;
+
+	const std::string_view digits   = name.substr( numberStart + 2, name.size() - numberStart - 3 );
+	const bool             isNumber = !digits.empty() && std::all_of( digits.begin(), digits.end(), []( char character ) {
+		return character >= '0' && character <= '9';
+	} );
+
+	return isNumber ? name.substr( 0, numberStart ) : name;
+}
+} // namespace
+
 Level::Level()
     : Resource( "", ResourceState::New )
 {
@@ -171,6 +189,53 @@ Entity* Level::CreateEntity( std::string_view entityName )
 	Entity*        entityPtr = entity.get();
 	m_Entities.push_back( std::move( entity ) );
 	return entityPtr;
+}
+
+Entity* Level::CloneEntity( u64 id )
+{
+	const Entity* source = FindEntity( id );
+	if( source == nullptr )
+	{
+		GAIA_ERROR( "Level {}: cannot clone unknown entity {}", GetName(), id );
+		return nullptr;
+	}
+
+	Entity* clone = CreateEntity( MakeCloneName( source->GetName() ) );
+
+	// Note: The transform goes first because components read it when they are added
+	clone->SetTransform(source->GetTransform());
+
+	Json::Value components;
+	if( !source->SerializeComponents( components ) || !clone->DeserializeComponents( components ) )
+	{
+		GAIA_ERROR( "Level {}: failed to clone the components of entity {}", GetName(), source->GetName() );
+		RemoveEntity( clone->GetId() );
+		return nullptr;
+	}
+
+	return clone;
+}
+
+std::string Level::MakeCloneName( std::string_view sourceName ) const
+{
+	auto isNameTaken = [this]( std::string_view name ) {
+		return std::any_of( m_Entities.begin(), m_Entities.end(), [name]( const unique<Entity>& entity ) {
+			return entity != nullptr && entity->GetName() == name;
+		} );
+	};
+
+	const std::string baseName( RemoveCloneNumber( sourceName ) );
+
+	// Note: Names can repeat, entities are told apart by their id, the number only helps to read the Hierarchy
+	u64         cloneNumber = 1;
+	std::string cloneName   = baseName + " (1)";
+	while( isNameTaken( cloneName ) )
+	{
+		++cloneNumber;
+		cloneName = baseName + " (" + std::to_string( cloneNumber ) + ")";
+	}
+
+	return cloneName;
 }
 
 bool Level::RemoveEntity( u64 id )

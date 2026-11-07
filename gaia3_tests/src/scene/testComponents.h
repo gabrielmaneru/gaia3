@@ -26,5 +26,8 @@ class ArmorComponent : public Component
 {
 	RTTI_DECLARE_COMP( ArmorComponent, Component )
 public:
-	float m_Armor = 1.5f;
+	void Update() override { ++updateCount; }
+
+	float m_Armor     = 1.5f;
+	int   updateCount = 0;
 };

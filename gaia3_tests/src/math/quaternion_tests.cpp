@@ -6,6 +6,7 @@
 #include <math/quaternionTransforms.h>
 #include <math/transform.h>
 
+#include <cmath>
 #include <math.h>
 
 TEST( QuatTests, UnaryMinus )
@@ -233,4 +234,51 @@ TEST( QuatTransformsTests, QuatFromMatrix33HandlesHalfTurns )
 	EXPECT_NEAR( fabsf( QuatFromMatrix33( aroundX ).x ), 1.0f, 1e-5f );
 	EXPECT_NEAR( fabsf( QuatFromMatrix33( aroundY ).y ), 1.0f, 1e-5f );
 	EXPECT_NEAR( fabsf( QuatFromMatrix33( aroundZ ).z ), 1.0f, 1e-5f );
+}
+
+TEST( QuatTransformsTests, QuatFromEulerRotatesAroundEachAxis )
+{
+	const Vec3 v( 0.0f, 0.0f, 1.0f );
+
+	EXPECT_TRUE( IsClose( QuatFromEuler( Vec3( 0.0f, 90.0f, 0.0f ) ).Rotate( v ), Vec3( 1.0f, 0.0f, 0.0f ), 1e-5f ) );
+	EXPECT_TRUE( IsClose( QuatFromEuler( Vec3( 90.0f, 0.0f, 0.0f ) ).Rotate( v ), Vec3( 0.0f, -1.0f, 0.0f ), 1e-5f ) );
+	EXPECT_TRUE( IsClose( QuatFromEuler( Vec3( 0.0f, 0.0f, 90.0f ) ).Rotate( Vec3::V_Right ), Vec3::V_Up, 1e-5f ) );
+}
+
+TEST( QuatTransformsTests, ZeroEulerIsIdentity )
+{
+	const Quat q = QuatFromEuler( Vec3::V_Zero );
+
+	EXPECT_NEAR( q.w, 1.0f, 1e-6f );
+	EXPECT_TRUE( IsClose( EulerFromQuat( Quat::V_Identity ), Vec3::V_Zero, 1e-5f ) );
+}
+
+TEST( QuatTransformsTests, EulerFromIdentityHasNoNegativeZero )
+{
+	EXPECT_FALSE( std::signbit( EulerFromQuat( Quat::V_Identity ).x ) );
+}
+
+TEST( QuatTransformsTests, EulerAnglesRoundTrip )
+{
+	const Vec3 angles[] = {
+	    Vec3( 10.0f, 20.0f, 30.0f ),
+	    Vec3( -45.0f, 120.0f, 60.0f ),
+	    Vec3( 80.0f, -170.0f, -30.0f ),
+	    Vec3( 0.0f, 90.0f, 0.0f ),
+	};
+
+	for( const Vec3& expected : angles )
+	{
+		EXPECT_TRUE( IsClose( EulerFromQuat( QuatFromEuler( expected ) ), expected, 1e-2f ) );
+	}
+}
+
+TEST( QuatTransformsTests, EulerConversionKeepsTheRotationStraightUp )
+{
+	const Vec3 v( 1.0f, 2.0f, 3.0f );
+
+	const Quat original = QuatFromEuler( Vec3( 90.0f, 30.0f, 40.0f ) );
+	const Quat restored = QuatFromEuler( EulerFromQuat( original ) );
+
+	EXPECT_TRUE( IsClose( restored.Rotate( v ), original.Rotate( v ), 1e-3f ) );
 }

@@ -6,10 +6,10 @@
 #include <scene/entity.h>
 
 RTTI_DEFINE_COMP( ModelComponent,
-                  RTTI_PROPERTY( modelName ) )
+                  RTTI_PROPERTY( m_Model ) )
 
 ModelComponent::ModelComponent( std::string_view name )
-    : modelName( name )
+    : m_Model( name )
 {
 }
 
@@ -17,18 +17,27 @@ void ModelComponent::OnAddComponent()
 {
 	Renderable::Register();
 
-	m_Model = App::GetSession().GetResourceManager().FindResource<Model>( modelName, true );
-	if( m_Model == nullptr )
-	{
-		GAIA_ERROR( "ModelComponent: failed to load {}", modelName );
-	}
+	ResolveModel();
 }
 
 void ModelComponent::OnRemoveComponent()
 {
 	Renderable::Unregister();
 
-	m_Model.reset();
+	m_Model.Release();
+}
+
+void ModelComponent::OnPropertyChanged( std::string_view propertyName )
+{
+	ResolveModel();
+}
+
+void ModelComponent::ResolveModel()
+{
+	if( !m_Model.Resolve( App::GetSession().GetResourceManager() ) )
+	{
+		GAIA_ERROR( "ModelComponent: failed to load {}", m_Model.GetName() );
+	}
 }
 
 Matrix44 ModelComponent::GetModelMatrix() const
@@ -38,8 +47,8 @@ Matrix44 ModelComponent::GetModelMatrix() const
 
 void ModelComponent::Draw() const
 {
-	if( m_Model != nullptr )
+	if( m_Model.Get() != nullptr )
 	{
-		m_Model->Draw();
+		m_Model.Get()->Draw();
 	}
 }

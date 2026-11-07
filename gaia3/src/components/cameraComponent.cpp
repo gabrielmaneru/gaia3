@@ -4,6 +4,7 @@
 #include <platform/input.h>
 #include <scene/componentFactory.h>
 #include <scene/entity.h>
+#include <scene/inspector.h>
 
 #include <math.h>
 
@@ -40,7 +41,7 @@ void CameraComponent::Update()
 
 		// Camera translation
 		{
-			const Quat rot = GetOwner()->GetTransform().rotation;
+			const Quat rot = GetOwner()->GetRotation();
 
 			const Vec3 front = rot.Rotate( Vec3::V_Front );
 			const Vec3 right = rot.Rotate( Vec3::V_Right );
@@ -66,10 +67,30 @@ void CameraComponent::Update()
 
 				const float  shiftMult = input->IsKeyDown( eInputKeys::LEFT_SHIFT ) ? 5.0f : 1.0f;
 				const Scalar linearSpeed( m_LinearSpeed * shiftMult );
-				GetOwner()->GetTransformRef().position += moveDir * linearSpeed;
+				GetOwner()->SetPosition( GetOwner()->GetPosition() + ( moveDir * linearSpeed ) );
 			}
 		}
 	}
+}
+
+void CameraComponent::OnTransformChanged()
+{
+	ComputeAnglesFromRotation();
+}
+
+void CameraComponent::DrawInspector()
+{
+	float yaw   = m_Yaw;
+	float pitch = m_Pitch;
+
+	const bool bYawChanged   = Inspector::EditFloat( "Yaw", yaw, 0.5f );
+	const bool bPitchChanged = Inspector::EditFloat( "Pitch", pitch, 0.5f );
+	if( bYawChanged || bPitchChanged )
+	{
+		SetRotationAngles( yaw, pitch );
+	}
+
+	Component::DrawInspector();
 }
 
 Matrix44 CameraComponent::GetProjectionMatrix( rect canvas ) const
@@ -97,7 +118,7 @@ void CameraComponent::SetRotationAngles( float yaw, float pitch )
 void CameraComponent::ComputeAnglesFromRotation()
 {
 	// Note: The entity's rotation is left untouched here, so a saved camera keeps it exactly until it is moved
-	const Vec3 front = GetOwner()->GetTransform().rotation.Normalized().Rotate( Vec3::V_Front );
+	const Vec3 front = GetOwner()->GetRotation().Normalized().Rotate( Vec3::V_Front );
 
 	m_Yaw   = ToDegrees( atan2f( front.z, front.x ) );
 	m_Pitch = Clamp( ToDegrees( asinf( Clamp( front.y, -1.0f, 1.0f ) ) ), -89.0f, 89.0f );
@@ -114,5 +135,5 @@ void CameraComponent::RecomputeRotation()
 	const Vec3 right = Cross( front, Vec3::V_Up ).Normalized();
 	const Vec3 up    = Cross( right, front ).Normalized();
 
-	GetOwner()->GetTransformRef().rotation = LookAtQuat( front, up );
+	GetOwner()->SetRotation( LookAtQuat( front, up ) );
 }

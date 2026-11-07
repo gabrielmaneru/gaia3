@@ -28,8 +28,20 @@ public:
 	Level*           GetLevel() const { return m_Level; }
 	u64              GetId() const { return m_Id; }
 	std::string_view GetName() const { return m_Name; }
-	Transform        GetTransform() const { return m_Transform; }
-	Transform&       GetTransformRef() { return m_Transform; }
+	void             SetName( std::string_view name ) { m_Name = name; }
+
+	Transform GetTransform() const { return m_Transform; }
+	void      SetTransform( const Transform& newTransform );
+
+	Vec3 GetPosition() { return m_Transform.position; }
+	void SetPosition( const Vec3& newPosition );
+
+	Quat GetRotation() { return m_Transform.rotation; }
+	void SetRotation( const Quat& newRotation );
+
+	Vec3 GetScale() { return m_Transform.scale; }
+	void SetScale( const Vec3& newScale );
+
 
 	template <typename T, typename... Args>
 	shared<T> AddComponent( Args&&... args );
@@ -45,6 +57,10 @@ public:
 
 	bool RemoveComponent( Component* component ) { return RemoveComponentInternal( component ); }
 
+	// Note: An entity holds at most one component of each type
+	Component* AddComponentByName( std::string_view typeName );
+	bool       HasComponent( std::string_view typeName ) const;
+
 	const std::vector<shared<Component>>& GetComponents() const { return m_Components; }
 
 	bool SerializeComponents( Json::Value& outComponents ) const;
@@ -58,6 +74,8 @@ private:
 	bool AddComponentInternal( const shared<Component>& component );
 	bool RemoveComponentInternal( Component* component );
 	void ClearComponents();
+
+	void NotifyTransformChanged();
 
 	u64                            m_Id = 0;
 	std::string                    m_Name;

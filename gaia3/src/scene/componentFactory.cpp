@@ -15,6 +15,18 @@ bool ComponentFactory::Register( std::string_view typeName, CreateFunc createFun
 	return creators.insert_or_assign( std::string( typeName ), std::move( createFunc ) ).second;
 }
 
+std::vector<std::string> ComponentFactory::GetRegisteredTypeNames()
+{
+	std::vector<std::string> typeNames;
+	for( const auto& [typeName, createFunc] : GetCreators() )
+	{
+		typeNames.push_back( typeName );
+	}
+
+	std::sort( typeNames.begin(), typeNames.end() );
+	return typeNames;
+}
+
 shared<Component> ComponentFactory::Create( std::string_view typeName ) const
 {
 	auto& creators = GetCreators();

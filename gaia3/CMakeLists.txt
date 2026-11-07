@@ -27,6 +27,7 @@ add_library(gaia3 STATIC
     src/scene/componentFactory.cpp
     src/scene/editor.cpp
     src/scene/entity.cpp
+    src/scene/inspector.cpp
     src/scene/level.cpp
     src/system/resource.cpp
     src/system/resourceManager.cpp
@@ -50,6 +51,7 @@ find_package(glad CONFIG REQUIRED)
 find_package(jsoncpp CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
+find_package(imguizmo CONFIG REQUIRED)
 
 # Link against vcpkg packages
 target_link_libraries(gaia3 PUBLIC
@@ -60,4 +62,4 @@ target_link_libraries(gaia3 PUBLIC
 )
 
 # Note: Private because ImGui is an implementation detail of the editor
-target_link_libraries(gaia3 PRIVATE imgui::imgui)
+target_link_libraries(gaia3 PRIVATE imgui::imgui imguizmo::imguizmo)

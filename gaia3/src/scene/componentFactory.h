@@ -17,6 +17,8 @@ public:
 
 	static bool Register( std::string_view typeName, CreateFunc createFunc );
 
+	static std::vector<std::string> GetRegisteredTypeNames();
+
 	shared<Component> Create( std::string_view typeName ) const;
 
 	void RegisterComponent( const shared<Component>& component );

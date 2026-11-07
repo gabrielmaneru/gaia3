@@ -25,6 +25,9 @@ struct PropertyInfo
 	size_t          Offset;
 	SerializeFunc   Serialize;
 	DeserializeFunc Deserialize;
+
+	// Note: The resource type a ResourceRef property points to, zero for every other property
+	u64 ResourceTypeId;
 };
 
 struct TypeInfo
@@ -72,11 +75,23 @@ struct IsVectorOfUnique<std::vector<unique<T>>> : std::true_type
 };
 
 template <typename T>
+concept IsResourceRef = requires( T& value, const T& constValue ) {
+	typename T::ResourceType;
+	constValue.GetName();
+	value.SetName( std::string_view{} );
+};
+
+template <typename T>
 bool ValueToJson( const T& value, Json::Value& outValue )
 {
 	using ValueType = std::remove_cvref_t<T>;
 
-	if constexpr( std::is_same_v<ValueType, bool> )
+	if constexpr( IsResourceRef<ValueType> )
+	{
+		outValue = Json::Value( value.GetName() );
+		return true;
+	}
+	else if constexpr( std::is_same_v<ValueType, bool> )
 	{
 		outValue = value;
 		return true;
@@ -154,7 +169,15 @@ bool ValueFromJson( const Json::Value& inValue, T& outValue )
 {
 	using ValueType = std::remove_cvref_t<T>;
 
-	if constexpr( std::is_same_v<ValueType, bool> )
+	if constexpr( IsResourceRef<ValueType> )
+	{
+		if( !inValue.isString() )
+			return false;
+
+		outValue.SetName( inValue.asString() );
+		return true;
+	}
+	else if constexpr( std::is_same_v<ValueType, bool> )
 	{
 		if( !inValue.isBool() )
 			return false;
@@ -250,6 +273,12 @@ bool ValueFromJson( const Json::Value& inValue, T& outValue )
 template <typename T>
 PropertyInfo MakeProperty( const char* propertyName, size_t propertyOffset )
 {
+	u64 resourceTypeId = 0;
+	if constexpr( IsResourceRef<T> )
+	{
+		resourceTypeId = GetTypeId<typename T::ResourceType>();
+	}
+
 	return PropertyInfo{ propertyName,
 	                     GetTypeId<T>(),
 	                     propertyOffset,
@@ -258,7 +287,8 @@ PropertyInfo MakeProperty( const char* propertyName, size_t propertyOffset )
 	                     },
 	                     []( void* valuePtr, const Json::Value& inValue ) {
 		                     return ValueFromJson( inValue, *reinterpret_cast<T*>( valuePtr ) );
-	                     } };
+	                     },
+	                     resourceTypeId };
 }
 
 template <typename T>

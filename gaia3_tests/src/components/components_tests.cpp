@@ -24,14 +24,14 @@ TEST( CameraComponentTests, AddingTheComponentKeepsTheEntityRotation )
 	Entity* entity = level.CreateEntity( "Camera" );
 
 	const Quat rotation = LookAtQuat( Vec3( 0.3f, 0.4f, 0.8f ).Normalized(), Vec3::V_Up );
-	entity->GetTransformRef().rotation = rotation;
+	entity->SetRotation(rotation);
 
 	entity->AddComponent<CameraComponent>();
 
-	EXPECT_EQ( entity->GetTransform().rotation.x, rotation.x );
-	EXPECT_EQ( entity->GetTransform().rotation.y, rotation.y );
-	EXPECT_EQ( entity->GetTransform().rotation.z, rotation.z );
-	EXPECT_EQ( entity->GetTransform().rotation.w, rotation.w );
+	EXPECT_EQ( entity->GetRotation().x, rotation.x );
+	EXPECT_EQ( entity->GetRotation().y, rotation.y );
+	EXPECT_EQ( entity->GetRotation().z, rotation.z );
+	EXPECT_EQ( entity->GetRotation().w, rotation.w );
 }
 
 TEST( CameraComponentTests, AnglesAreDerivedFromTheEntityRotation )
@@ -39,7 +39,7 @@ TEST( CameraComponentTests, AnglesAreDerivedFromTheEntityRotation )
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
 
-	entity->GetTransformRef().rotation = LookAtQuat( FrontFromAngles( 60.0f, -20.0f ), Vec3::V_Up );
+	entity->SetRotation( LookAtQuat( FrontFromAngles( 60.0f, -20.0f ), Vec3::V_Up ));
 
 	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
 
@@ -66,7 +66,7 @@ TEST( CameraComponentTests, SetRotationAnglesUpdatesTheEntityRotation )
 	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
 	camera->SetRotationAngles( 45.0f, -20.0f );
 
-	const Quat rotation = entity->GetTransform().rotation;
+	const Quat rotation = entity->GetRotation();
 
 	EXPECT_TRUE( IsClose( rotation.Rotate( Vec3::V_Front ), FrontFromAngles( 45.0f, -20.0f ), 1e-4f ) );
 	EXPECT_NEAR( rotation.Rotate( Vec3::V_Right ).y, 0.0f, 1e-4f );
@@ -99,16 +99,16 @@ TEST( CameraComponentTests, AnglesRoundTripThroughTheRotationWithoutMoving )
 		sourceCamera->SetRotationAngles( pair[0], pair[1] );
 
 		Entity* restored                     = level.CreateEntity( "Restored" );
-		restored->GetTransformRef().rotation = source->GetTransform().rotation;
+		restored->SetRotation( source->GetRotation());
 
 		shared<CameraComponent> restoredCamera = restored->AddComponent<CameraComponent>();
 		EXPECT_NEAR( restoredCamera->GetYaw(), pair[0], 1e-2f );
 		EXPECT_NEAR( restoredCamera->GetPitch(), pair[1], 1e-2f );
 
 		// Note: Applying the restored angles must not make the camera jump
-		const Quat before = restored->GetTransform().rotation;
+		const Quat before = restored->GetRotation();
 		restoredCamera->SetRotationAngles( restoredCamera->GetYaw(), restoredCamera->GetPitch() );
-		EXPECT_NEAR( fabsf( Dot( before, restored->GetTransform().rotation ) ), 1.0f, 1e-5f );
+		EXPECT_NEAR( fabsf( Dot( before, restored->GetRotation()) ), 1.0f, 1e-5f );
 	}
 }
 
@@ -143,7 +143,7 @@ TEST( CameraComponentTests, SavedLevelRestoresWhereTheCameraWasLooking )
 
 	Entity* entity = loaded.FindEntity( 1 );
 	ASSERT_NE( entity, nullptr );
-	EXPECT_TRUE( IsClose( entity->GetTransform().rotation.Rotate( Vec3::V_Front ), FrontFromAngles( 45.0f, -20.0f ), 1e-4f ) );
+	EXPECT_TRUE( IsClose( entity->GetRotation().Rotate( Vec3::V_Front ), FrontFromAngles( 45.0f, -20.0f ), 1e-4f ) );
 	EXPECT_NEAR( entity->GetComponent<CameraComponent>()->GetYaw(), 45.0f, 1e-2f );
 	EXPECT_NEAR( entity->GetComponent<CameraComponent>()->GetPitch(), -20.0f, 1e-2f );
 }
@@ -168,12 +168,12 @@ TEST( CameraComponentTests, ViewMatrixMovesTheCameraToTheOrigin )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
-	entity->GetTransformRef().position = Vec3( 1.0f, 2.0f, -3.0f );
+	entity->SetPosition( Vec3( 1.0f, 2.0f, -3.0f ) );
 
 	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
 
 	const Matrix44 view = camera->GetViewMatrix();
-	const Vec4     position( entity->GetTransform().position, 1.0f );
+	const Vec4     position( entity->GetPosition(), 1.0f );
 
 	EXPECT_NEAR( Dot( view.GetRow( 0 ), position ), 0.0f, 1e-5f );
 	EXPECT_NEAR( Dot( view.GetRow( 1 ), position ), 0.0f, 1e-5f );
@@ -203,8 +203,8 @@ TEST( ModelComponentTests, ModelMatrixFollowsTheEntityTransform )
 
 	shared<ModelComponent> model = entity->AddComponent<ModelComponent>( "missing.obj" );
 
-	entity->GetTransformRef().position = Vec3( 1.0f, 2.0f, 3.0f );
-	entity->GetTransformRef().scale    = Vec3( 2.0f, 2.0f, 2.0f );
+	entity->SetPosition( Vec3( 1.0f, 2.0f, 3.0f ));
+	entity->SetScale(Vec3( 2.0f, 2.0f, 2.0f ));
 
 	const Matrix44 matrix = model->GetModelMatrix();
 
@@ -225,7 +225,7 @@ TEST( ModelComponentTests, DrawWithoutAResourceDoesNothing )
 	renderable.Draw();
 }
 
-TEST( ModelComponentTests, ModelNameIsSavedWithTheEntity )
+TEST( ModelComponentTests, ModelIsSavedAsAResourceName )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Model" );
@@ -235,5 +235,80 @@ TEST( ModelComponentTests, ModelNameIsSavedWithTheEntity )
 	ASSERT_TRUE( entity->SerializeComponents( json ) );
 
 	EXPECT_EQ( json[0]["m_TypeName"].asString(), "ModelComponent" );
-	EXPECT_EQ( json[0]["m_Data"]["modelName"].asString(), "cube.obj" );
+	EXPECT_EQ( json[0]["m_Data"]["m_Model"].asString(), "cube.obj" );
+}
+
+TEST( ModelComponentTests, EmptyModelIsValidAndLogsNothing )
+{
+	Level      level;
+	Entity*    entity = level.CreateEntity( "Model" );
+	LogCapture log;
+
+	shared<ModelComponent> model = entity->AddComponent<ModelComponent>();
+
+	EXPECT_FALSE( log.Contains( "error" ) );
+
+	const Renderable& renderable = *model;
+	renderable.Draw();
+}
+
+TEST( ModelComponentTests, MissingModelIsReported )
+{
+	Level      level;
+	Entity*    entity = level.CreateEntity( "Model" );
+	LogCapture log;
+
+	entity->AddComponent<ModelComponent>( "missing" );
+
+	EXPECT_TRUE( log.Contains( "error: ModelComponent: failed to load missing" ) );
+}
+
+TEST( ModelComponentTests, ChangingThePropertyResolvesTheNewModel )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Model" );
+
+	shared<ModelComponent> model = entity->AddComponent<ModelComponent>();
+
+	const rtti::PropertyInfo* property = model->GetTypeInfo().FindProperty( "m_Model" );
+	ASSERT_NE( property, nullptr );
+	ASSERT_NE( property->ResourceTypeId, 0u );
+
+	void* valuePtr = reinterpret_cast<u8*>( static_cast<Component*>( model.get() ) ) + property->Offset;
+	ASSERT_TRUE( property->Deserialize( valuePtr, Json::Value( "missing" ) ) );
+
+	LogCapture log;
+	model->OnPropertyChanged( property->Name );
+
+	EXPECT_TRUE( log.Contains( "error: ModelComponent: failed to load missing" ) );
+}
+
+TEST( CameraComponentTests, EditingTheTransformUpdatesYawAndPitch )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Camera" );
+
+	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
+
+	entity->SetRotation( LookAtQuat( FrontFromAngles( 60.0f, -20.0f ), Vec3::V_Up ) );
+
+	EXPECT_NEAR( camera->GetYaw(), 60.0f, 1e-2f );
+	EXPECT_NEAR( camera->GetPitch(), -20.0f, 1e-2f );
+}
+
+TEST( CameraComponentTests, ClonedCameraKeepsItsOrientation )
+{
+	Level   level;
+	Entity* source = level.CreateEntity( "Camera" );
+
+	shared<CameraComponent> camera = source->AddComponent<CameraComponent>();
+	camera->SetRotationAngles( 45.0f, -20.0f );
+
+	Entity* clone = level.CloneEntity( source->GetId() );
+	ASSERT_NE( clone, nullptr );
+
+	const CameraComponent* clonedCamera = clone->GetComponent<CameraComponent>();
+	ASSERT_NE( clonedCamera, nullptr );
+	EXPECT_NEAR( clonedCamera->GetYaw(), 45.0f, 1e-2f );
+	EXPECT_NEAR( clonedCamera->GetPitch(), -20.0f, 1e-2f );
 }

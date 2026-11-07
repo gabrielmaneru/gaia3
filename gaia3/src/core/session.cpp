@@ -35,6 +35,16 @@ void Session::Shutdown()
 	m_ResourceManager.Shutdown();
 }
 
+void Session::NewLevel()
+{
+	if( m_CurrentLevel != nullptr )
+	{
+		m_CurrentLevel->Unload();
+	}
+
+	m_CurrentLevel = new_shared<Level>();
+}
+
 bool Session::OpenLevel( std::string_view levelName )
 {
 	// Note: The new level loads first, so a failed load keeps the current level running

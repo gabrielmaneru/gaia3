@@ -14,6 +14,9 @@ public:
 
 	void Update() override;
 
+	void OnTransformChanged() override;
+	void DrawInspector() override;
+
 	Matrix44 GetProjectionMatrix( rect canvas ) const override;
 	Matrix44 GetViewMatrix() const override;
 

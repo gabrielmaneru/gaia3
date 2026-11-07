@@ -31,6 +31,49 @@ void Entity::Update()
 	}
 }
 
+void Entity::SetTransform( const Transform& newTransform )
+{
+	m_Transform = newTransform;
+	NotifyTransformChanged();
+}
+
+void Entity::SetPosition( const Vec3& newPosition )
+{
+	m_Transform.position = newPosition;
+	NotifyTransformChanged();
+}
+
+void Entity::SetRotation( const Quat& newRotation )
+{
+	m_Transform.rotation = newRotation;
+	NotifyTransformChanged();
+}
+
+void Entity::SetScale( const Vec3& newScale )
+{
+	m_Transform.scale = newScale;
+	NotifyTransformChanged();
+}
+
+Component* Entity::AddComponentByName( std::string_view typeName )
+{
+	shared<Component> component = m_Level != nullptr ? m_Level->GetComponentFactory().Create( typeName ) : nullptr;
+	if( component == nullptr || !AddComponentInternal( component ) )
+	{
+		GAIA_ERROR( "Entity {}: failed to add component {}", m_Name, typeName );
+		return nullptr;
+	}
+
+	return component.get();
+}
+
+bool Entity::HasComponent( std::string_view typeName ) const
+{
+	return std::any_of( m_Components.begin(), m_Components.end(), [typeName]( const shared<Component>& component ) {
+		return component != nullptr && typeName == component->GetTypeInfo().Name;
+	} );
+}
+
 void Entity::OnAddToLevel()
 {
 }
@@ -98,6 +141,12 @@ bool Entity::DeserializeComponents( const Json::Value& inComponents )
 			continue;
 		}
 
+		if( HasComponent( componentTypeJson.asString() ) )
+		{
+			GAIA_WARN( "Entity {}: ignoring a duplicate {}, keeping the first one", m_Name, componentTypeJson.asString() );
+			continue;
+		}
+
 		if( !rtti::DeserializeObject( component.get(), component->GetTypeInfo(), componentDataJson ) )
 		{
 			GAIA_ERROR( "Entity {}: invalid data for component {}", m_Name, componentTypeJson.asString() );
@@ -128,6 +177,12 @@ bool Entity::AddComponentInternal( const shared<Component>& component )
 {
 	if( component == nullptr || component->GetOwner() != nullptr )
 		return false;
+
+	if( HasComponent( component->GetTypeInfo().Name ) )
+	{
+		GAIA_ERROR( "Entity {}: already has a {}", m_Name, component->GetTypeInfo().Name );
+		return false;
+	}
 
 	m_Components.push_back( component );
 	component->SetOwner( this );
@@ -174,4 +229,12 @@ void Entity::ClearComponents()
 	}
 
 	m_Components.clear();
+}
+
+void Entity::NotifyTransformChanged()
+{
+	for( auto& pComp : m_Components )
+	{
+		pComp->OnTransformChanged();
+	}
 }

@@ -13,6 +13,7 @@ public:
 	void Update();
 	void Shutdown();
 
+	void   NewLevel();
 	bool   OpenLevel( std::string_view levelName );
 	bool   SaveCurrentLevel();
 	bool   SaveCurrentLevelAs( std::string_view fileName );

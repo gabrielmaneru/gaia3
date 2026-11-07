@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+#include "testHelpers.h"
 
 #include "testComponents.h"
 
@@ -77,13 +77,82 @@ TEST( EntityTests, RemoveComponentByPointerRemovesOnlyThatComponent )
 	Level   level;
 	Entity* entity = level.CreateEntity( "Entity" );
 
-	shared<HealthComponent> first  = entity->AddComponent<HealthComponent>( 1 );
-	shared<HealthComponent> second = entity->AddComponent<HealthComponent>( 2 );
+	shared<HealthComponent> health = entity->AddComponent<HealthComponent>();
+	shared<ArmorComponent>  armor  = entity->AddComponent<ArmorComponent>();
 
-	EXPECT_TRUE( entity->RemoveComponent( first.get() ) );
+	EXPECT_TRUE( entity->RemoveComponent( health.get() ) );
 
 	EXPECT_EQ( entity->GetComponents().size(), 1u );
-	EXPECT_EQ( entity->GetComponent<HealthComponent>(), second.get() );
+	EXPECT_EQ( entity->GetComponent<ArmorComponent>(), armor.get() );
+}
+
+TEST( EntityTests, ASecondComponentOfTheSameTypeIsRejected )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Entity" );
+
+	shared<HealthComponent> first = entity->AddComponent<HealthComponent>( 1 );
+
+	LogCapture log;
+	EXPECT_EQ( entity->AddComponent<HealthComponent>( 2 ), nullptr );
+
+	EXPECT_TRUE( log.Contains( "already has a HealthComponent" ) );
+	EXPECT_EQ( entity->GetComponents().size(), 1u );
+	EXPECT_EQ( entity->GetComponent<HealthComponent>(), first.get() );
+	EXPECT_EQ( first->m_Health, 1 );
+	EXPECT_EQ( first->addCount, 1 );
+	EXPECT_EQ( level.GetComponents<HealthComponent>().size(), 1u );
+}
+
+TEST( EntityTests, ASecondComponentByNameIsRejected )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Entity" );
+
+	ASSERT_NE( entity->AddComponentByName( "HealthComponent" ), nullptr );
+
+	EXPECT_EQ( entity->AddComponentByName( "HealthComponent" ), nullptr );
+	EXPECT_EQ( entity->GetComponents().size(), 1u );
+}
+
+TEST( EntityTests, AComponentTypeCanBeAddedAgainAfterRemovingIt )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Entity" );
+
+	entity->AddComponent<HealthComponent>( 1 );
+	ASSERT_TRUE( entity->RemoveComponent<HealthComponent>() );
+
+	shared<HealthComponent> replacement = entity->AddComponent<HealthComponent>( 2 );
+
+	ASSERT_NE( replacement, nullptr );
+	EXPECT_EQ( entity->GetComponent<HealthComponent>(), replacement.get() );
+}
+
+TEST( EntityTests, EachEntityCanHoldItsOwnComponentOfAType )
+{
+	Level level;
+
+	EXPECT_NE( level.CreateEntity( "First" )->AddComponent<HealthComponent>(), nullptr );
+	EXPECT_NE( level.CreateEntity( "Second" )->AddComponent<HealthComponent>(), nullptr );
+	EXPECT_EQ( level.GetComponents<HealthComponent>().size(), 2u );
+}
+
+TEST( EntityTests, HasComponentChecksTheTypeName )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Entity" );
+
+	EXPECT_FALSE( entity->HasComponent( "HealthComponent" ) );
+
+	entity->AddComponent<HealthComponent>();
+
+	EXPECT_TRUE( entity->HasComponent( "HealthComponent" ) );
+	EXPECT_FALSE( entity->HasComponent( "ArmorComponent" ) );
+
+	entity->RemoveComponent<HealthComponent>();
+
+	EXPECT_FALSE( entity->HasComponent( "HealthComponent" ) );
 }
 
 TEST( EntityTests, RemovingAMissingComponentFails )
@@ -102,13 +171,13 @@ TEST( EntityTests, UpdateReachesEveryComponent )
 	Level   level;
 	Entity* entity = level.CreateEntity( "Entity" );
 
-	shared<HealthComponent> first  = entity->AddComponent<HealthComponent>();
-	shared<HealthComponent> second = entity->AddComponent<HealthComponent>();
+	shared<HealthComponent> health = entity->AddComponent<HealthComponent>();
+	shared<ArmorComponent>  armor  = entity->AddComponent<ArmorComponent>();
 
 	entity->Update();
 
-	EXPECT_EQ( first->updateCount, 1 );
-	EXPECT_EQ( second->updateCount, 1 );
+	EXPECT_EQ( health->updateCount, 1 );
+	EXPECT_EQ( armor->updateCount, 1 );
 }
 
 TEST( EntityTests, DestroyingAnEntityRemovesItsComponents )
@@ -183,6 +252,30 @@ TEST( EntityTests, DeserializeComponentsRejectsNonArrays )
 	Entity* entity = level.CreateEntity( "Entity" );
 
 	EXPECT_FALSE( entity->DeserializeComponents( Json::Value( Json::objectValue ) ) );
+}
+
+TEST( EntityTests, DeserializeComponentsKeepsTheFirstOfADuplicatedType )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Entity" );
+	entity->AddComponent<HealthComponent>( 1 );
+
+	Json::Value first;
+	ASSERT_TRUE( entity->SerializeComponents( first ) );
+
+	Json::Value second = first;
+	second[0]["m_Data"]["m_Health"] = 2;
+
+	Json::Value json( Json::arrayValue );
+	json.append( first[0] );
+	json.append( second[0] );
+
+	LogCapture log;
+	EXPECT_TRUE( entity->DeserializeComponents( json ) );
+
+	EXPECT_TRUE( log.Contains( "ignoring a duplicate HealthComponent" ) );
+	ASSERT_EQ( entity->GetComponents().size(), 1u );
+	EXPECT_EQ( entity->GetComponent<HealthComponent>()->m_Health, 1 );
 }
 
 TEST( EntityTests, DeserializeComponentsReportsBadEntriesButKeepsGoodOnes )

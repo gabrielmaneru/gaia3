@@ -13,7 +13,7 @@ std::string SaveTestLevel( const ScopedTempDir& directory )
 	Level level;
 
 	Entity* player = level.CreateEntity( "Player" );
-	player->GetTransformRef().position = Vec3( 1.0f, 2.0f, 3.0f );
+	player->SetPosition(Vec3( 1.0f, 2.0f, 3.0f ));
 	player->AddComponent<HealthComponent>( 42 );
 	player->AddComponent<ArmorComponent>();
 
@@ -160,7 +160,7 @@ TEST( LevelTests, SaveAndLoadRestoresEntitiesAndComponents )
 	ASSERT_NE( player, nullptr );
 	EXPECT_EQ( player->GetName(), "Player" );
 	EXPECT_EQ( player->GetLevel(), &level );
-	EXPECT_TRUE( player->GetTransform().position == Vec3( 1.0f, 2.0f, 3.0f ) );
+	EXPECT_TRUE( player->GetPosition()== Vec3( 1.0f, 2.0f, 3.0f ) );
 
 	HealthComponent* health = player->GetComponent<HealthComponent>();
 	ASSERT_NE( health, nullptr );
