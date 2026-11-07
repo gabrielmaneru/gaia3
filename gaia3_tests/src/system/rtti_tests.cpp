@@ -31,11 +31,11 @@ class RttiTestObject
 {
 	RTTI_DECLARE_TYPE( RttiTestObject )
 public:
-	bool                               flag     = false;
-	int                                count    = 0;
-	u64                                big      = 0;
-	float                              ratio    = 0.0f;
-	double                             precise  = 0.0;
+	bool                               flag    = false;
+	int                                count   = 0;
+	u64                                big     = 0;
+	float                              ratio   = 0.0f;
+	double                             precise = 0.0;
 	std::string                        name;
 	RttiTestColor                      color = RttiTestColor::Red;
 	Transform                          transform;

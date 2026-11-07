@@ -320,19 +320,19 @@ public:                                              \
 private:
 
 // The property list may be empty: a type can be registered with no properties.
-#define RTTI_DEFINE_TYPE( TypeName, ... )                                                                  \
-	const ::rtti::TypeInfo& TypeName::StaticTypeInfo()                                                     \
-	{                                                                                                      \
-		using ThisType                                             = TypeName;                             \
-		static const std::vector<::rtti::PropertyInfo> kProperties = { __VA_ARGS__ };                      \
-		static const ::rtti::TypeInfo                  kTypeInfo   = ::rtti::CreateTypeInfo<TypeName>(     \
-		    #TypeName, kProperties.data(), kProperties.size() );                                           \
-		static const bool kRegistered = []() {                                                             \
-			::rtti::Registry::Instance().Register( kTypeInfo );                                            \
-			return true;                                                                                   \
-		}();                                                                                               \
-		(void)kRegistered;                                                                                 \
-		return kTypeInfo;                                                                                  \
+#define RTTI_DEFINE_TYPE( TypeName, ... )                                                              \
+	const ::rtti::TypeInfo& TypeName::StaticTypeInfo()                                                 \
+	{                                                                                                  \
+		using ThisType                                             = TypeName;                         \
+		static const std::vector<::rtti::PropertyInfo> kProperties = { __VA_ARGS__ };                  \
+		static const ::rtti::TypeInfo                  kTypeInfo   = ::rtti::CreateTypeInfo<TypeName>( \
+		    #TypeName, kProperties.data(), kProperties.size() );                                       \
+		static const bool kRegistered = []() {                                                         \
+			::rtti::Registry::Instance().Register( kTypeInfo );                                        \
+			return true;                                                                               \
+		}();                                                                                           \
+		(void)kRegistered;                                                                             \
+		return kTypeInfo;                                                                              \
 	}
 
 #define RTTI_PROPERTY( MemberName ) ::rtti::MakeProperty<decltype( ThisType::MemberName )>( #MemberName, offsetof( ThisType, MemberName ) )

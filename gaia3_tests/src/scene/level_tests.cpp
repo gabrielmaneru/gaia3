@@ -13,7 +13,7 @@ std::string SaveTestLevel( const ScopedTempDir& directory )
 	Level level;
 
 	Entity* player = level.CreateEntity( "Player" );
-	player->SetPosition(Vec3( 1.0f, 2.0f, 3.0f ));
+	player->SetPosition( Vec3( 1.0f, 2.0f, 3.0f ) );
 	player->AddComponent<HealthComponent>( 42 );
 	player->AddComponent<ArmorComponent>();
 
@@ -118,7 +118,7 @@ TEST( LevelTests, GetComponentsSpansAllEntities )
 
 TEST( LevelTests, SaveAsMarksTheLevelAsLoaded )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = directory.PathTo( "level.lvl" );
 
 	Level level;
@@ -131,7 +131,7 @@ TEST( LevelTests, SaveAsMarksTheLevelAsLoaded )
 
 TEST( LevelTests, SaveAsCreatesMissingFolders )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = directory.PathTo( "nested/folder/level.lvl" );
 
 	Level level;
@@ -150,7 +150,7 @@ TEST( LevelTests, SaveAsRejectsEmptyPath )
 
 TEST( LevelTests, SaveAndLoadRestoresEntitiesAndComponents )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = SaveTestLevel( directory );
 
 	Level level( path );
@@ -160,7 +160,7 @@ TEST( LevelTests, SaveAndLoadRestoresEntitiesAndComponents )
 	ASSERT_NE( player, nullptr );
 	EXPECT_EQ( player->GetName(), "Player" );
 	EXPECT_EQ( player->GetLevel(), &level );
-	EXPECT_TRUE( player->GetPosition()== Vec3( 1.0f, 2.0f, 3.0f ) );
+	EXPECT_TRUE( player->GetPosition() == Vec3( 1.0f, 2.0f, 3.0f ) );
 
 	HealthComponent* health = player->GetComponent<HealthComponent>();
 	ASSERT_NE( health, nullptr );
@@ -178,7 +178,7 @@ TEST( LevelTests, SaveAndLoadRestoresEntitiesAndComponents )
 
 TEST( LevelTests, EmptyLevelRoundTrips )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = directory.PathTo( "empty.lvl" );
 
 	Level saved;
@@ -191,7 +191,7 @@ TEST( LevelTests, EmptyLevelRoundTrips )
 
 TEST( LevelTests, EntitiesCreatedAfterLoadGetNewIds )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = SaveTestLevel( directory );
 
 	Level level( path );
@@ -205,7 +205,7 @@ TEST( LevelTests, EntitiesCreatedAfterLoadGetNewIds )
 
 TEST( LevelTests, ReloadingReplacesEntitiesInsteadOfDuplicating )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = SaveTestLevel( directory );
 
 	Level level( path );
@@ -285,7 +285,7 @@ TEST( LevelTests, LoadFailsForUnknownComponentTypes )
 
 TEST( LevelTests, UnloadRemovesEntitiesAndNotifiesComponents )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = SaveTestLevel( directory );
 
 	Level level( path );

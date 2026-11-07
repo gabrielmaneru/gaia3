@@ -165,7 +165,7 @@ TEST( InfoLogTests, ResourceScanReportsWhatItFound )
 
 TEST( InfoLogTests, LoadingALevelReportsTheResourceAndEachEntity )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = directory.PathTo( "town.lvl" );
 	{
 		Level   saved;

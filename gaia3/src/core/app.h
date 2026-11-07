@@ -33,7 +33,6 @@ public:
 
 	// External accesors
 	static Window&   GetWindow() { return m_Window; }
-	static Input&    GetInput() { return m_Input; }
 	static Renderer& GetRenderer() { return m_Renderer; }
 	static Session&  GetSession() { return m_Session; }
 

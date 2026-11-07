@@ -13,12 +13,12 @@ public:
 	void Update();
 	void Shutdown();
 
-	void   NewLevel();
-	bool   OpenLevel( std::string_view levelName );
-	bool   SaveCurrentLevel();
-	bool   SaveCurrentLevelAs( std::string_view fileName );
+	void NewLevel();
+	bool OpenLevel( std::string_view levelName );
+	bool SaveCurrentLevel();
+	bool SaveCurrentLevelAs( std::string_view fileName );
 
-	Level* GetCurrentLevel() { return m_CurrentLevel.get(); }
+	Level*           GetCurrentLevel() { return m_CurrentLevel.get(); }
 	ResourceManager& GetResourceManager() { return m_ResourceManager; }
 
 private:

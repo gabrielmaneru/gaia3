@@ -65,7 +65,6 @@ bool Model::LoadInternal()
 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, m_IndexBuffer );
 		glBufferData( GL_ELEMENT_ARRAY_BUFFER, rawMesh.indices.size() * sizeof( u32 ), rawMesh.indices.data(), GL_STATIC_DRAW );
 		m_IndexCount = static_cast<u32>( rawMesh.indices.size() );
-
 	}
 	glBindVertexArray( 0 );
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );

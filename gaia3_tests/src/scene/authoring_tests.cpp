@@ -66,7 +66,7 @@ TEST( LevelCloneTests, CloneCopiesTheTransformAndComponents )
 {
 	Level   level;
 	Entity* source = level.CreateEntity( "Source" );
-	source->SetPosition(Vec3( 1.0f, 2.0f, 3.0f ));
+	source->SetPosition( Vec3( 1.0f, 2.0f, 3.0f ) );
 	source->AddComponent<HealthComponent>( 42 );
 	source->AddComponent<ArmorComponent>();
 
@@ -92,7 +92,7 @@ TEST( LevelCloneTests, CloneIsIndependentFromTheSource )
 	ASSERT_NE( clone, nullptr );
 
 	clone->GetComponent<HealthComponent>()->m_Health = 1;
-	clone->SetPosition( Vec3( 9.0f, 9.0f, 9.0f ));
+	clone->SetPosition( Vec3( 9.0f, 9.0f, 9.0f ) );
 
 	EXPECT_EQ( source->GetComponent<HealthComponent>()->m_Health, 42 );
 	EXPECT_TRUE( source->GetPosition() == Vec3::V_Zero );
@@ -186,7 +186,7 @@ TEST( LevelCloneTests, EntitiesCanShareAName )
 
 TEST( LevelCloneTests, EntitiesWithTheSameNameSurviveSaving )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = directory.PathTo( "same.lvl" );
 	{
 		Level saved;
@@ -214,7 +214,7 @@ TEST( LevelCloneTests, CloningAnUnknownEntityFails )
 
 TEST( LevelCloneTests, ClonesAreSavedLikeAnyOtherEntity )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = directory.PathTo( "clones.lvl" );
 	{
 		Level   saved;
@@ -332,7 +332,7 @@ TEST_F( AuthoringTests, AnAuthoredLevelSurvivesSavingAndLoading )
 {
 	Entity* entity = m_Editor.CreateEntity( "Hero" );
 	entity->SetName( "Renamed" );
-	entity->SetPosition( Vec3( 1.0f, 2.0f, 3.0f ));
+	entity->SetPosition( Vec3( 1.0f, 2.0f, 3.0f ) );
 	entity->AddComponentByName( "HealthComponent" );
 
 	ASSERT_TRUE( m_Editor.SaveLevelAs( "authored" ) );

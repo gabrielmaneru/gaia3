@@ -24,7 +24,7 @@ TEST( CameraComponentTests, AddingTheComponentKeepsTheEntityRotation )
 	Entity* entity = level.CreateEntity( "Camera" );
 
 	const Quat rotation = LookAtQuat( Vec3( 0.3f, 0.4f, 0.8f ).Normalized(), Vec3::V_Up );
-	entity->SetRotation(rotation);
+	entity->SetRotation( rotation );
 
 	entity->AddComponent<CameraComponent>();
 
@@ -39,7 +39,7 @@ TEST( CameraComponentTests, AnglesAreDerivedFromTheEntityRotation )
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
 
-	entity->SetRotation( LookAtQuat( FrontFromAngles( 60.0f, -20.0f ), Vec3::V_Up ));
+	entity->SetRotation( LookAtQuat( FrontFromAngles( 60.0f, -20.0f ), Vec3::V_Up ) );
 
 	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
 
@@ -98,8 +98,8 @@ TEST( CameraComponentTests, AnglesRoundTripThroughTheRotationWithoutMoving )
 		shared<CameraComponent> sourceCamera = source->AddComponent<CameraComponent>();
 		sourceCamera->SetRotationAngles( pair[0], pair[1] );
 
-		Entity* restored                     = level.CreateEntity( "Restored" );
-		restored->SetRotation( source->GetRotation());
+		Entity* restored = level.CreateEntity( "Restored" );
+		restored->SetRotation( source->GetRotation() );
 
 		shared<CameraComponent> restoredCamera = restored->AddComponent<CameraComponent>();
 		EXPECT_NEAR( restoredCamera->GetYaw(), pair[0], 1e-2f );
@@ -108,7 +108,7 @@ TEST( CameraComponentTests, AnglesRoundTripThroughTheRotationWithoutMoving )
 		// Note: Applying the restored angles must not make the camera jump
 		const Quat before = restored->GetRotation();
 		restoredCamera->SetRotationAngles( restoredCamera->GetYaw(), restoredCamera->GetPitch() );
-		EXPECT_NEAR( fabsf( Dot( before, restored->GetRotation()) ), 1.0f, 1e-5f );
+		EXPECT_NEAR( fabsf( Dot( before, restored->GetRotation() ) ), 1.0f, 1e-5f );
 	}
 }
 
@@ -127,7 +127,7 @@ TEST( CameraComponentTests, YawAndPitchAreNotSaved )
 
 TEST( CameraComponentTests, SavedLevelRestoresWhereTheCameraWasLooking )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = directory.PathTo( "camera.lvl" );
 	{
 		Level   saved;
@@ -203,8 +203,8 @@ TEST( ModelComponentTests, ModelMatrixFollowsTheEntityTransform )
 
 	shared<ModelComponent> model = entity->AddComponent<ModelComponent>( "missing.obj" );
 
-	entity->SetPosition( Vec3( 1.0f, 2.0f, 3.0f ));
-	entity->SetScale(Vec3( 2.0f, 2.0f, 2.0f ));
+	entity->SetPosition( Vec3( 1.0f, 2.0f, 3.0f ) );
+	entity->SetScale( Vec3( 2.0f, 2.0f, 2.0f ) );
 
 	const Matrix44 matrix = model->GetModelMatrix();
 

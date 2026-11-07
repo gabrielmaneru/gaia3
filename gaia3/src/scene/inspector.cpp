@@ -95,8 +95,7 @@ bool EditJson( const std::string& label, Json::Value& value )
 
 	switch( value.type() )
 	{
-	case Json::booleanValue:
-	{
+	case Json::booleanValue: {
 		bool boolValue = value.asBool();
 		if( !ImGui::Checkbox( label.c_str(), &boolValue ) )
 			return false;
@@ -104,8 +103,7 @@ bool EditJson( const std::string& label, Json::Value& value )
 		value = boolValue;
 		return true;
 	}
-	case Json::stringValue:
-	{
+	case Json::stringValue: {
 		std::string stringValue = value.asString();
 		if( !Inspector::EditString( label.c_str(), stringValue ) )
 			return false;
@@ -113,8 +111,7 @@ bool EditJson( const std::string& label, Json::Value& value )
 		value = stringValue;
 		return true;
 	}
-	case Json::intValue:
-	{
+	case Json::intValue: {
 		Json::Int64 intValue = value.asInt64();
 		if( !ImGui::DragScalar( label.c_str(), ImGuiDataType_S64, &intValue ) )
 			return false;
@@ -122,8 +119,7 @@ bool EditJson( const std::string& label, Json::Value& value )
 		value = intValue;
 		return true;
 	}
-	case Json::uintValue:
-	{
+	case Json::uintValue: {
 		Json::UInt64 uintValue = value.asUInt64();
 		if( !ImGui::DragScalar( label.c_str(), ImGuiDataType_U64, &uintValue ) )
 			return false;
@@ -131,8 +127,7 @@ bool EditJson( const std::string& label, Json::Value& value )
 		value = uintValue;
 		return true;
 	}
-	case Json::realValue:
-	{
+	case Json::realValue: {
 		float floatValue = value.asFloat();
 		if( !Inspector::EditFloat( label.c_str(), floatValue ) )
 			return false;

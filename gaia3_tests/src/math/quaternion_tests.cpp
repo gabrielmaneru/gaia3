@@ -161,8 +161,8 @@ TEST( QuatTransformsTests, LookAtQuatKeepsTheHorizonLevel )
 
 TEST( QuatTests, InverseCancelsRotation )
 {
-	const Quat q   = Quat( 0.1f, 0.2f, 0.3f, 0.9f ).Normalized();
-	const Quat id  = q * q.Inverse();
+	const Quat q  = Quat( 0.1f, 0.2f, 0.3f, 0.9f ).Normalized();
+	const Quat id = q * q.Inverse();
 	const Vec3 v( 1.0f, -2.0f, 3.0f );
 
 	EXPECT_NEAR( id.x, 0.0f, 1e-5f );

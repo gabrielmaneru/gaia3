@@ -15,8 +15,7 @@ public:
 
 	void BlitToWindow( rect canvas ) const;
 
-	u32  GetColorTexture() const { return m_ColorTexture; }
-	rect GetSize() const { return m_Size; }
+	u32 GetColorTexture() const { return m_ColorTexture; }
 
 private:
 	u32  m_Framebuffer  = 0;

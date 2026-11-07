@@ -255,7 +255,7 @@ TEST_F( EditorTests, GetEntitiesListsEntitiesInCreationOrder )
 	Entity* first  = GetSessionLevel()->CreateEntity( "First" );
 	Entity* second = GetSessionLevel()->CreateEntity( "Second" );
 
-	Editor editor;
+	Editor                             editor;
 	const std::vector<unique<Entity>>& entities = editor.GetLevel()->GetEntities();
 
 	ASSERT_EQ( entities.size(), 2u );

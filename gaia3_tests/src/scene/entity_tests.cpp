@@ -263,7 +263,7 @@ TEST( EntityTests, DeserializeComponentsKeepsTheFirstOfADuplicatedType )
 	Json::Value first;
 	ASSERT_TRUE( entity->SerializeComponents( first ) );
 
-	Json::Value second = first;
+	Json::Value second              = first;
 	second[0]["m_Data"]["m_Health"] = 2;
 
 	Json::Value json( Json::arrayValue );

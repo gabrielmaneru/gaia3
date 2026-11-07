@@ -147,10 +147,10 @@ struct GizmoModeItem
 };
 
 constexpr GizmoModeItem kGizmoModeItems[] = {
-	{ "Selection", GizmoMode::Selection },
-	{ "Translate", GizmoMode::Translate },
-	{ "Rotate", GizmoMode::Rotate },
-	{ "Scale", GizmoMode::Scale },
+    { "Selection", GizmoMode::Selection },
+    { "Translate", GizmoMode::Translate },
+    { "Rotate", GizmoMode::Rotate },
+    { "Scale", GizmoMode::Scale },
 };
 
 ImGuizmo::OPERATION ToGizmoOperation( GizmoMode mode )

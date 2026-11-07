@@ -6,7 +6,6 @@ add_library(gaia3 STATIC
     src/core/log.cpp
     src/core/session.cpp
     src/core/serializationTypes.cpp
-    src/gaia3_pch.cpp
     src/gfx/framebuffer.cpp
     src/gfx/meshObj.cpp
     src/gfx/model.cpp
@@ -17,7 +16,6 @@ add_library(gaia3 STATIC
     src/math/matrixTransforms.cpp
     src/math/quaternion.cpp
     src/math/quaternionTransforms.cpp
-    src/math/scalar.cpp
     src/math/transform.cpp
     src/math/vector.cpp
     src/math/vectorTransforms.cpp

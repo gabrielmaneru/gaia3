@@ -22,9 +22,6 @@ public:
 
 	void Update();
 
-	void OnAddToLevel();
-	void OnRemoveFromLevel();
-
 	Level*           GetLevel() const { return m_Level; }
 	u64              GetId() const { return m_Id; }
 	std::string_view GetName() const { return m_Name; }
@@ -41,7 +38,6 @@ public:
 
 	Vec3 GetScale() { return m_Transform.scale; }
 	void SetScale( const Vec3& newScale );
-
 
 	template <typename T, typename... Args>
 	shared<T> AddComponent( Args&&... args );

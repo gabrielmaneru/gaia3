@@ -204,7 +204,7 @@ Entity* Level::CloneEntity( u64 id )
 	Entity* clone = CreateEntity( MakeCloneName( source->GetName() ) );
 
 	// Note: The transform goes first because components read it when they are added
-	clone->SetTransform(source->GetTransform());
+	clone->SetTransform( source->GetTransform() );
 
 	Json::Value components;
 	if( !source->SerializeComponents( components ) || !clone->DeserializeComponents( components ) )

@@ -54,8 +54,8 @@ void createDefaultLevel( Level* pLevel )
 	// Create camera
 	Entity* pCamera = pLevel->CreateEntity( "Camera" );
 	{
-		pCamera->SetPosition( Vec3( 1.0f, 1.0f, -4.12f ));
-		pCamera->SetRotation(LookAtQuat( Vec3( 0.0f, 0.0f, 1.0f ), Vec3::V_Up ));
+		pCamera->SetPosition( Vec3( 1.0f, 1.0f, -4.12f ) );
+		pCamera->SetRotation( LookAtQuat( Vec3( 0.0f, 0.0f, 1.0f ), Vec3::V_Up ) );
 		pCamera->AddComponent<CameraComponent>();
 	}
 
@@ -78,7 +78,7 @@ int main( int argc, char** argv )
 	config.appPath    = SANDBOX_ASSETS_PATH;
 	config.commonPath = GAIA3_ASSETS_PATH;
 
-	config.maxFrames  = options.maxFrames;
+	config.maxFrames = options.maxFrames;
 
 	config.editor.enabled = !options.bNoEditor;
 	config.editor.docked  = !options.bNoDock;

@@ -20,7 +20,6 @@ Entity::Entity( u64 id, std::string_view entityName, Level* level )
 Entity::~Entity()
 {
 	ClearComponents();
-	OnRemoveFromLevel();
 }
 
 void Entity::Update()
@@ -72,14 +71,6 @@ bool Entity::HasComponent( std::string_view typeName ) const
 	return std::any_of( m_Components.begin(), m_Components.end(), [typeName]( const shared<Component>& component ) {
 		return component != nullptr && typeName == component->GetTypeInfo().Name;
 	} );
-}
-
-void Entity::OnAddToLevel()
-{
-}
-
-void Entity::OnRemoveFromLevel()
-{
 }
 
 bool Entity::SerializeComponents( Json::Value& outComponents ) const
@@ -170,7 +161,6 @@ void Entity::AttachToLevel( Level* level )
 	GAIA_ASSERT( level != nullptr );
 	GAIA_ASSERT( m_Level == nullptr );
 	m_Level = level;
-	OnAddToLevel();
 }
 
 bool Entity::AddComponentInternal( const shared<Component>& component )

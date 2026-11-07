@@ -33,7 +33,6 @@ bool ParseVec3( std::istringstream& stream, Vec3& outValue )
 	return true;
 }
 
-
 struct FaceVertex
 {
 	int position = -1;
@@ -45,8 +44,8 @@ struct FaceVertex
 		u64 operator()( const FaceVertex& vertex ) const
 		{
 			u64 hash = std::hash<int>{}( vertex.position );
-			hash        = hash * 31 + std::hash<int>{}( vertex.uv );
-			hash        = hash * 31 + std::hash<int>{}( vertex.normal );
+			hash     = hash * 31 + std::hash<int>{}( vertex.uv );
+			hash     = hash * 31 + std::hash<int>{}( vertex.normal );
 			return hash;
 		}
 	};
@@ -78,10 +77,10 @@ bool ParseFaceVertex( std::string_view token, u64 positionCount, u64 uvCount, u6
 	if( firstSlash == std::string_view::npos )
 		return true;
 	const std::string_view afterPosition = token.substr( firstSlash + 1 );
-	
+
 	// Parse UV
-	const u64           secondSlash   = afterPosition.find( '/' );
-	const std::string_view uvText        = afterPosition.substr( 0, secondSlash );
+	const u64              secondSlash = afterPosition.find( '/' );
+	const std::string_view uvText      = afterPosition.substr( 0, secondSlash );
 	if( !uvText.empty() && !resolveIndex( uvText, uvCount, outVertex.uv ) )
 		return false;
 	if( secondSlash == std::string_view::npos )
@@ -108,7 +107,7 @@ MeshObj::MeshObj( std::string_view path )
 	std::vector<FaceVertex> tempIndices;
 
 	std::string line;
-	u64      lineNumber = 0;
+	u64         lineNumber = 0;
 	while( std::getline( inputFile, line ) )
 	{
 		++lineNumber;

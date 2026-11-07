@@ -108,7 +108,7 @@ TEST( ResourceManagerTests, ResourcesInAnotherFolderKeepTheirWholePath )
 
 TEST( ResourceManagerTests, TheTypeFolderWinsOverAFileWithTheSameNameInAnotherFolder )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string inFolder = directory.Write( "managed/othermanaged/foo.managed", "" );
 	const std::string stray    = directory.Write( "othermanaged/foo.managed", "" );
 
@@ -130,7 +130,7 @@ TEST( ResourceManagerTests, TheTypeFolderWinsOverAFileWithTheSameNameInAnotherFo
 
 TEST( ResourceManagerTests, TheTypeFolderWinsOverAFileInTheRoot )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string inFolder = directory.Write( "managed/item.managed", "" );
 	directory.Write( "item.managed", "" );
 
@@ -145,7 +145,7 @@ TEST( ResourceManagerTests, TheTypeFolderWinsOverAFileInTheRoot )
 
 TEST( ResourceManagerTests, ACommonFileInTheTypeFolderWinsOverAnAppFileOutsideIt )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string inFolder = directory.Write( "common/managed/item.managed", "" );
 	directory.Write( "app/item.managed", "" );
 
@@ -385,7 +385,7 @@ TEST( ResourceManagerTests, SavedResourcesCanBeFoundByTheirNewName )
 
 TEST( ResourceManagerTests, SavingUnderANewNameKeepsTheOldFileAvailable )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string oldFile = directory.Write( "old.managed", "" );
 
 	ResourceManager manager;
@@ -422,7 +422,7 @@ TEST( ResourceManagerTests, SavingOverTheSameNameKeepsOneResource )
 
 TEST( ResourceManagerTests, SaveFailsWithoutResourceNameOrAppPath )
 {
-	ScopedTempDir directory;
+	ScopedTempDir           directory;
 	shared<ManagedResource> resource = new_shared<ManagedResource>( "", ResourceState::New );
 
 	ResourceManager noAppPath;

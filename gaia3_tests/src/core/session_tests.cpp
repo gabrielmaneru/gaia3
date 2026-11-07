@@ -104,7 +104,7 @@ TEST( SessionTests, LevelsInAnotherFolderLoadAndShowThatFolder )
 
 TEST( SessionTests, SavingALevelFromAnotherFolderKeepsItThere )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = directory.PathTo( "models/stray.lvl" );
 	SaveLevelWithEntity( path, "Saved" );
 
@@ -260,7 +260,7 @@ TEST( SessionTests, SaveCurrentLevelNeedsAnExistingFile )
 
 TEST( SessionTests, SaveCurrentLevelWritesChangesToItsFile )
 {
-	ScopedTempDir directory;
+	ScopedTempDir     directory;
 	const std::string path = directory.PathTo( "start.lvl" );
 	SaveLevelWithEntity( path, "Saved" );
 

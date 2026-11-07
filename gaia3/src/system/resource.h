@@ -63,25 +63,19 @@ private:
 
 #define RTTI_DECLARE_RESOURCE( ... ) RTTI_DECLARE_TYPE( __VA_ARGS__ )
 
-#define REGISTER_RESOURCE_TYPE( TypeName, FactoryFn, Folder, ... )                               \
-	namespace                                                                                    \
-	{                                                                                            \
-	const bool s_##TypeName##ResourceRegistered = Resource::RegisterResourceType(                \
-	    Resource::TypeDescriptor{ GetTypeId<TypeName>(), Folder, { __VA_ARGS__ }, FactoryFn } ); \
-	}
-
 // Note: The folder of a type is where it saves, and files inside it are named without it
 #define RTTI_RESOURCE_FOLDER( Folder ) Folder
 
 #define RTTI_RESOURCE_EXTENSIONS( ... ) __VA_ARGS__
 
-#define RTTI_DEFINE_RESOURCE( TypeName, Folder, Extensions, ... )        \
-	RTTI_DEFINE_TYPE( TypeName, __VA_ARGS__ )                            \
-	namespace                                                            \
-	{                                                                    \
-	shared<Resource> Create##TypeName##Resource( std::string_view path ) \
-	{                                                                    \
-		return new_shared<TypeName>( path, ResourceState::NotLoaded );   \
-	}                                                                    \
-	}                                                                    \
-	REGISTER_RESOURCE_TYPE( TypeName, &Create##TypeName##Resource, Folder, Extensions )
+#define RTTI_DEFINE_RESOURCE( TypeName, Folder, Extensions, ... )                                                 \
+	RTTI_DEFINE_TYPE( TypeName, __VA_ARGS__ )                                                                     \
+	namespace                                                                                                     \
+	{                                                                                                             \
+	shared<Resource> Create##TypeName##Resource( std::string_view path )                                          \
+	{                                                                                                             \
+		return new_shared<TypeName>( path, ResourceState::NotLoaded );                                            \
+	}                                                                                                             \
+	const bool s_##TypeName##ResourceRegistered = Resource::RegisterResourceType(                                 \
+	    Resource::TypeDescriptor{ GetTypeId<TypeName>(), Folder, { Extensions }, &Create##TypeName##Resource } ); \
+	}

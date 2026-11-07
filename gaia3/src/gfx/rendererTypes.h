@@ -19,8 +19,6 @@ protected:
 class RenderCamera
 {
 public:
-	bool IsActive() const { return m_Active; }
-
 	virtual Matrix44 GetProjectionMatrix( rect canvas ) const = 0;
 	virtual Matrix44 GetViewMatrix() const                    = 0;
 
@@ -29,6 +27,4 @@ protected:
 
 	void Register();
 	void Unregister();
-
-	bool m_Active = false;
 };

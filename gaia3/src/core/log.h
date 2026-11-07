@@ -29,13 +29,13 @@ public:
 #endif
 
 // Note: ASSERT stops the program in every build, Debug hits a breakpoint first to allow inspecting the state
-#define GAIA_ASSERT( condition )                                                                       \
-	do                                                                                                 \
-	{                                                                                                  \
-		if( !( condition ) )                                                                           \
-		{                                                                                              \
+#define GAIA_ASSERT( condition )                                                                           \
+	do                                                                                                     \
+	{                                                                                                      \
+		if( !( condition ) )                                                                               \
+		{                                                                                                  \
 			::Log::GetLogger().critical( "Assertion failed: {} ({}:{})", #condition, __FILE__, __LINE__ ); \
-			GAIA_DEBUG_BREAK();                                                                        \
-			std::abort();                                                                              \
-		}                                                                                              \
+			GAIA_DEBUG_BREAK();                                                                            \
+			std::abort();                                                                                  \
+		}                                                                                                  \
 	} while( false )
