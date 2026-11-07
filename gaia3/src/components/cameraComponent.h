@@ -17,14 +17,20 @@ public:
 	Matrix44 GetProjectionMatrix( rect canvas ) const override;
 	Matrix44 GetViewMatrix() const override;
 
+	float GetYaw() const { return m_Yaw; }
+	float GetPitch() const { return m_Pitch; }
+	void  SetRotationAngles( float yaw, float pitch );
+
 private:
+	void ComputeAnglesFromRotation();
 	void RecomputeRotation();
 
 	float m_HorizontalFOV{ 90.0f }; // deg
 	float m_NearPlane{ 0.01f };
 	float m_FarPlane{ 100.0f };
 
-	float m_Yaw{ 90.0f };  // deg
+	// Note: Runtime only, the saved orientation is the entity's rotation
+	float m_Yaw{ 0.0f };   // deg
 	float m_Pitch{ 0.0f }; // deg
 	// Assume m_Roll = 0.0f
 

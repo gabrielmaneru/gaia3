@@ -228,10 +228,10 @@ TEST( ResourceManagerTests, SavedResourcesCanBeFoundByTheirNewName )
 	EXPECT_TRUE( resource->IsLoaded() );
 }
 
-TEST( ResourceManagerTests, SavingUnderANewNameDropsTheOldName )
+TEST( ResourceManagerTests, SavingUnderANewNameKeepsTheOldFileAvailable )
 {
 	ScopedTempDir directory;
-	directory.Write( "old.managed", "" );
+	const std::string oldFile = directory.Write( "old.managed", "" );
 
 	ResourceManager manager;
 	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
@@ -240,8 +240,29 @@ TEST( ResourceManagerTests, SavingUnderANewNameDropsTheOldName )
 	ASSERT_NE( resource, nullptr );
 	ASSERT_TRUE( manager.SaveResourceAs<ManagedResource>( resource, "new.managed" ) );
 
-	EXPECT_EQ( manager.FindResource<ManagedResource>( "old" ), nullptr );
 	EXPECT_EQ( manager.FindResource<ManagedResource>( "new" ), resource );
+
+	shared<ManagedResource> oldResource = manager.FindResource<ManagedResource>( "old" );
+	ASSERT_NE( oldResource, nullptr );
+	EXPECT_NE( oldResource, resource );
+	EXPECT_FALSE( oldResource->IsLoaded() );
+	EXPECT_TRUE( std::filesystem::equivalent( oldResource->GetPath(), oldFile ) );
+}
+
+TEST( ResourceManagerTests, SavingOverTheSameNameKeepsOneResource )
+{
+	ScopedTempDir directory;
+	directory.Write( "same.managed", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	shared<ManagedResource> resource = manager.FindResource<ManagedResource>( "same", true );
+	ASSERT_NE( resource, nullptr );
+	ASSERT_TRUE( manager.SaveResourceAs<ManagedResource>( resource, "same.managed" ) );
+
+	EXPECT_EQ( manager.FindResource<ManagedResource>( "same" ), resource );
+	EXPECT_EQ( manager.GetResourceNames<ManagedResource>().size(), 1u );
 }
 
 TEST( ResourceManagerTests, SaveFailsWithoutResourceNameOrAppPath )
@@ -257,4 +278,39 @@ TEST( ResourceManagerTests, SaveFailsWithoutResourceNameOrAppPath )
 	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
 	EXPECT_FALSE( manager.SaveResourceAs<ManagedResource>( nullptr, "file.managed" ) );
 	EXPECT_FALSE( manager.SaveResourceAs<ManagedResource>( resource, "" ) );
+}
+
+TEST( ResourceManagerTests, GetResourceNamesListsOneTypeInOrder )
+{
+	ScopedTempDir directory;
+	directory.Write( "zebra.managed", "" );
+	directory.Write( "nested/apple.managed", "" );
+	directory.Write( "other.othermanaged", "" );
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	const std::vector<std::string> expected = { "nested/apple", "zebra" };
+	EXPECT_EQ( manager.GetResourceNames<ManagedResource>(), expected );
+}
+
+TEST( ResourceManagerTests, GetResourceNamesIsEmptyForUnusedTypes )
+{
+	ResourceManager manager;
+
+	EXPECT_TRUE( manager.GetResourceNames<ManagedResource>().empty() );
+}
+
+TEST( ResourceManagerTests, SavedResourcesAppearInTheNames )
+{
+	ScopedTempDir directory;
+
+	ResourceManager manager;
+	ASSERT_TRUE( manager.Init( "", directory.GetPath() ) );
+
+	shared<ManagedResource> resource = new_shared<ManagedResource>( "", ResourceState::New );
+	ASSERT_TRUE( manager.SaveResourceAs<ManagedResource>( resource, "saved.managed" ) );
+
+	const std::vector<std::string> expected = { "saved" };
+	EXPECT_EQ( manager.GetResourceNames<ManagedResource>(), expected );
 }

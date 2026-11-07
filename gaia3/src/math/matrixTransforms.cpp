@@ -40,28 +40,8 @@ Matrix33 LookAt33( const Vec3& forwardDir, const Vec3& upAxis )
 
 	const Vec3 up = Cross( right, front ).Normalized();
 
-	Matrix33 viewRotation;
-	viewRotation.SetRow( 0, right );
-	viewRotation.SetRow( 1, up );
-	viewRotation.SetRow( 2, -front );
-
-	return viewRotation;
-}
-
-Matrix44 LookAt44( const Vec3& eye, const Vec3& forwardDir, const Vec3& upAxis )
-{
-	const Matrix33 lookAtM33 = LookAt33( forwardDir, upAxis );
-
-	// View translation terms from dot products with camera basis vectors.
-	const float tx = -Dot( lookAtM33.GetRow( 0 ), eye );
-	const float ty = -Dot( lookAtM33.GetRow( 1 ), eye );
-	const float tz = Dot( -lookAtM33.GetRow( 2 ), eye );
-
-	Matrix44 lookAtM44( lookAtM33 );
-	lookAtM44.m03 = tx;
-	lookAtM44.m13 = ty;
-	lookAtM44.m23 = tz;
-	return lookAtM44;
+	// Note: The axes are columns, so the local axes map to world directions and V_Front maps to front
+	return Matrix33( right, up, -front );
 }
 
 Matrix44 Perspective( float fovRadians, float aspectRatio, float nearPlane, float farPlane )

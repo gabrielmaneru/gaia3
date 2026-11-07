@@ -133,6 +133,31 @@ TEST( QuatTransformsTests, LookAtQuatMatchesMatrixLookAtOrientation )
 	EXPECT_NEAR( fabsf( Dot( lookAtQuat, fromMatrix ) ), 1.0f, 1e-5f );
 }
 
+TEST( QuatTransformsTests, LookAtQuatPointsTheFrontAxisAtTheTarget )
+{
+	const Vec3 directions[] = {
+	    Vec3( 0.0f, 0.0f, 1.0f ),
+	    Vec3( 1.0f, 0.0f, 0.0f ),
+	    Vec3( 0.5f, 0.0f, 0.866f ),
+	    Vec3( 0.3f, 0.4f, 0.8f ),
+	    Vec3( -0.5f, 0.6f, -0.5f ),
+	};
+
+	for( const Vec3& direction : directions )
+	{
+		const Vec3 expected = direction.Normalized();
+
+		EXPECT_TRUE( IsClose( LookAtQuat( expected, Vec3::V_Up ).Rotate( Vec3::V_Front ), expected, 1e-4f ) );
+	}
+}
+
+TEST( QuatTransformsTests, LookAtQuatKeepsTheHorizonLevel )
+{
+	const Quat rotation = LookAtQuat( Vec3( 0.3f, 0.4f, 0.8f ).Normalized(), Vec3::V_Up );
+
+	EXPECT_NEAR( rotation.Rotate( Vec3::V_Right ).y, 0.0f, 1e-4f );
+}
+
 TEST( QuatTests, InverseCancelsRotation )
 {
 	const Quat q   = Quat( 0.1f, 0.2f, 0.3f, 0.9f ).Normalized();

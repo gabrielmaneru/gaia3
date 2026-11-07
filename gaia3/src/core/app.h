@@ -4,6 +4,7 @@
 #include <core/session.h>
 #include <platform/input.h>
 #include <platform/window.h>
+#include <scene/editor.h>
 
 #include <string>
 
@@ -16,6 +17,11 @@ struct AppConfig
 
 	std::string appPath    = "";
 	std::string commonPath = R"(..\..\gaia3\assets\)";
+
+	EditorConfig editor;
+
+	// Note: Zero runs until the window closes
+	u64 maxFrames = 0;
 };
 
 class App
@@ -32,8 +38,10 @@ public:
 	static Session&  GetSession() { return m_Session; }
 
 private:
-	static Window   m_Window;
-	static Input    m_Input;
-	static Renderer m_Renderer;
-	static Session  m_Session;
+	static Window         m_Window;
+	static Input          m_Input;
+	static Renderer       m_Renderer;
+	static Session        m_Session;
+	static unique<Editor> m_Editor;
+	static u64            m_MaxFrames;
 };

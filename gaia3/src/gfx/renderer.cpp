@@ -50,14 +50,27 @@ bool Renderer::Init( ProcAddressFn procAddressLoader, rect canvas )
 		return false;
 	}
 
+	if( !m_RenderTarget.Create( canvas ) )
+	{
+		GAIA_ERROR( "Renderer init failed: Failed to create the render target" );
+		return false;
+	}
+
 	glEnable( GL_DEPTH_TEST );
 
 	return true;
 }
 
-void Renderer::Update( rect canvas )
+void Renderer::Update( rect renderSize )
 {
-	glViewport( 0, 0, canvas.x, canvas.y );
+	if( !m_RenderTarget.Resize( renderSize ) )
+	{
+		GAIA_ERROR( "Renderer: failed to resize the render target to {}x{}", renderSize.x, renderSize.y );
+		return;
+	}
+
+	m_RenderTarget.Bind();
+	glViewport( 0, 0, renderSize.x, renderSize.y );
 
 	// Clear buffer
 	glClearColor( 0.1f, 0.1f, 0.1f, 1.0f );
@@ -70,7 +83,7 @@ void Renderer::Update( rect canvas )
 	{
 		// Use first camera for now
 		const Matrix44 view       = m_Cameras[0]->GetViewMatrix();
-		const Matrix44 projection = m_Cameras[0]->GetProjectionMatrix( canvas );
+		const Matrix44 projection = m_Cameras[0]->GetProjectionMatrix( renderSize );
 		glUniformMatrix4fv( m_ViewMatrixLocation, 1, GL_FALSE, &view.m00 );
 		glUniformMatrix4fv( m_ProjectionMatrixLocation, 1, GL_FALSE, &projection.m00 );
 	}
@@ -87,12 +100,21 @@ void Renderer::Update( rect canvas )
 
 		renderable->Draw();
 	}
+
+	Framebuffer::Unbind();
+}
+
+void Renderer::PresentToWindow( rect canvas ) const
+{
+	m_RenderTarget.BlitToWindow( canvas );
 }
 
 void Renderer::Shutdown()
 {
 	m_Renderables.clear();
 	m_Cameras.clear();
+
+	m_RenderTarget.Destroy();
 
 	if( m_Program != 0 )
 	{

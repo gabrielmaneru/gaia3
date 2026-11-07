@@ -7,6 +7,7 @@ add_library(gaia3 STATIC
     src/core/session.cpp
     src/core/serializationTypes.cpp
     src/gaia3_pch.cpp
+    src/gfx/framebuffer.cpp
     src/gfx/meshObj.cpp
     src/gfx/model.cpp
     src/gfx/renderer.cpp
@@ -24,6 +25,7 @@ add_library(gaia3 STATIC
     src/platform/window.cpp
     src/scene/component.cpp
     src/scene/componentFactory.cpp
+    src/scene/editor.cpp
     src/scene/entity.cpp
     src/scene/level.cpp
     src/system/resource.cpp
@@ -47,6 +49,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(jsoncpp CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 
 # Link against vcpkg packages
 target_link_libraries(gaia3 PUBLIC
@@ -55,3 +58,6 @@ target_link_libraries(gaia3 PUBLIC
     jsoncpp_lib
     spdlog::spdlog
 )
+
+# Note: Private because ImGui is an implementation detail of the editor
+target_link_libraries(gaia3 PRIVATE imgui::imgui)

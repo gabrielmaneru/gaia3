@@ -19,3 +19,9 @@ target_compile_definitions(sandbox PRIVATE
 
 # Link against the core engine
 target_link_libraries(sandbox PRIVATE gaia3)
+
+# Note: These open a real window for a few frames, so they need a GPU and run one at a time
+add_test(NAME sandbox_docked_editor COMMAND sandbox -frames 30)
+add_test(NAME sandbox_floating_editor COMMAND sandbox -no_dock -frames 30)
+add_test(NAME sandbox_no_editor COMMAND sandbox -no_editor -frames 30)
+set_tests_properties(sandbox_docked_editor sandbox_floating_editor sandbox_no_editor PROPERTIES RUN_SERIAL TRUE)

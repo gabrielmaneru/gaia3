@@ -39,10 +39,21 @@ bool Window::Init( std::string_view title, rect canvas )
 	m_Canvas.y = currentHeight > 0 ? currentHeight : 1;
 
 	GAIA_INFO( "GLFW version: {}", glfwGetVersionString() );
-	GAIA_INFO( "Window created: {}x{}", m_Canvas.x, m_Canvas.y );
+	GAIA_INFO( "Window created: {}x{}, display scale {}", m_Canvas.x, m_Canvas.y, GetContentScale() );
 
 	SetVSyncEnabled( true );
 	return true;
+}
+
+float Window::GetContentScale() const
+{
+	if( m_WindowHandle == nullptr )
+		return 1.0f;
+
+	float scaleX = 1.0f;
+	float scaleY = 1.0f;
+	glfwGetWindowContentScale( m_WindowHandle, &scaleX, &scaleY );
+	return scaleX;
 }
 
 void Window::Update()

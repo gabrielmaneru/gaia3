@@ -177,9 +177,12 @@ public:
 
 	float GetMouseX() const { return m_MouseX; }
 	float GetMouseY() const { return m_MouseY; }
-	float GetMouseDeltaX() const { return m_MouseDeltaX; }
-	float GetMouseDeltaY() const { return m_MouseDeltaY; }
-	bool  IsMouseMoving() const { return m_MouseDeltaX != 0.0f || m_MouseDeltaY != 0.0f; }
+	float GetMouseDeltaX() const { return m_bMouseCaptured ? 0.0f : m_MouseDeltaX; }
+	float GetMouseDeltaY() const { return m_bMouseCaptured ? 0.0f : m_MouseDeltaY; }
+	bool  IsMouseMoving() const { return GetMouseDeltaX() != 0.0f || GetMouseDeltaY() != 0.0f; }
+
+	// Note: While captured, keys and buttons report as up and the mouse reports no movement
+	void SetCaptured( bool bMouseCaptured, bool bKeyboardCaptured );
 
 	static Input* _GetInstance()
 	{
@@ -188,6 +191,9 @@ public:
 	}
 
 private:
+	eInputState GetKeyState( eInputKeys inputKey ) const;
+	eInputState GetMouseButtonState( eInputMouseButtons inputButton ) const;
+
 	static void KeyCallback( GLFWwindow* windowHandle, int key, int scancode, int action, int mods );
 	static void MouseButtonCallback( GLFWwindow* windowHandle, int button, int action, int mods );
 	static void MousePositionCallback( GLFWwindow* windowHandle, double xPos, double yPos );
@@ -204,5 +210,8 @@ private:
 	float m_MouseDeltaX      = 0.0f;
 	float m_MouseDeltaY      = 0.0f;
 	bool  m_HasMousePosition = false;
+
+	bool m_bMouseCaptured    = false;
+	bool m_bKeyboardCaptured = false;
 };
 #define input Input::_GetInstance()

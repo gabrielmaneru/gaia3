@@ -136,6 +136,20 @@ TEST( WarningLogTests, MissingStartLevelFallsBackWithAWarning )
 	EXPECT_TRUE( log.Contains( "warning: Session: start level start.lvl" ) );
 }
 
+TEST( WarningLogTests, EmptyStartLevelCreatesANewLevelWithoutWarning )
+{
+	ScopedTempDir directory;
+	LogCapture    log;
+
+	Session session;
+
+	ASSERT_TRUE( session.Init( "", "", directory.GetPath() ) );
+
+	ASSERT_NE( session.GetCurrentLevel(), nullptr );
+	EXPECT_TRUE( session.GetCurrentLevel()->IsNew() );
+	EXPECT_FALSE( log.Contains( "warning" ) );
+}
+
 TEST( InfoLogTests, ResourceScanReportsWhatItFound )
 {
 	ScopedTempDir directory;

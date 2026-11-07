@@ -282,3 +282,19 @@ TEST( LevelTests, LoadFailsForUnknownComponentTypes )
 
 	EXPECT_FALSE( level.Load() );
 }
+
+TEST( LevelTests, UnloadRemovesEntitiesAndNotifiesComponents )
+{
+	ScopedTempDir directory;
+	const std::string path = SaveTestLevel( directory );
+
+	Level level( path );
+	ASSERT_TRUE( level.Load() );
+	shared<HealthComponent> health = level.GetComponents<HealthComponent>()[0];
+
+	EXPECT_TRUE( level.Unload() );
+
+	EXPECT_TRUE( level.GetEntities().empty() );
+	EXPECT_EQ( health->removeCount, 1 );
+	EXPECT_TRUE( level.GetComponents<HealthComponent>().empty() );
+}

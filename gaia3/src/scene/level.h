@@ -19,6 +19,7 @@ public:
 	void Update();
 
 	bool LoadInternal() override;
+	bool UnloadInternal() override;
 	bool SaveAsInternal( std::string_view path ) override;
 
 	Entity* CreateEntity( std::string_view entityName );
@@ -27,6 +28,8 @@ public:
 
 	Entity*       FindEntity( u64 id );
 	const Entity* FindEntity( u64 id ) const;
+
+	const std::vector<unique<Entity>>& GetEntities() const { return m_Entities; }
 
 	void                    RegisterComponent( const shared<Component>& component ) { m_ComponentFactory.RegisterComponent( component ); }
 	void                    UnregisterComponent( const shared<Component>& component ) { m_ComponentFactory.UnregisterComponent( component ); }

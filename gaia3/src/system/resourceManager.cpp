@@ -96,11 +96,12 @@ bool ResourceManager::SaveResourceAsType( u64 typeId, const shared<Resource>& re
 		return false;
 	}
 
+	const std::string     previousPath( resource->GetPath() );
 	std::filesystem::path outputPath = std::filesystem::path( m_AppPath ) / std::string( fileName );
 	if( !resource->SaveAs( outputPath.string() ) )
 		return false;
 
-	RemoveResourceEntries( typeId, resource );
+	ReleaseResourceEntries( typeId, resource, previousPath );
 
 	std::string resourceKey = BuildResourceKey( std::filesystem::path( m_AppPath ), outputPath );
 	if( resourceKey.empty() )
@@ -172,6 +173,23 @@ shared<Resource> ResourceManager::FindResourceByTypeId( u64 typeId, std::string_
 	return {};
 }
 
+std::vector<std::string> ResourceManager::GetResourceNamesByTypeId( u64 typeId ) const
+{
+	std::vector<std::string> names;
+
+	auto mapIt = m_ResourceMaps.find( typeId );
+	if( mapIt == m_ResourceMaps.end() )
+		return names;
+
+	for( const auto& [resourceKey, resource] : mapIt->second )
+	{
+		names.push_back( resourceKey );
+	}
+
+	std::sort( names.begin(), names.end() );
+	return names;
+}
+
 void ResourceManager::RegisterResource( u64 typeId, const std::string& resourceKey, shared<Resource> resource )
 {
 	if( resource == nullptr || resourceKey.empty() )
@@ -181,18 +199,31 @@ void ResourceManager::RegisterResource( u64 typeId, const std::string& resourceK
 	resourceMap[resourceKey] = resource;
 }
 
-void ResourceManager::RemoveResourceEntries( u64 typeId, const shared<Resource>& resource )
+void ResourceManager::ReleaseResourceEntries( u64 typeId, const shared<Resource>& resource, std::string_view previousPath )
 {
 	auto mapIt = m_ResourceMaps.find( typeId );
 	if( mapIt == m_ResourceMaps.end() || resource == nullptr )
 		return;
 
+	const std::string               extension  = std::filesystem::path( previousPath ).extension().string();
+	const Resource::TypeDescriptor* descriptor = Resource::FindResourceTypeByExtension( extension );
+
+	// Note: The previous file is still on disk, so its name stays available as a separate unloaded resource
 	ResourceMap& resourceMap = mapIt->second;
 	for( auto it = resourceMap.begin(); it != resourceMap.end(); )
 	{
-		if( it->second == resource )
-			it = resourceMap.erase( it );
-		else
+		if( it->second != resource )
+		{
 			++it;
+		}
+		else if( descriptor != nullptr )
+		{
+			it->second = descriptor->Create( previousPath );
+			++it;
+		}
+		else
+		{
+			it = resourceMap.erase( it );
+		}
 	}
 }

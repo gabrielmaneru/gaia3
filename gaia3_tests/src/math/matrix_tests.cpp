@@ -345,55 +345,30 @@ TEST( MatrixTests, Matrix44InverseProducesIdentityWhenMultiplied )
 	EXPECT_NEAR( right.GetRow( 3 ).w, 1.0f, 1e-5f );
 }
 
-TEST( MatrixTransformsTests, LookAtBuildsExpectedBasisAtOrigin )
-{
-	const Matrix44 view = LookAt44( Vec3::V_Zero, Vec3::V_Front, Vec3::V_Up );
-
-	EXPECT_FLOAT_EQ( view.m00, 1.0f );
-	EXPECT_FLOAT_EQ( view.m01, 0.0f );
-	EXPECT_FLOAT_EQ( view.m02, 0.0f );
-	EXPECT_FLOAT_EQ( view.m03, 0.0f );
-
-	EXPECT_FLOAT_EQ( view.m10, 0.0f );
-	EXPECT_FLOAT_EQ( view.m11, 1.0f );
-	EXPECT_FLOAT_EQ( view.m12, 0.0f );
-	EXPECT_FLOAT_EQ( view.m13, 0.0f );
-
-	EXPECT_FLOAT_EQ( view.m20, 0.0f );
-	EXPECT_FLOAT_EQ( view.m21, 0.0f );
-	EXPECT_FLOAT_EQ( view.m22, 1.0f );
-	EXPECT_FLOAT_EQ( view.m23, 0.0f );
-
-	EXPECT_FLOAT_EQ( view.m30, 0.0f );
-	EXPECT_FLOAT_EQ( view.m31, 0.0f );
-	EXPECT_FLOAT_EQ( view.m32, 0.0f );
-	EXPECT_FLOAT_EQ( view.m33, 1.0f );
-}
-
 TEST( MatrixTransformsTests, LookAt33BuildsExpectedBasis )
 {
-	const Matrix33 view3 = LookAt33( Vec3::V_Front, Vec3::V_Up );
+	const Matrix33 lookAt = LookAt33( Vec3::V_Front, Vec3::V_Up );
 
-	EXPECT_FLOAT_EQ( view3.m00, 1.0f );
-	EXPECT_FLOAT_EQ( view3.m01, 0.0f );
-	EXPECT_FLOAT_EQ( view3.m02, 0.0f );
+	EXPECT_FLOAT_EQ( lookAt.m00, 1.0f );
+	EXPECT_FLOAT_EQ( lookAt.m01, 0.0f );
+	EXPECT_FLOAT_EQ( lookAt.m02, 0.0f );
 
-	EXPECT_FLOAT_EQ( view3.m10, 0.0f );
-	EXPECT_FLOAT_EQ( view3.m11, 1.0f );
-	EXPECT_FLOAT_EQ( view3.m12, 0.0f );
+	EXPECT_FLOAT_EQ( lookAt.m10, 0.0f );
+	EXPECT_FLOAT_EQ( lookAt.m11, 1.0f );
+	EXPECT_FLOAT_EQ( lookAt.m12, 0.0f );
 
-	EXPECT_FLOAT_EQ( view3.m20, 0.0f );
-	EXPECT_FLOAT_EQ( view3.m21, 0.0f );
-	EXPECT_FLOAT_EQ( view3.m22, 1.0f );
+	EXPECT_FLOAT_EQ( lookAt.m20, 0.0f );
+	EXPECT_FLOAT_EQ( lookAt.m21, 0.0f );
+	EXPECT_FLOAT_EQ( lookAt.m22, 1.0f );
 }
 
 TEST( MatrixTransformsTests, LookAt33HandlesParallelForwardAndUp )
 {
-	const Matrix33 view3 = LookAt33( Vec3::V_Up, Vec3::V_Up );
+	const Matrix33 lookAt = LookAt33( Vec3::V_Up, Vec3::V_Up );
 
-	const Vec3 row0( view3.m00, view3.m01, view3.m02 );
-	const Vec3 row1( view3.m10, view3.m11, view3.m12 );
-	const Vec3 row2( view3.m20, view3.m21, view3.m22 );
+	const Vec3 row0( lookAt.m00, lookAt.m01, lookAt.m02 );
+	const Vec3 row1( lookAt.m10, lookAt.m11, lookAt.m12 );
+	const Vec3 row2( lookAt.m20, lookAt.m21, lookAt.m22 );
 
 	EXPECT_NEAR( row0.LengthSq(), 1.0f, 1e-5f );
 	EXPECT_NEAR( row1.LengthSq(), 1.0f, 1e-5f );
@@ -405,11 +380,11 @@ TEST( MatrixTransformsTests, LookAt33HandlesParallelForwardAndUp )
 
 TEST( MatrixTransformsTests, LookAt33HandlesZeroInputs )
 {
-	const Matrix33 view3 = LookAt33( Vec3::V_Zero, Vec3::V_Zero );
+	const Matrix33 lookAt = LookAt33( Vec3::V_Zero, Vec3::V_Zero );
 
-	const Vec3 row0 = view3.GetRow( 0 );
-	const Vec3 row1 = view3.GetRow( 1 );
-	const Vec3 row2 = view3.GetRow( 2 );
+	const Vec3 row0 = lookAt.GetRow( 0 );
+	const Vec3 row1 = lookAt.GetRow( 1 );
+	const Vec3 row2 = lookAt.GetRow( 2 );
 
 	EXPECT_NEAR( row0.LengthSq(), 1.0f, 1e-5f );
 	EXPECT_NEAR( row1.LengthSq(), 1.0f, 1e-5f );
@@ -419,44 +394,23 @@ TEST( MatrixTransformsTests, LookAt33HandlesZeroInputs )
 	EXPECT_NEAR( Dot( row1, row2 ), 0.0f, 1e-5f );
 }
 
-TEST( MatrixTransformsTests, LookAtComputesTranslationFromEye )
+TEST( MatrixTransformsTests, LookAt33MapsTheLocalAxesToWorldDirections )
 {
-	const Vec3     eye( 2.0f, 3.0f, 4.0f );
-	const Matrix44 view = LookAt44( eye, Vec3::V_Front, Vec3::V_Up );
+	const Vec3 forward = Vec3( 0.3f, 0.4f, 0.8f ).Normalized();
 
-	EXPECT_FLOAT_EQ( view.m03, -2.0f );
-	EXPECT_FLOAT_EQ( view.m13, -3.0f );
-	EXPECT_FLOAT_EQ( view.m23, -4.0f );
-	EXPECT_FLOAT_EQ( view.m33, 1.0f );
+	const Matrix33 lookAt = LookAt33( forward, Vec3::V_Up );
+
+	EXPECT_TRUE( IsClose( lookAt.col[2], -forward, 1e-5f ) );
+	EXPECT_NEAR( lookAt.col[0].y, 0.0f, 1e-5f );
+	EXPECT_NEAR( Dot( lookAt.col[0], forward ), 0.0f, 1e-5f );
+	EXPECT_NEAR( Dot( lookAt.col[1], forward ), 0.0f, 1e-5f );
 }
 
-TEST( MatrixTransformsTests, LookAt44MatchesLookAt33BasisAndComputedTranslation )
+TEST( MatrixTransformsTests, LookAt33IsARotation )
 {
-	const Vec3 eye( 2.0f, -1.0f, 5.0f );
-	const Vec3 forward( 0.3f, 0.4f, 0.5f );
-	const Vec3 up( 0.0f, 1.0f, 0.2f );
+	const Matrix33 lookAt = LookAt33( Vec3( 0.3f, 0.4f, 0.8f ), Vec3::V_Up );
 
-	const Matrix33 basis33 = LookAt33( forward, up );
-	const Matrix44 view44  = LookAt44( eye, forward, up );
-
-	EXPECT_NEAR( view44.m00, basis33.m00, 1e-5f );
-	EXPECT_NEAR( view44.m10, basis33.m10, 1e-5f );
-	EXPECT_NEAR( view44.m20, basis33.m20, 1e-5f );
-	EXPECT_NEAR( view44.m01, basis33.m01, 1e-5f );
-	EXPECT_NEAR( view44.m11, basis33.m11, 1e-5f );
-	EXPECT_NEAR( view44.m21, basis33.m21, 1e-5f );
-	EXPECT_NEAR( view44.m02, basis33.m02, 1e-5f );
-	EXPECT_NEAR( view44.m12, basis33.m12, 1e-5f );
-	EXPECT_NEAR( view44.m22, basis33.m22, 1e-5f );
-
-	const float tx = -Dot( basis33.GetRow( 0 ), eye );
-	const float ty = -Dot( basis33.GetRow( 1 ), eye );
-	const float tz = Dot( -basis33.GetRow( 2 ), eye );
-
-	EXPECT_NEAR( view44.m03, tx, 1e-5f );
-	EXPECT_NEAR( view44.m13, ty, 1e-5f );
-	EXPECT_NEAR( view44.m23, tz, 1e-5f );
-	EXPECT_NEAR( view44.m33, 1.0f, 1e-5f );
+	EXPECT_NEAR( lookAt.Determinant(), 1.0f, 1e-5f );
 }
 
 TEST( MatrixTransformsTests, PerspectiveProducesExpectedCoefficients )

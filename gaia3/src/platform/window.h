@@ -18,6 +18,9 @@ public:
 	static ProcAddressFn GetProcAddressLoader();
 	GLFWwindow*          GetWindowHandle() const { return m_WindowHandle; }
 
+	// Note: The operating system's display scale, for example 1.5 at 150%
+	float GetContentScale() const;
+
 	rect GetCanvas() const { return m_Canvas; }
 	bool IsMinimized() const { return m_Canvas.x == 0 && m_Canvas.y == 0; }
 

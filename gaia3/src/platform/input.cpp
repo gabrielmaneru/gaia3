@@ -39,61 +39,75 @@ void Input::Update()
 	}
 }
 
-bool Input::IsKeyDown( eInputKeys inputKey ) const
+void Input::SetCaptured( bool bMouseCaptured, bool bKeyboardCaptured )
+{
+	m_bMouseCaptured    = bMouseCaptured;
+	m_bKeyboardCaptured = bKeyboardCaptured;
+}
+
+eInputState Input::GetKeyState( eInputKeys inputKey ) const
 {
 	GAIA_ASSERT( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
-	const eInputState state = m_KeyStates[(u16)inputKey];
+	return m_bKeyboardCaptured ? eInputState::UP : m_KeyStates[(u16)inputKey];
+}
+
+eInputState Input::GetMouseButtonState( eInputMouseButtons inputButton ) const
+{
+	GAIA_ASSERT( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
+	return m_bMouseCaptured ? eInputState::UP : m_MouseButtonStates[(u16)inputButton];
+}
+
+bool Input::IsKeyDown( eInputKeys inputKey ) const
+{
+	const eInputState state = GetKeyState( inputKey );
 	return state == eInputState::DOWN || state == eInputState::TRIGGERED;
 }
 
 bool Input::IsKeyUp( eInputKeys inputKey ) const
 {
-	GAIA_ASSERT( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
-	const eInputState state = m_KeyStates[(u16)inputKey];
+	const eInputState state = GetKeyState( inputKey );
 	return state == eInputState::UP || state == eInputState::RELEASED;
 }
 
 bool Input::IsKeyTriggered( eInputKeys inputKey ) const
 {
-	GAIA_ASSERT( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
-	return m_KeyStates[(u16)inputKey] == eInputState::TRIGGERED;
+	return GetKeyState( inputKey ) == eInputState::TRIGGERED;
 }
 
 bool Input::IsKeyReleased( eInputKeys inputKey ) const
 {
-	GAIA_ASSERT( (u16)inputKey < (u16)eInputKeys::_KEY_COUNT );
-	return m_KeyStates[(u16)inputKey] == eInputState::RELEASED;
+	return GetKeyState( inputKey ) == eInputState::RELEASED;
 }
 
 bool Input::IsMouseButtonDown( eInputMouseButtons inputButton ) const
 {
-	GAIA_ASSERT( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
-	const eInputState state = m_MouseButtonStates[(u16)inputButton];
+	const eInputState state = GetMouseButtonState( inputButton );
 	return state == eInputState::DOWN || state == eInputState::TRIGGERED;
 }
 
 bool Input::IsMouseButtonUp( eInputMouseButtons inputButton ) const
 {
-	GAIA_ASSERT( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
-	const eInputState state = m_MouseButtonStates[(u16)inputButton];
+	const eInputState state = GetMouseButtonState( inputButton );
 	return state == eInputState::UP || state == eInputState::RELEASED;
 }
 
 bool Input::IsMouseButtonTriggered( eInputMouseButtons inputButton ) const
 {
-	GAIA_ASSERT( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
-	return m_MouseButtonStates[(u16)inputButton] == eInputState::TRIGGERED;
+	return GetMouseButtonState( inputButton ) == eInputState::TRIGGERED;
 }
 
 bool Input::IsMouseButtonReleased( eInputMouseButtons inputButton ) const
 {
-	GAIA_ASSERT( (u16)inputButton < (u16)eInputMouseButtons::_BUTTON_COUNT );
-	return m_MouseButtonStates[(u16)inputButton] == eInputState::RELEASED;
+	return GetMouseButtonState( inputButton ) == eInputState::RELEASED;
 }
 
 void Input::KeyCallback( GLFWwindow* windowHandle, int key, int, int action, int )
 {
 	if( windowHandle == nullptr || s_Instance == nullptr )
+		return;
+
+	// Note: GLFW reports keys it does not recognize, like some media keys, as GLFW_KEY_UNKNOWN
+	if( key == GLFW_KEY_UNKNOWN )
 		return;
 
 	GAIA_ASSERT( (u16)key < (u16)eInputKeys::_KEY_COUNT );

@@ -80,3 +80,132 @@ TEST( SessionTests, ShutdownReleasesTheLevel )
 
 	EXPECT_EQ( session.GetCurrentLevel(), nullptr );
 }
+
+namespace
+{
+void SaveLevelWithEntity( const std::string& path, std::string_view entityName )
+{
+	Level level;
+	level.CreateEntity( entityName );
+	ASSERT_TRUE( level.SaveAs( path ) );
+}
+} // namespace
+
+TEST( SessionTests, OpenLevelSwitchesTheCurrentLevel )
+{
+	ScopedTempDir directory;
+	SaveLevelWithEntity( directory.PathTo( "other.lvl" ), "Other" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "start.lvl", "", directory.GetPath() ) );
+
+	EXPECT_TRUE( session.OpenLevel( "other" ) );
+
+	ASSERT_NE( session.GetCurrentLevel()->FindEntity( 1 ), nullptr );
+	EXPECT_EQ( session.GetCurrentLevel()->FindEntity( 1 )->GetName(), "Other" );
+}
+
+TEST( SessionTests, OpenLevelUnloadsThePreviousLevel )
+{
+	ScopedTempDir directory;
+	SaveLevelWithEntity( directory.PathTo( "first.lvl" ), "First" );
+	SaveLevelWithEntity( directory.PathTo( "second.lvl" ), "Second" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "first.lvl", "", directory.GetPath() ) );
+	const shared<Level> first = session.GetResourceManager().FindResource<Level>( "first" );
+
+	ASSERT_TRUE( session.OpenLevel( "second" ) );
+
+	EXPECT_FALSE( first->IsLoaded() );
+	EXPECT_TRUE( first->GetEntities().empty() );
+}
+
+TEST( SessionTests, PreviousLevelCanBeOpenedAgain )
+{
+	ScopedTempDir directory;
+	SaveLevelWithEntity( directory.PathTo( "first.lvl" ), "First" );
+	SaveLevelWithEntity( directory.PathTo( "second.lvl" ), "Second" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "first.lvl", "", directory.GetPath() ) );
+	ASSERT_TRUE( session.OpenLevel( "second" ) );
+
+	EXPECT_TRUE( session.OpenLevel( "first" ) );
+
+	ASSERT_NE( session.GetCurrentLevel()->FindEntity( 1 ), nullptr );
+	EXPECT_EQ( session.GetCurrentLevel()->FindEntity( 1 )->GetName(), "First" );
+}
+
+TEST( SessionTests, OpeningTheCurrentLevelKeepsItsState )
+{
+	ScopedTempDir directory;
+	SaveLevelWithEntity( directory.PathTo( "start.lvl" ), "Saved" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "start.lvl", "", directory.GetPath() ) );
+	session.GetCurrentLevel()->CreateEntity( "Unsaved" );
+
+	EXPECT_TRUE( session.OpenLevel( "start" ) );
+
+	EXPECT_NE( session.GetCurrentLevel()->FindEntity( 2 ), nullptr );
+}
+
+TEST( SessionTests, FailedOpenKeepsTheCurrentLevel )
+{
+	ScopedTempDir directory;
+	SaveLevelWithEntity( directory.PathTo( "start.lvl" ), "Saved" );
+	directory.Write( "broken.lvl", "not json" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "start.lvl", "", directory.GetPath() ) );
+
+	EXPECT_FALSE( session.OpenLevel( "broken" ) );
+	EXPECT_FALSE( session.OpenLevel( "missing" ) );
+
+	ASSERT_NE( session.GetCurrentLevel()->FindEntity( 1 ), nullptr );
+	EXPECT_EQ( session.GetCurrentLevel()->FindEntity( 1 )->GetName(), "Saved" );
+}
+
+TEST( SessionTests, LevelSavedUnderANewNameCanStillBeOpenedFromItsOldFile )
+{
+	ScopedTempDir directory;
+	SaveLevelWithEntity( directory.PathTo( "start.lvl" ), "Original" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "start.lvl", "", directory.GetPath() ) );
+	session.GetCurrentLevel()->CreateEntity( "Added" );
+	ASSERT_TRUE( session.SaveCurrentLevelAs( "copy.lvl" ) );
+
+	EXPECT_TRUE( session.OpenLevel( "start" ) );
+
+	EXPECT_EQ( session.GetCurrentLevel()->GetEntities().size(), 1u );
+}
+
+TEST( SessionTests, SaveCurrentLevelNeedsAnExistingFile )
+{
+	ScopedTempDir directory;
+
+	Session session;
+	ASSERT_TRUE( session.Init( "start.lvl", "", directory.GetPath() ) );
+
+	EXPECT_FALSE( session.SaveCurrentLevel() );
+	EXPECT_TRUE( session.GetCurrentLevel()->IsNew() );
+}
+
+TEST( SessionTests, SaveCurrentLevelWritesChangesToItsFile )
+{
+	ScopedTempDir directory;
+	const std::string path = directory.PathTo( "start.lvl" );
+	SaveLevelWithEntity( path, "Saved" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "start.lvl", "", directory.GetPath() ) );
+	session.GetCurrentLevel()->CreateEntity( "Added" );
+
+	EXPECT_TRUE( session.SaveCurrentLevel() );
+
+	Level reloaded( path );
+	ASSERT_TRUE( reloaded.Load() );
+	EXPECT_EQ( reloaded.GetEntities().size(), 2u );
+}

@@ -3,6 +3,14 @@
     "glfw3",
     "glad",
     "gtest",
+    {
+      "name": "imgui",
+      "features": [
+        "docking-experimental",
+        "glfw-binding",
+        "opengl3-binding"
+      ]
+    },
     "jsoncpp",
     "spdlog"
   ]

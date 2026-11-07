@@ -13,6 +13,7 @@ add_executable(gaia3_tests
     src/math/transform_tests.cpp
     src/math/vector_tests.cpp
     src/scene/componentFactory_tests.cpp
+    src/scene/editor_tests.cpp
     src/scene/entity_tests.cpp
     src/scene/level_tests.cpp
     src/scene/testComponents.cpp

@@ -11,15 +11,13 @@ RTTI_DEFINE_COMP( CameraComponent,
                   RTTI_PROPERTY( m_HorizontalFOV ),
                   RTTI_PROPERTY( m_NearPlane ),
                   RTTI_PROPERTY( m_FarPlane ),
-                  RTTI_PROPERTY( m_Yaw ),
-                  RTTI_PROPERTY( m_Pitch ),
                   RTTI_PROPERTY( m_LinearSpeed ),
                   RTTI_PROPERTY( m_AngularSpeed ) )
 
 void CameraComponent::OnAddComponent()
 {
 	RenderCamera::Register();
-	RecomputeRotation();
+	ComputeAnglesFromRotation();
 }
 
 void CameraComponent::OnRemoveComponent()
@@ -37,11 +35,7 @@ void CameraComponent::Update()
 			const float mouseDeltaX = input->GetMouseDeltaX();
 			const float mouseDeltaY = input->GetMouseDeltaY();
 
-			m_Yaw -= mouseDeltaX * m_AngularSpeed;
-			m_Pitch += mouseDeltaY * m_AngularSpeed;
-			m_Pitch = Clamp( m_Pitch, -89.0f, 89.0f );
-
-			RecomputeRotation();
+			SetRotationAngles( m_Yaw + mouseDeltaX * m_AngularSpeed, m_Pitch + mouseDeltaY * m_AngularSpeed );
 		}
 
 		// Camera translation
@@ -90,6 +84,23 @@ Matrix44 CameraComponent::GetProjectionMatrix( rect canvas ) const
 Matrix44 CameraComponent::GetViewMatrix() const
 {
 	return GetOwner()->GetTransform().Inverse().ToMatrix44();
+}
+
+void CameraComponent::SetRotationAngles( float yaw, float pitch )
+{
+	m_Yaw   = yaw;
+	m_Pitch = Clamp( pitch, -89.0f, 89.0f );
+
+	RecomputeRotation();
+}
+
+void CameraComponent::ComputeAnglesFromRotation()
+{
+	// Note: The entity's rotation is left untouched here, so a saved camera keeps it exactly until it is moved
+	const Vec3 front = GetOwner()->GetTransform().rotation.Normalized().Rotate( Vec3::V_Front );
+
+	m_Yaw   = ToDegrees( atan2f( front.z, front.x ) );
+	m_Pitch = Clamp( ToDegrees( asinf( Clamp( front.y, -1.0f, 1.0f ) ) ), -89.0f, 89.0f );
 }
 
 void CameraComponent::RecomputeRotation()

@@ -3,14 +3,59 @@
 #include <components/cameraComponent.h>
 #include <components/modelComponent.h>
 
+#include <charconv>
+
 namespace
 {
+struct SandboxOptions
+{
+	bool bNoEditor = false;
+	bool bNoDock   = false;
+	u64  maxFrames = 0;
+};
+
+SandboxOptions ParseArguments( int argc, char** argv )
+{
+	SandboxOptions options;
+
+	for( int i = 1; i < argc; ++i )
+	{
+		const std::string_view argument = argv[i];
+		if( argument == "-no_editor" )
+		{
+			options.bNoEditor = true;
+		}
+		else if( argument == "-no_dock" )
+		{
+			options.bNoDock = true;
+		}
+		else if( argument == "-frames" && i + 1 < argc )
+		{
+			const std::string_view value = argv[++i];
+
+			const auto [parsedEnd, errorCode] = std::from_chars( value.data(), value.data() + value.size(), options.maxFrames );
+			if( errorCode != std::errc() || parsedEnd != value.data() + value.size() )
+			{
+				GAIA_WARN( "Sandbox: invalid frame count {}, running until closed", value );
+				options.maxFrames = 0;
+			}
+		}
+		else
+		{
+			GAIA_WARN( "Sandbox: unknown argument {}", argument );
+		}
+	}
+
+	return options;
+}
+
 void createDefaultLevel( Level* pLevel )
 {
 	// Create camera
 	Entity* pCamera = pLevel->CreateEntity( "Camera" );
 	{
 		pCamera->GetTransformRef().position = Vec3( 1.0f, 1.0f, -4.12f );
+		pCamera->GetTransformRef().rotation = LookAtQuat( Vec3( 0.0f, 0.0f, 1.0f ), Vec3::V_Up );
 		pCamera->AddComponent<CameraComponent>();
 	}
 
@@ -22,14 +67,21 @@ void createDefaultLevel( Level* pLevel )
 }
 } // namespace
 
-int main()
+int main( int argc, char** argv )
 {
+	const SandboxOptions options = ParseArguments( argc, argv );
+
 	AppConfig config;
-	config.canvas     = { 1920, 1080 };
+	config.canvas     = { 2560, 1440 };
 	config.title      = "Sandbox";
-	config.startLevel = "test.lvl";
+	config.startLevel = "";
 	config.appPath    = SANDBOX_ASSETS_PATH;
 	config.commonPath = GAIA3_ASSETS_PATH;
+
+	config.maxFrames  = options.maxFrames;
+
+	config.editor.enabled = !options.bNoEditor;
+	config.editor.docked  = !options.bNoDock;
 
 	if( !App::Init( config ) )
 		return 1;
@@ -45,16 +97,6 @@ int main()
 	}
 
 	App::Run();
-
-	// If New, try to save it
-	{
-		Level* pLevel = App::GetSession().GetCurrentLevel();
-		if( pLevel->IsNew() )
-		{
-			App::GetSession().SaveCurrentLevelAs( "test.lvl" );
-		}
-	}
-
 	App::Shutdown();
 	return 0;
 }

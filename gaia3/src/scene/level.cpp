@@ -100,6 +100,12 @@ bool Level::LoadInternal()
 	return true;
 }
 
+bool Level::UnloadInternal()
+{
+	ClearEntities();
+	return true;
+}
+
 bool Level::SaveAsInternal( std::string_view path )
 {
 	std::filesystem::path filePath( path );
