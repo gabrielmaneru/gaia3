@@ -23,40 +23,33 @@ bool ParseVec3( std::istringstream& stream, Vec3& outValue )
 }
 } // namespace
 
+void MaterialEntry::Bind( const DrawContext& context ) const
+{
+	if( shader == nullptr )
+		return;
+
+	shader->Use();
+	shader->SetMatrix44( "u_Model", context.model );
+	shader->SetMatrix44( "u_View", context.view );
+	shader->SetMatrix44( "u_Projection", context.projection );
+
+	shader->SetVec3( "u_Color", data.diffuseColor );
+	shader->SetInt( "u_UseTexture", diffuseTexture != nullptr ? 1 : 0 );
+	if( diffuseTexture != nullptr )
+	{
+		diffuseTexture->Bind( kDiffuseTextureUnit );
+		shader->SetInt( "u_Texture", kDiffuseTextureUnit );
+	}
+}
+
 Material::Material( std::string_view path, ResourceState state )
     : Resource( path, state )
 {
 }
 
-std::vector<std::string> Material::ListEntries( std::string_view path )
+bool Material::ReadMtl( std::string_view path, std::vector<MaterialData>& outMaterials )
 {
-	std::vector<std::string> names;
-
-	std::ifstream file{ std::string( path ) };
-	std::string   line;
-	while( std::getline( file, line ) )
-	{
-		std::istringstream lineStream( line );
-		std::string        keyword;
-		std::string        name;
-		if( !( lineStream >> keyword >> name ) || keyword != "newmtl" )
-			continue;
-
-		if( std::find( names.begin(), names.end(), name ) != names.end() )
-		{
-			GAIA_WARN( "Material: {} defines {} twice, using the first one", path, name );
-			continue;
-		}
-
-		names.push_back( name );
-	}
-
-	return names;
-}
-
-bool Material::ReadMtl( std::string_view path, std::string_view materialName, MaterialData& outData )
-{
-	outData = MaterialData();
+	outMaterials.clear();
 
 	std::ifstream file{ std::string( path ) };
 	if( !file.is_open() )
@@ -65,9 +58,15 @@ bool Material::ReadMtl( std::string_view path, std::string_view materialName, Ma
 		return false;
 	}
 
-	// Note: Lines only count while inside the wanted newmtl block, a file without newmtl lines is one material
-	bool        bInside    = materialName.empty();
-	bool        bFound     = materialName.empty();
+	// Note: Lines before the first newmtl start an unnamed material
+	auto currentMaterial = [&outMaterials]() -> MaterialData& {
+		if( outMaterials.empty() )
+		{
+			outMaterials.emplace_back();
+		}
+		return outMaterials.back();
+	};
+
 	u64         lineNumber = 0;
 	std::string line;
 	while( std::getline( file, line ) )
@@ -80,27 +79,22 @@ bool Material::ReadMtl( std::string_view path, std::string_view materialName, Ma
 
 		if( keyword == "newmtl" )
 		{
-			std::string name;
-			lineStream >> name;
+			MaterialData material;
+			lineStream >> material.name;
 
-			if( bInside && !outData.name.empty() )
-				break;
-
-			bInside = materialName.empty() || name == materialName;
-			if( bInside )
+			const bool bRepeated = std::any_of( outMaterials.begin(), outMaterials.end(), [&material]( const MaterialData& existing ) {
+				return existing.name == material.name;
+			} );
+			if( bRepeated )
 			{
-				bFound       = true;
-				outData.name = name;
+				GAIA_WARN( "Material: {} defines {} twice, the first one is used", path, material.name );
 			}
-			continue;
+
+			outMaterials.push_back( material );
 		}
-
-		if( !bInside )
-			continue;
-
-		if( keyword == "Kd" )
+		else if( keyword == "Kd" )
 		{
-			if( !ParseVec3( lineStream, outData.diffuseColor ) )
+			if( !ParseVec3( lineStream, currentMaterial().diffuseColor ) )
 			{
 				GAIA_ERROR( "Material: invalid colour at {}:{}", path, lineNumber );
 				return false;
@@ -112,59 +106,75 @@ bool Material::ReadMtl( std::string_view path, std::string_view materialName, Ma
 			std::string word;
 			while( lineStream >> word )
 			{
-				outData.diffuseTexture = word;
+				currentMaterial().diffuseTexture = word;
 			}
 		}
 		else if( keyword == "shader" )
 		{
-			lineStream >> outData.shader;
+			lineStream >> currentMaterial().shader;
 		}
 	}
 
-	if( !bFound )
-	{
-		GAIA_ERROR( "Material: {} has no material named {}", path, materialName );
-		return false;
-	}
-
+	currentMaterial();
 	return true;
 }
 
-shared<Material> Material::FindOrError( std::string_view materialName, std::string_view requester )
+shared<Material> Material::FindOrError( std::string_view libraryName, std::string_view requester )
 {
 	ResourceManager& manager = App::GetSession().GetResourceManager();
 
-	if( shared<Material> material = manager.FindResource<Material>( materialName, true ) )
-		return material;
+	if( shared<Material> library = manager.FindResource<Material>( libraryName, true ) )
+		return library;
 
-	GAIA_WARN( "{}: material {} is not available, using {}", requester, materialName, kErrorName );
+	GAIA_WARN( "{}: material {} is not available, using {}", requester, libraryName, kErrorName );
 
-	shared<Material> errorMaterial = manager.FindResource<Material>( kErrorName, true );
-	if( errorMaterial == nullptr )
+	shared<Material> errorLibrary = manager.FindResource<Material>( kErrorName, true );
+	if( errorLibrary == nullptr )
 	{
 		GAIA_ERROR( "{}: the {} material is not available either, so nothing draws in its place", requester, kErrorName );
 	}
 
-	return errorMaterial;
+	return errorLibrary;
+}
+
+const MaterialEntry* Material::FindErrorEntry( std::string_view requester )
+{
+	shared<Material>     errorLibrary = App::GetSession().GetResourceManager().FindResource<Material>( kErrorName, true );
+	const MaterialEntry* errorEntry   = errorLibrary != nullptr ? errorLibrary->FindEntry( "" ) : nullptr;
+	if( errorEntry == nullptr )
+	{
+		GAIA_ERROR( "{}: the {} material is not available, so nothing draws in its place", requester, kErrorName );
+	}
+
+	return errorEntry;
 }
 
 bool Material::LoadInternal()
 {
-	if( !ReadMtl( GetPath(), GetEntry(), m_Data ) )
+	std::vector<MaterialData> materials;
+	if( !ReadMtl( GetPath(), materials ) )
 		return false;
 
 	ResourceManager& manager = App::GetSession().GetResourceManager();
 
-	m_Shader = manager.FindResource<Shader>( m_Data.shader, true );
-	if( m_Shader == nullptr )
+	for( MaterialData& data : materials )
 	{
-		GAIA_ERROR( "Material {}: shader {} is not available", GetName(), m_Data.shader );
-		return false;
-	}
+		MaterialEntry entry;
+		entry.shader = manager.FindResource<Shader>( data.shader, true );
+		if( entry.shader == nullptr )
+		{
+			GAIA_ERROR( "Material {}: shader {} of {} is not available", GetName(), data.shader, data.name );
+			m_Entries.clear();
+			return false;
+		}
 
-	if( !m_Data.diffuseTexture.empty() )
-	{
-		m_DiffuseTexture = Texture::FindOrError( m_Data.diffuseTexture, "Material " + std::string( GetName() ) );
+		if( !data.diffuseTexture.empty() )
+		{
+			entry.diffuseTexture = Texture::FindOrError( data.diffuseTexture, "Material " + std::string( GetName() ) );
+		}
+
+		entry.data = std::move( data );
+		m_Entries.push_back( std::move( entry ) );
 	}
 
 	return true;
@@ -172,26 +182,23 @@ bool Material::LoadInternal()
 
 bool Material::UnloadInternal()
 {
-	m_Shader.reset();
-	m_DiffuseTexture.reset();
+	m_Entries.clear();
 	return true;
 }
 
-void Material::Bind( const DrawContext& context ) const
+const MaterialEntry* Material::FindEntry( std::string_view materialName ) const
 {
-	if( m_Shader == nullptr )
-		return;
+	if( m_Entries.empty() )
+		return nullptr;
 
-	m_Shader->Use();
-	m_Shader->SetMatrix44( "u_Model", context.model );
-	m_Shader->SetMatrix44( "u_View", context.view );
-	m_Shader->SetMatrix44( "u_Projection", context.projection );
+	if( materialName.empty() )
+		return &m_Entries.front();
 
-	m_Shader->SetVec3( "u_Color", m_Data.diffuseColor );
-	m_Shader->SetInt( "u_UseTexture", m_DiffuseTexture != nullptr ? 1 : 0 );
-	if( m_DiffuseTexture != nullptr )
+	for( const MaterialEntry& entry : m_Entries )
 	{
-		m_DiffuseTexture->Bind( kDiffuseTextureUnit );
-		m_Shader->SetInt( "u_Texture", kDiffuseTextureUnit );
+		if( entry.data.name == materialName )
+			return &entry;
 	}
+
+	return nullptr;
 }

@@ -19,7 +19,19 @@ struct MaterialData
 	std::string shader = "default";
 };
 
-// Note: One material of a .mtl file in materials/, a file can hold several and each one is named by its newmtl line
+// Note: One newmtl of a material library, ready to draw with
+struct MaterialEntry
+{
+	MaterialData    data;
+	shared<Shader>  shader;
+	shared<Texture> diffuseTexture;
+
+	// Note: Selects the shader, then sets the material's values and the object's matrices
+	void Bind( const DrawContext& context ) const;
+};
+
+// Note: A .mtl file in materials/, named after the file. Its materials are only seen by the models that use the
+// library, so names like "floor" in different libraries never clash
 class Material : public Resource
 {
 	RTTI_DECLARE_RESOURCE( Material )
@@ -29,24 +41,26 @@ public:
 
 	explicit Material( std::string_view path, ResourceState state = ResourceState::NotLoaded );
 
-	// Note: The names of every newmtl in the file, in order
-	static std::vector<std::string> ListEntries( std::string_view path );
+	// Note: Reads every newmtl of a .mtl file in order: its Kd colour, its map_Kd texture and a "shader" line, a
+	// gaia3 extension other tools skip like any line they don't know. A file without newmtl lines is one unnamed
+	// material
+	static bool ReadMtl( std::string_view path, std::vector<MaterialData>& outMaterials );
 
-	// Note: Reads one material of a .mtl file, the first one when materialName is empty: its Kd colour, its map_Kd
-	// texture and a "shader" line, a gaia3 extension other tools skip like any line they don't know
-	static bool ReadMtl( std::string_view path, std::string_view materialName, MaterialData& outData );
+	// Note: Returns the named library, or the error library with a warning so a missing one stands out
+	static shared<Material> FindOrError( std::string_view libraryName, std::string_view requester );
 
-	// Note: Returns the named material, or the error material with a warning so a missing one stands out
-	static shared<Material> FindOrError( std::string_view materialName, std::string_view requester );
+	// Note: The error library's material, for anything whose material can't be found. The ResourceManager keeps the
+	// library loaded until it shuts down, so callers can keep the pointer without holding the library themselves
+	static const MaterialEntry* FindErrorEntry( std::string_view requester );
 
 	bool LoadInternal() override;
 	bool UnloadInternal() override;
 
-	// Note: Selects the shader, then sets the material's values and the object's matrices
-	void Bind( const DrawContext& context ) const;
+	// Note: The material with that name, or the first one when the name is empty. Null when there is none, entries
+	// stay valid while the library is loaded
+	const MaterialEntry*              FindEntry( std::string_view materialName ) const;
+	const std::vector<MaterialEntry>& GetEntries() const { return m_Entries; }
 
 private:
-	MaterialData    m_Data;
-	shared<Shader>  m_Shader;
-	shared<Texture> m_DiffuseTexture;
+	std::vector<MaterialEntry> m_Entries;
 };

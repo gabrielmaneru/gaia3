@@ -3,6 +3,7 @@
 #include <components/cameraComponent.h>
 #include <components/modelComponent.h>
 #include <gfx/material.h>
+#include <gfx/model.h>
 #include <math/mathHelpers.h>
 #include <math/quaternionTransforms.h>
 #include <math/vectorTransforms.h>
@@ -202,7 +203,8 @@ TEST( ModelComponentTests, ModelMatrixFollowsTheEntityTransform )
 	Level   level;
 	Entity* entity = level.CreateEntity( "Model" );
 
-	shared<ModelComponent> model = entity->AddComponent<ModelComponent>( "missing.obj" );
+	shared<ModelComponent> model = entity->AddComponent<ModelComponent>();
+	model->SetModel( "missing.obj" );
 
 	entity->SetPosition( Vec3( 1.0f, 2.0f, 3.0f ) );
 	entity->SetScale( Vec3( 2.0f, 2.0f, 2.0f ) );
@@ -220,7 +222,8 @@ TEST( ModelComponentTests, DrawWithoutAResourceDoesNothing )
 	Level   level;
 	Entity* entity = level.CreateEntity( "Model" );
 
-	shared<ModelComponent> model = entity->AddComponent<ModelComponent>( "missing.obj" );
+	shared<ModelComponent> model = entity->AddComponent<ModelComponent>();
+	model->SetModel( "missing.obj" );
 
 	const Renderable& renderable = *model;
 	renderable.Draw( DrawContext() );
@@ -230,7 +233,7 @@ TEST( ModelComponentTests, ModelIsSavedAsAResourceName )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Model" );
-	entity->AddComponent<ModelComponent>( "cube.obj" );
+	entity->AddComponent<ModelComponent>()->SetModel( "cube.obj" );
 
 	Json::Value json;
 	ASSERT_TRUE( entity->SerializeComponents( json ) );
@@ -257,20 +260,94 @@ TEST( ModelComponentTests, MaterialOverrideIsSavedAsAResourceName )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Model" );
-	entity->AddComponent<ModelComponent>( "cube", "error" );
+	shared<ModelComponent> model = entity->AddComponent<ModelComponent>();
+	model->SetModel( "cube" );
+	model->SetMaterialOverride( "error" );
 
 	Json::Value json;
 	ASSERT_TRUE( entity->SerializeComponents( json ) );
 
 	EXPECT_EQ( json[0]["m_Data"]["m_Model"].asString(), "cube" );
-	EXPECT_EQ( json[0]["m_Data"]["m_Material"].asString(), "error" );
+	EXPECT_EQ( json[0]["m_Data"]["m_MaterialOverride"].asString(), "error" );
+}
+
+TEST( ModelComponentTests, ClearingTheMaterialOverrideSavesItEmpty )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Model" );
+
+	shared<ModelComponent> model = entity->AddComponent<ModelComponent>();
+	model->SetMaterialOverride( "error" );
+	model->SetMaterialOverride( "" );
+
+	Json::Value json;
+	ASSERT_TRUE( entity->SerializeComponents( json ) );
+	EXPECT_EQ( json[0]["m_Data"]["m_MaterialOverride"].asString(), "" );
+}
+
+TEST( ModelComponentTests, ChangingTheModelClearsTheMaterialOverride )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Model" );
+
+	shared<ModelComponent> model = entity->AddComponent<ModelComponent>();
+	model->SetModel( "first" );
+	model->SetMaterialOverride( "error" );
+	model->SetModel( "second" );
+
+	Json::Value json;
+	ASSERT_TRUE( entity->SerializeComponents( json ) );
+	EXPECT_EQ( json[0]["m_Data"]["m_Model"].asString(), "second" );
+	EXPECT_EQ( json[0]["m_Data"]["m_MaterialOverride"].asString(), "" );
+}
+
+TEST( ModelComponentTests, SettingTheSameModelKeepsTheMaterialOverride )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Model" );
+
+	shared<ModelComponent> model = entity->AddComponent<ModelComponent>();
+	model->SetModel( "first" );
+	model->SetMaterialOverride( "error" );
+	model->SetModel( "first" );
+
+	Json::Value json;
+	ASSERT_TRUE( entity->SerializeComponents( json ) );
+	EXPECT_EQ( json[0]["m_Data"]["m_MaterialOverride"].asString(), "error" );
+}
+
+TEST( ModelComponentTests, AnOverrideIsAcceptedWhenTheModelDoesNotUseIt )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Model" );
+
+	// Note: Without a session the model doesn't load, so it uses no library and nothing is refused
+	EXPECT_TRUE( entity->AddComponent<ModelComponent>()->SetMaterialOverride( "error" ) );
+}
+
+TEST( ModelComponentTests, AnUnloadedModelUsesNoMaterialLibrary )
+{
+	const Model model( "models/sponza.obj" );
+
+	EXPECT_FALSE( model.UsesMaterialLibrary( "sponza" ) );
+	EXPECT_FALSE( model.UsesMaterialLibrary( "" ) );
+}
+
+TEST( ModelComponentTests, SetMaterialOverrideWithoutAnEntityLoadsNothing )
+{
+	LogCapture log;
+
+	ModelComponent model;
+	model.SetMaterialOverride( "test" );
+
+	EXPECT_FALSE( log.Contains( "material test is not available" ) );
 }
 
 TEST( ModelComponentTests, MaterialOverrideIsAResourceProperty )
 {
 	ModelComponent model;
 
-	const rtti::PropertyInfo* property = model.GetTypeInfo().FindProperty( "m_Material" );
+	const rtti::PropertyInfo* property = model.GetTypeInfo().FindProperty( "m_MaterialOverride" );
 
 	ASSERT_NE( property, nullptr );
 	EXPECT_EQ( property->ResourceTypeId, GetTypeId<Material>() );
@@ -282,7 +359,7 @@ TEST( ModelComponentTests, MissingMaterialIsReported )
 	Entity*    entity = level.CreateEntity( "Model" );
 	LogCapture log;
 
-	entity->AddComponent<ModelComponent>( "", "test" );
+	entity->AddComponent<ModelComponent>()->SetMaterialOverride( "test" );
 
 	EXPECT_TRUE( log.Contains( "warning: ModelComponent: material test is not available, using error" ) );
 }
@@ -309,9 +386,33 @@ TEST( ModelComponentTests, MissingModelIsReported )
 	Entity*    entity = level.CreateEntity( "Model" );
 	LogCapture log;
 
-	entity->AddComponent<ModelComponent>( "missing" );
+	entity->AddComponent<ModelComponent>()->SetModel( "missing" );
 
 	EXPECT_TRUE( log.Contains( "error: ModelComponent: failed to load missing" ) );
+}
+
+TEST( ModelComponentTests, SetModelWithoutAnEntityLoadsNothing )
+{
+	LogCapture log;
+
+	ModelComponent model;
+	model.SetModel( "missing" );
+
+	EXPECT_FALSE( log.Contains( "failed to load missing" ) );
+}
+
+TEST( ModelComponentTests, SetModelSavesTheNewName )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Model" );
+
+	shared<ModelComponent> model = entity->AddComponent<ModelComponent>();
+	model->SetModel( "first" );
+	model->SetModel( "second" );
+
+	Json::Value json;
+	ASSERT_TRUE( entity->SerializeComponents( json ) );
+	EXPECT_EQ( json[0]["m_Data"]["m_Model"].asString(), "second" );
 }
 
 TEST( ModelComponentTests, ChangingThePropertyResolvesTheNewModel )

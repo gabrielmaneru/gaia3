@@ -7,6 +7,7 @@
 #define STBI_ONLY_BMP
 #define STBI_ONLY_PNG
 #define STBI_ONLY_JPEG
+#define STBI_ONLY_TGA
 #include <stb_image.h>
 
 #include <core/app.h>
@@ -17,7 +18,7 @@
 
 RTTI_DEFINE_RESOURCE( Texture,
                       RTTI_RESOURCE_FOLDER( "textures" ),
-                      RTTI_RESOURCE_EXTENSIONS( ".bmp", ".png", ".jpg", ".jpeg" ) )
+                      RTTI_RESOURCE_EXTENSIONS( ".bmp", ".png", ".jpg", ".jpeg", ".tga" ) )
 
 namespace
 {

@@ -41,16 +41,15 @@
 **Resources**
 - Every resource type has its own folder: `levels/`, `models/`, `materials/`, `shaders/` and `textures/`
 - Resources are found by short name, so `models/cube.obj` is simply `cube`
-- One file can hold several resources, like every material of a `.mtl` library
 - App assets override the engine's common assets
 - Typed references (`ResourceRef<Model>`) that save as names and pick from a dropdown in the Inspector
 
 **Rendering**
 - OpenGL 3.3 core renderer that draws into a framebuffer
 - Wavefront `.obj` models, where each object or group becomes a mesh with one sub-mesh per material
-- Materials from `.mtl` files with a colour, a texture and a shader
+- Material libraries from `.mtl` files, each material with a colour, a texture and a shader
 - Shaders in `.glsl` files, with both stages in one file
-- BMP, PNG and JPEG textures, with optional import settings for filtering, wrapping and mipmaps
+- BMP, PNG, JPEG and TGA textures, with optional import settings for filtering, wrapping and mipmaps
 - Texture formats and sampling described by `TextureProperties`, with presets shared by textures and render targets
 - Missing materials and textures draw with a recognisable error texture
 - One camera, with mouse look and WASD movement
@@ -104,6 +103,7 @@ Tests and samples can be switched off with `-DGAIA3_BUILD_TESTS=OFF` and `-DGAIA
 | `-no_editor` | Runs the game alone, full window |
 | `-no_dock` | Uses the floating editor layout, currently only used for testing |
 | `-frames N` | Closes after `N` frames |
+| `-level name` | Opens that level at startup instead of the default one |
 
 ### Run the tests
 
@@ -172,9 +172,9 @@ int main()
 	camera->SetRotation( LookAtQuat( Vec3( 0.0f, 0.0f, 1.0f ), Vec3::V_Up ) );
 	camera->AddComponent<CameraComponent>();
 
-	// The second name overrides the model's own materials, leave it out to use them
+	// Components are added empty, then each property is set
 	Entity* cube = level->CreateEntity( "Cube" );
-	cube->AddComponent<ModelComponent>( "cube", "error" );
+	cube->AddComponent<ModelComponent>()->SetModel( "cube" );
 
 	App::Run();
 	App::Shutdown();
@@ -205,13 +205,16 @@ Override `DrawInspector` for a dedicated editing experience, as `CameraComponent
 
 ### Materials, shaders and textures
 
-Materials are standard `.mtl` files in `materials/`. Every `newmtl` is its own material, found by that name:
+Materials come in libraries: standard `.mtl` files in `materials/`, named after the file. A library holds one material per `newmtl`, and those names only mean something inside it, so `floor` in `sponza.mtl` never clashes with `floor` in another library:
 
 ```text
-newmtl bricks
+newmtl floor
 Kd 1.0 1.0 1.0
-map_Kd bricks.png
+map_Kd floor.png
 shader default
+
+newmtl arch
+map_Kd arch.png
 ```
 
 | Line | Meaning |
@@ -220,7 +223,15 @@ shader default
 | `map_Kd` | Texture, looked up by file name in `textures/`. A texture that can't be found uses `error` with a warning |
 | `shader` | Shader in `shaders/`, a gaia3 extension other tools ignore. `default` when left out |
 
-A model's faces use the material their `usemtl` line names. Faces without one use `default`, and a material that can't be found uses `error` with a warning. A `ModelComponent` can also override every material of its model.
+A model uses the libraries its `mtllib` lines name, found by file name wherever the `.mtl` is. Each sub-mesh then takes the material its `usemtl` line names from those libraries:
+
+| Case | Material used |
+|---|---|
+| The name is in one of the model's libraries | That material |
+| The face has no `usemtl` | The `default` library |
+| The name or the library can't be found | The `error` library, with a warning |
+
+A `ModelComponent` can set a material override, a library used instead of the model's own, with `SetMaterialOverride` or the Inspector's MaterialOverride field. Each sub-mesh then looks up its name in that library, and sub-meshes without a name take its first material, so a cube drawn with the `error` library shows the error texture. The libraries the model already uses can't be chosen, they're greyed out in the Inspector, and changing the model clears the override.
 
 Shaders are `.glsl` files holding both stages, each one after a `#type vertex` or `#type fragment` line. The default shader draws the material's colour and texture, lit by a fixed sun.
 
@@ -239,13 +250,11 @@ Each resource type declares its folder and file extensions. The folder is a requ
 ```cpp
 RTTI_DEFINE_RESOURCE( Level,
                       RTTI_RESOURCE_FOLDER( "levels" ),
-                      RTTI_RESOURCE_EXTENSIONS( ".level", ".lvl" ),
+                      RTTI_RESOURCE_EXTENSIONS( ".lvl" ),
                       RTTI_PROPERTY( m_Entities ) )
 ```
 
 Saving always writes into the type's folder. A file found in another folder still loads, and shows its whole path, such as `models/stray` for a level inside `models/`. If two files end up with the same name, the one in the type's folder wins and the other is ignored with a warning.
-
-A type with a static `ListEntries( path )` reads several resources from one file, each named by its entry. `Material` uses it to list the `newmtl` names of a `.mtl` file.
 
 ## How it fits together
 
@@ -273,8 +282,8 @@ graph TD
     CameraComponent -. registers with .-> Renderer
     ModelComponent -. registers with .-> Renderer
     ModelComponent -. references .-> Model
-    ModelComponent -. can override .-> Material
-    Model -. sub-meshes use .-> Material
+    ModelComponent -. material override .-> Material
+    Model -. mtllib .-> Material
     Material -. uses .-> Shader
     Material -. uses .-> Texture
 
@@ -343,7 +352,7 @@ Installed through vcpkg from [`vcpkg.json`](vcpkg.json):
 | [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo) | Viewport gizmos |
 | [JsonCpp](https://github.com/open-source-parsers/jsoncpp) | Level serialization |
 | [spdlog](https://github.com/gabime/spdlog) | Logging |
-| [stb_image](https://github.com/nothings/stb) | Reading BMP, PNG and JPEG textures |
+| [stb_image](https://github.com/nothings/stb) | Reading BMP, PNG, JPEG and TGA textures |
 | [GoogleTest](https://github.com/google/googletest) | Tests |
 
 The editor font is [Cascadia Mono](https://github.com/microsoft/cascadia-code), included under the SIL Open Font License. See [`LICENCE_OFL.txt`](gaia3/assets/fonts/LICENCE_OFL.txt).

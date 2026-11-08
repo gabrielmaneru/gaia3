@@ -15,23 +15,11 @@ void Resource::SetPath( std::string_view path )
 {
 	m_Path = path;
 
-	if( !m_Entry.empty() )
-		return;
-
 	std::filesystem::path filePath( path );
 	m_Name = filePath.stem().string();
 	if( m_Name.empty() )
 	{
 		m_Name = filePath.filename().string();
-	}
-}
-
-void Resource::SetEntry( std::string_view entry )
-{
-	m_Entry = entry;
-	if( !m_Entry.empty() )
-	{
-		m_Name = m_Entry;
 	}
 }
 

@@ -6,16 +6,16 @@ namespace
 {
 struct ReadResult
 {
-	bool         bRead = false;
-	MaterialData data;
+	bool                      bRead = false;
+	std::vector<MaterialData> materials;
 };
 
-ReadResult ReadMtlText( const std::string& text, std::string_view materialName = "" )
+ReadResult ReadMtlText( const std::string& text )
 {
 	ScopedTempDir directory;
 
 	ReadResult result;
-	result.bRead = Material::ReadMtl( directory.Write( "material.mtl", text ), materialName, result.data );
+	result.bRead = Material::ReadMtl( directory.Write( "material.mtl", text ), result.materials );
 	return result;
 }
 
@@ -29,10 +29,13 @@ TEST( MaterialTests, ReadsColourTextureAndShader )
 	const ReadResult result = ReadMtlText( "newmtl bricks\nNs 10\nKd 0.5 0.25 1\nmap_Kd bricks.png\nshader lit\n" );
 
 	ASSERT_TRUE( result.bRead );
-	EXPECT_EQ( result.data.name, "bricks" );
-	EXPECT_TRUE( result.data.diffuseColor == Vec3( 0.5f, 0.25f, 1.0f ) );
-	EXPECT_EQ( result.data.diffuseTexture, "bricks.png" );
-	EXPECT_EQ( result.data.shader, "lit" );
+	ASSERT_EQ( result.materials.size(), 1u );
+
+	const MaterialData& bricks = result.materials[0];
+	EXPECT_EQ( bricks.name, "bricks" );
+	EXPECT_TRUE( bricks.diffuseColor == Vec3( 0.5f, 0.25f, 1.0f ) );
+	EXPECT_EQ( bricks.diffuseTexture, "bricks.png" );
+	EXPECT_EQ( bricks.shader, "lit" );
 }
 
 TEST( MaterialTests, MissingLinesKeepTheDefaults )
@@ -40,9 +43,10 @@ TEST( MaterialTests, MissingLinesKeepTheDefaults )
 	const ReadResult result = ReadMtlText( "# only a comment\nnewmtl plain\n" );
 
 	ASSERT_TRUE( result.bRead );
-	EXPECT_TRUE( result.data.diffuseColor == Vec3( 1.0f, 1.0f, 1.0f ) );
-	EXPECT_TRUE( result.data.diffuseTexture.empty() );
-	EXPECT_EQ( result.data.shader, "default" );
+	ASSERT_EQ( result.materials.size(), 1u );
+	EXPECT_TRUE( result.materials[0].diffuseColor == Vec3( 1.0f, 1.0f, 1.0f ) );
+	EXPECT_TRUE( result.materials[0].diffuseTexture.empty() );
+	EXPECT_EQ( result.materials[0].shader, "default" );
 }
 
 TEST( MaterialTests, TextureOptionsComeBeforeTheFileName )
@@ -50,71 +54,56 @@ TEST( MaterialTests, TextureOptionsComeBeforeTheFileName )
 	const ReadResult result = ReadMtlText( "newmtl bricks\nmap_Kd -s 2 2 1 -bm 0.5 textures/bricks.png\n" );
 
 	ASSERT_TRUE( result.bRead );
-	EXPECT_EQ( result.data.diffuseTexture, "textures/bricks.png" );
+	EXPECT_EQ( result.materials[0].diffuseTexture, "textures/bricks.png" );
 }
 
-TEST( MaterialTests, ReadsTheNamedMaterialOfALibrary )
-{
-	const ReadResult result = ReadMtlText( kLibrary, "fabric" );
-
-	ASSERT_TRUE( result.bRead );
-	EXPECT_EQ( result.data.name, "fabric" );
-	EXPECT_TRUE( result.data.diffuseColor == Vec3( 0.0f, 1.0f, 0.0f ) );
-	EXPECT_TRUE( result.data.diffuseTexture.empty() );
-	EXPECT_EQ( result.data.shader, "cloth" );
-}
-
-TEST( MaterialTests, ReadsTheLastMaterialOfALibrary )
-{
-	const ReadResult result = ReadMtlText( kLibrary, "floor" );
-
-	ASSERT_TRUE( result.bRead );
-	EXPECT_TRUE( result.data.diffuseColor == Vec3( 0.0f, 0.0f, 1.0f ) );
-	EXPECT_EQ( result.data.shader, "default" );
-}
-
-TEST( MaterialTests, WithoutANameTheFirstMaterialIsRead )
+TEST( MaterialTests, ReadsEveryMaterialOfALibraryInOrder )
 {
 	const ReadResult result = ReadMtlText( kLibrary );
 
 	ASSERT_TRUE( result.bRead );
-	EXPECT_EQ( result.data.name, "bricks" );
-	EXPECT_EQ( result.data.diffuseTexture, "bricks.png" );
-	EXPECT_TRUE( result.data.diffuseColor == Vec3( 1.0f, 0.0f, 0.0f ) );
+	ASSERT_EQ( result.materials.size(), 3u );
+
+	EXPECT_EQ( result.materials[0].name, "bricks" );
+	EXPECT_EQ( result.materials[0].diffuseTexture, "bricks.png" );
+	EXPECT_TRUE( result.materials[0].diffuseColor == Vec3( 1.0f, 0.0f, 0.0f ) );
+
+	EXPECT_EQ( result.materials[1].name, "fabric" );
+	EXPECT_TRUE( result.materials[1].diffuseTexture.empty() );
+	EXPECT_EQ( result.materials[1].shader, "cloth" );
+
+	EXPECT_EQ( result.materials[2].name, "floor" );
+	EXPECT_TRUE( result.materials[2].diffuseColor == Vec3( 0.0f, 0.0f, 1.0f ) );
+	EXPECT_EQ( result.materials[2].shader, "default" );
 }
 
-TEST( MaterialTests, AMissingNameIsReported )
+TEST( MaterialTests, AFileWithoutNewmtlIsOneUnnamedMaterial )
 {
-	LogCapture log;
+	const ReadResult result = ReadMtlText( "Kd 0.5 0.5 0.5\nmap_Kd stone.png\n" );
 
-	EXPECT_FALSE( ReadMtlText( kLibrary, "glass" ).bRead );
-	EXPECT_TRUE( log.Contains( "has no material named glass" ) );
+	ASSERT_TRUE( result.bRead );
+	ASSERT_EQ( result.materials.size(), 1u );
+	EXPECT_EQ( result.materials[0].name, "" );
+	EXPECT_EQ( result.materials[0].diffuseTexture, "stone.png" );
 }
 
-TEST( MaterialTests, ListsEveryMaterialOfALibrary )
+TEST( MaterialTests, AnEmptyFileIsOneDefaultMaterial )
 {
-	ScopedTempDir directory;
+	const ReadResult result = ReadMtlText( "" );
 
-	EXPECT_EQ( Material::ListEntries( directory.Write( "sponza.mtl", kLibrary ) ), ( std::vector<std::string>{ "bricks", "fabric", "floor" } ) );
+	ASSERT_TRUE( result.bRead );
+	ASSERT_EQ( result.materials.size(), 1u );
+	EXPECT_EQ( result.materials[0].shader, "default" );
 }
 
-TEST( MaterialTests, RepeatedNamesAreListedOnceWithAWarning )
+TEST( MaterialTests, RepeatedNamesAreReported )
 {
-	ScopedTempDir directory;
-	LogCapture    log;
+	LogCapture       log;
+	const ReadResult result = ReadMtlText( "newmtl a\nKd 1 0 0\nnewmtl b\nnewmtl a\nKd 0 1 0\n" );
 
-	const std::vector<std::string> names = Material::ListEntries( directory.Write( "twice.mtl", "newmtl a\nnewmtl b\nnewmtl a\n" ) );
-
-	EXPECT_EQ( names, ( std::vector<std::string>{ "a", "b" } ) );
-	EXPECT_TRUE( log.Contains( "defines a twice" ) );
-}
-
-TEST( MaterialTests, FilesWithoutMaterialsListNothing )
-{
-	ScopedTempDir directory;
-
-	EXPECT_TRUE( Material::ListEntries( directory.Write( "empty.mtl", "# nothing\n" ) ).empty() );
-	EXPECT_TRUE( Material::ListEntries( "this/file/does/not/exist.mtl" ).empty() );
+	ASSERT_TRUE( result.bRead );
+	EXPECT_EQ( result.materials.size(), 3u );
+	EXPECT_TRUE( log.Contains( "defines a twice, the first one is used" ) );
 }
 
 TEST( MaterialTests, InvalidColoursFail )
@@ -127,41 +116,61 @@ TEST( MaterialTests, InvalidColoursFail )
 
 TEST( MaterialTests, MissingFilesFail )
 {
-	MaterialData data;
+	std::vector<MaterialData> materials;
 
-	EXPECT_FALSE( Material::ReadMtl( "this/file/does/not/exist.mtl", "", data ) );
+	EXPECT_FALSE( Material::ReadMtl( "this/file/does/not/exist.mtl", materials ) );
 }
 
 TEST( MaterialTests, HandlesWindowsLineEndings )
 {
-	ScopedTempDir     directory;
-	const std::string path = directory.Write( "material.mtl", "newmtl bricks\r\nKd 0.5 0.5 0.5\r\nmap_Kd bricks.png\r\nnewmtl stone\r\n" );
+	const ReadResult result = ReadMtlText( "newmtl bricks\r\nKd 0.5 0.5 0.5\r\nmap_Kd bricks.png\r\nnewmtl stone\r\n" );
 
-	MaterialData data;
-	ASSERT_TRUE( Material::ReadMtl( path, "bricks", data ) );
-	EXPECT_EQ( data.diffuseTexture, "bricks.png" );
-	EXPECT_EQ( Material::ListEntries( path ), ( std::vector<std::string>{ "bricks", "stone" } ) );
+	ASSERT_TRUE( result.bRead );
+	ASSERT_EQ( result.materials.size(), 2u );
+	EXPECT_EQ( result.materials[0].name, "bricks" );
+	EXPECT_EQ( result.materials[0].diffuseTexture, "bricks.png" );
+	EXPECT_EQ( result.materials[1].name, "stone" );
 }
 
-TEST( MaterialTests, MissingMaterialsFallBackToErrorWithAWarning )
+TEST( MaterialTests, AnUnloadedLibraryHasNoMaterials )
+{
+	const Material library( "materials/sponza.mtl" );
+
+	EXPECT_EQ( library.GetName(), "sponza" );
+	EXPECT_TRUE( library.GetEntries().empty() );
+	EXPECT_EQ( library.FindEntry( "" ), nullptr );
+	EXPECT_EQ( library.FindEntry( "floor" ), nullptr );
+}
+
+TEST( MaterialTests, MissingLibrariesFallBackToErrorWithAWarning )
 {
 	LogCapture log;
 
-	// Note: There is no session here, so the error material is missing too
-	EXPECT_EQ( Material::FindOrError( "test", "Model cube" ), nullptr );
-	EXPECT_TRUE( log.Contains( "warning: Model cube: material test is not available, using error" ) );
-	EXPECT_TRUE( log.Contains( "error: Model cube: the error material is not available either" ) );
+	// Note: There is no session here, so the error library is missing too
+	EXPECT_EQ( Material::FindOrError( "test", "ModelComponent" ), nullptr );
+	EXPECT_TRUE( log.Contains( "warning: ModelComponent: material test is not available, using error" ) );
+	EXPECT_TRUE( log.Contains( "error: ModelComponent: the error material is not available either" ) );
+}
+
+TEST( MaterialTests, TheErrorEntryIsReportedWhenItIsMissing )
+{
+	LogCapture log;
+
+	// Note: There is no session here, so the error library can't be found
+	EXPECT_EQ( Material::FindErrorEntry( "Model sponza" ), nullptr );
+	EXPECT_TRUE( log.Contains( "error: Model sponza: the error material is not available" ) );
 }
 
 TEST( MaterialTests, TheEngineMaterialsRead )
 {
-	MaterialData error;
-	ASSERT_TRUE( Material::ReadMtl( GAIA3_ASSETS_PATH "materials/error.mtl", "error", error ) );
-	EXPECT_EQ( error.diffuseTexture, "error.bmp" );
-	EXPECT_EQ( error.shader, "default" );
+	std::vector<MaterialData> error;
+	ASSERT_TRUE( Material::ReadMtl( GAIA3_ASSETS_PATH "materials/error.mtl", error ) );
+	ASSERT_EQ( error.size(), 1u );
+	EXPECT_EQ( error[0].diffuseTexture, "error.bmp" );
+	EXPECT_EQ( error[0].shader, "default" );
 
-	MaterialData fallback;
-	ASSERT_TRUE( Material::ReadMtl( GAIA3_ASSETS_PATH "materials/default.mtl", "default", fallback ) );
-	EXPECT_TRUE( fallback.diffuseTexture.empty() );
-	EXPECT_EQ( fallback.shader, "default" );
+	std::vector<MaterialData> fallback;
+	ASSERT_TRUE( Material::ReadMtl( GAIA3_ASSETS_PATH "materials/default.mtl", fallback ) );
+	ASSERT_EQ( fallback.size(), 1u );
+	EXPECT_TRUE( fallback[0].diffuseTexture.empty() );
 }

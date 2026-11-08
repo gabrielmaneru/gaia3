@@ -141,26 +141,38 @@ bool EditJson( const std::string& label, Json::Value& value )
 	}
 }
 
-bool EditResource( const std::string& label, u64 resourceTypeId, Json::Value& value )
+bool EditResourceValue( const std::string& label, u64 resourceTypeId, Json::Value& value )
 {
-	const std::string currentName = value.asString();
+	std::string resourceName = value.asString();
+	if( !Inspector::EditResource( label.c_str(), resourceTypeId, resourceName ) )
+		return false;
+
+	value = resourceName;
+	return true;
+}
+} // namespace
+
+bool Inspector::EditResource( const char* label, u64 resourceTypeId, std::string& resourceName, const std::function<bool( std::string_view )>& isDisabled )
+{
+	const std::string currentName = resourceName;
 	const char*       preview     = currentName.empty() ? kNoResourceLabel : currentName.c_str();
 
 	bool bChanged = false;
-	if( ImGui::BeginCombo( label.c_str(), preview ) )
+	if( ImGui::BeginCombo( label, preview ) )
 	{
 		if( ImGui::Selectable( kNoResourceLabel, currentName.empty() ) && !currentName.empty() )
 		{
-			value    = "";
-			bChanged = true;
+			resourceName = "";
+			bChanged     = true;
 		}
 
-		for( const std::string& resourceName : App::GetSession().GetResourceManager().GetResourceNamesByTypeId( resourceTypeId ) )
+		for( const std::string& name : App::GetSession().GetResourceManager().GetResourceNamesByTypeId( resourceTypeId ) )
 		{
-			if( ImGui::Selectable( resourceName.c_str(), resourceName == currentName ) && resourceName != currentName )
+			const ImGuiSelectableFlags flags = isDisabled != nullptr && isDisabled( name ) ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None;
+			if( ImGui::Selectable( name.c_str(), name == currentName, flags ) && name != currentName )
 			{
-				value    = resourceName;
-				bChanged = true;
+				resourceName = name;
+				bChanged     = true;
 			}
 		}
 
@@ -169,7 +181,6 @@ bool EditResource( const std::string& label, u64 resourceTypeId, Json::Value& va
 
 	return bChanged;
 }
-} // namespace
 
 bool Inspector::EditFloat( const char* label, float& value, float speed )
 {
@@ -205,7 +216,7 @@ bool Inspector::EditProperty( void* instance, const rtti::PropertyInfo& property
 	}
 
 	const std::string label    = GetDisplayName( property.Name );
-	const bool        bChanged = property.ResourceTypeId != 0 ? EditResource( label, property.ResourceTypeId, value ) : EditJson( label, value );
+	const bool        bChanged = property.ResourceTypeId != 0 ? EditResourceValue( label, property.ResourceTypeId, value ) : EditJson( label, value );
 	if( !bChanged )
 		return false;
 

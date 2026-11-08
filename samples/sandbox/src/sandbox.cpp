@@ -9,9 +9,10 @@ namespace
 {
 struct SandboxOptions
 {
-	bool bNoEditor = false;
-	bool bNoDock   = false;
-	u64  maxFrames = 0;
+	bool        bNoEditor = false;
+	bool        bNoDock   = false;
+	u64         maxFrames = 0;
+	std::string level;
 };
 
 SandboxOptions ParseArguments( int argc, char** argv )
@@ -40,6 +41,10 @@ SandboxOptions ParseArguments( int argc, char** argv )
 				options.maxFrames = 0;
 			}
 		}
+		else if( argument == "-level" && i + 1 < argc )
+		{
+			options.level = argv[++i];
+		}
 		else
 		{
 			GAIA_WARN( "Sandbox: unknown argument {}", argument );
@@ -62,7 +67,9 @@ void createDefaultLevel( Level* pLevel )
 	// Create cube in the middle
 	Entity* pCube = pLevel->CreateEntity( "Cube" );
 	{
-		pCube->AddComponent<ModelComponent>( "cube", "test" );
+		shared<ModelComponent> pModelComp = pCube->AddComponent<ModelComponent>();
+		pModelComp->SetModel( "cube" );
+
 	}
 }
 } // namespace
@@ -74,7 +81,7 @@ int main( int argc, char** argv )
 	AppConfig config;
 	config.canvas     = { 2560, 1440 };
 	config.title      = "Sandbox";
-	config.startLevel = "";
+	config.startLevel = options.level;
 	config.appPath    = SANDBOX_ASSETS_PATH;
 	config.commonPath = GAIA3_ASSETS_PATH;
 

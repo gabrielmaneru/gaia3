@@ -68,28 +68,11 @@ bool ResourceManager::Init( std::string_view commonPath, std::string_view appPat
 			if( resourceKey.empty() )
 				resourceKey = filePath.stem().string();
 
-			auto registerScanned = [&]( const std::string& key, std::string_view resourceEntry ) {
-				if( !WinsNameClash( *descriptor, key, filePath.string() ) )
-					return;
-
-				RegisterResource( descriptor->TypeId, key, descriptor->Create( filePath.string(), resourceEntry ) );
-				++resourceCount;
-			};
-
-			const std::vector<std::string> fileEntries = descriptor->ListEntries != nullptr ? descriptor->ListEntries( filePath.string() ) : std::vector<std::string>();
-			if( fileEntries.empty() )
-			{
-				registerScanned( resourceKey, "" );
+			if( !WinsNameClash( *descriptor, resourceKey, filePath.string() ) )
 				continue;
-			}
 
-			// Note: Each entry is named like a file next to it, so props/crates.mtl holding "crate" gives "props/crate"
-			const u64         lastSlash   = resourceKey.rfind( '/' );
-			const std::string entryFolder = lastSlash == std::string::npos ? "" : resourceKey.substr( 0, lastSlash + 1 );
-			for( const std::string& fileEntry : fileEntries )
-			{
-				registerScanned( entryFolder + fileEntry, fileEntry );
-			}
+			RegisterResource( descriptor->TypeId, resourceKey, descriptor->Create( filePath.string() ) );
+			++resourceCount;
 		}
 
 		GAIA_INFO( "ResourceManager: found {} resources in {}", resourceCount, rootPath );
@@ -295,7 +278,7 @@ void ResourceManager::ReleaseResourceEntries( u64 typeId, const shared<Resource>
 		}
 		else if( descriptor != nullptr )
 		{
-			it->second = descriptor->Create( previousPath, resource->GetEntry() );
+			it->second = descriptor->Create( previousPath );
 			++it;
 		}
 		else

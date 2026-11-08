@@ -11,3 +11,5 @@ vcpkg_installed/
 
 # PrecompiledHeader
 *.pch
+
+samples/sandbox/assets/

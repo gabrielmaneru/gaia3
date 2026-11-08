@@ -91,6 +91,23 @@ TEST( TextureTests, ReadsABmpAsRgba )
 	EXPECT_EQ( image.pixels, ( std::vector<u8>{ 255, 0, 0, 255, 0, 255, 0, 255 } ) );
 }
 
+TEST( TextureTests, ReadsATgaAsRgba )
+{
+	// Note: An uncompressed 24 bit TGA, like Sponza's textures, one row with a red then a green pixel
+	const unsigned char bytes[] = {
+		0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 24, 0, // header
+		0, 0, 255, 0, 255, 0                                  // pixels, blue green red
+	};
+
+	ScopedTempDir directory;
+	TextureData   image;
+	ASSERT_TRUE( Texture::ReadImage( directory.Write( "pixels.tga", std::string( reinterpret_cast<const char*>( bytes ), sizeof( bytes ) ) ), image ) );
+
+	EXPECT_EQ( image.width, 2u );
+	EXPECT_EQ( image.height, 1u );
+	EXPECT_EQ( image.pixels, ( std::vector<u8>{ 255, 0, 0, 255, 0, 255, 0, 255 } ) );
+}
+
 TEST( TextureTests, ReadsTheEngineErrorTexture )
 {
 	TextureData image;

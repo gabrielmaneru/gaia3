@@ -47,33 +47,27 @@ bool ImportModel( std::string_view path, ModelData& outData )
 	return false;
 }
 
-// Note: Faces without a material use the default one, and a named material that can't be found uses the error one
-shared<Material> FindSlotMaterial( std::string_view modelName, const std::string& slot )
+// Note: Faces without a material use the default library, named ones are looked up in the model's own libraries
+const MaterialEntry* FindSlotMaterial( const std::vector<shared<Material>>& libraries, const Material* defaultLibrary, const std::string& slot, std::string_view requester )
 {
-	const std::string requester = "Model " + std::string( modelName );
-	if( !slot.empty() )
-		return Material::FindOrError( slot, requester );
-
-	shared<Material> defaultMaterial = App::GetSession().GetResourceManager().FindResource<Material>( Material::kDefaultName, true );
-	if( defaultMaterial == nullptr )
+	if( slot.empty() )
 	{
-		GAIA_ERROR( "{}: the {} material is not available, so faces without a material won't draw", requester, Material::kDefaultName );
-	}
-
-	return defaultMaterial;
-}
-
-void WarnAboutMissingLibraries( std::string_view modelName, std::string_view modelPath, const std::vector<std::string>& libraries )
-{
-	const std::filesystem::path modelFolder = std::filesystem::path( modelPath ).parent_path();
-	for( const std::string& library : libraries )
-	{
-		std::error_code ec;
-		if( !std::filesystem::exists( modelFolder / library, ec ) )
+		const MaterialEntry* defaultMaterial = defaultLibrary != nullptr ? defaultLibrary->FindEntry( "" ) : nullptr;
+		if( defaultMaterial == nullptr )
 		{
-			GAIA_WARN( "Model {}: material library {} is not next to the model, its materials are looked up by name", modelName, library );
+			GAIA_ERROR( "{}: the {} material is not available, so faces without a material won't draw", requester, Material::kDefaultName );
 		}
+		return defaultMaterial;
 	}
+
+	for( const shared<Material>& library : libraries )
+	{
+		if( const MaterialEntry* material = library->FindEntry( slot ) )
+			return material;
+	}
+
+	GAIA_WARN( "{}: material {} is not in its material libraries, using {}", requester, slot, Material::kErrorName );
+	return Material::FindErrorEntry( requester );
 }
 } // namespace
 
@@ -114,10 +108,27 @@ bool Model::LoadInternal()
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );
 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
 
-	WarnAboutMissingLibraries( GetName(), GetPath(), data.materialLibraries );
+	const std::string requester = "Model " + std::string( GetName() );
+	ResourceManager&  manager   = App::GetSession().GetResourceManager();
+
+	// Note: Libraries are found by file name like any material, wherever the .mtl file is
+	for( const std::string& libraryFile : data.materialLibraries )
+	{
+		const std::string libraryName = std::filesystem::path( libraryFile ).stem().string();
+		if( shared<Material> library = manager.FindResource<Material>( libraryName, true ) )
+		{
+			m_Libraries.push_back( library );
+		}
+		else
+		{
+			GAIA_WARN( "{}: material library {} is not available", requester, libraryFile );
+		}
+	}
+
+	shared<Material> defaultLibrary = manager.FindResource<Material>( Material::kDefaultName, true );
 
 	// Note: Each slot is looked up once, many meshes usually share a material
-	std::unordered_map<std::string, shared<Material>> slotMaterials;
+	std::unordered_map<std::string, const MaterialEntry*> slotMaterials;
 	for( const MeshData& mesh : data.meshes )
 	{
 		for( const SubMeshData& subMeshData : mesh.subMeshes )
@@ -125,15 +136,22 @@ bool Model::LoadInternal()
 			const auto [slotIt, bNewSlot] = slotMaterials.try_emplace( subMeshData.materialSlot );
 			if( bNewSlot )
 			{
-				slotIt->second = FindSlotMaterial( GetName(), subMeshData.materialSlot );
+				slotIt->second = FindSlotMaterial( m_Libraries, defaultLibrary.get(), subMeshData.materialSlot, requester );
 			}
 
 			SubMesh subMesh;
-			subMesh.indexOffset = subMeshData.indexOffset;
-			subMesh.indexCount  = subMeshData.indexCount;
-			subMesh.material    = slotIt->second;
+			subMesh.indexOffset  = subMeshData.indexOffset;
+			subMesh.indexCount   = subMeshData.indexCount;
+			subMesh.materialSlot = subMeshData.materialSlot;
+			subMesh.material     = slotIt->second;
 			m_SubMeshes.push_back( subMesh );
 		}
+	}
+
+	// Note: The default library only counts as the model's own when some faces have no material
+	if( defaultLibrary != nullptr && slotMaterials.contains( "" ) )
+	{
+		m_Libraries.push_back( defaultLibrary );
 	}
 
 	GAIA_INFO( "Model {}: {} vertices, {} triangles, {} meshes, {} sub-meshes", GetName(), data.positions.size(), data.indices.size() / 3, data.meshes.size(), m_SubMeshes.size() );
@@ -154,17 +172,53 @@ bool Model::UnloadInternal()
 	m_IndexBuffer    = 0;
 
 	m_SubMeshes.clear();
+	m_Libraries.clear();
 
 	return true;
 }
 
-void Model::Draw( const DrawContext& context, const Material* overrideMaterial ) const
+bool Model::UsesMaterialLibrary( std::string_view libraryName ) const
 {
-	glBindVertexArray( m_VertexArray );
+	// Note: Compares the resources, so "models/sponza" and "sponza" are the same library when they are the same file
+	const shared<Material> library = App::GetSession().GetResourceManager().FindResource<Material>( libraryName );
+	return library != nullptr && std::find( m_Libraries.begin(), m_Libraries.end(), library ) != m_Libraries.end();
+}
 
+std::vector<const MaterialEntry*> Model::FindMaterials( const Material& library ) const
+{
+	const std::string requester = "Model " + std::string( GetName() );
+
+	std::vector<const MaterialEntry*>                     materials;
+	std::unordered_map<std::string, const MaterialEntry*> slotMaterials;
 	for( const SubMesh& subMesh : m_SubMeshes )
 	{
-		const Material* material = overrideMaterial != nullptr ? overrideMaterial : subMesh.material.get();
+		const auto [slotIt, bNewSlot] = slotMaterials.try_emplace( subMesh.materialSlot );
+		if( bNewSlot )
+		{
+			slotIt->second = library.FindEntry( subMesh.materialSlot );
+			if( slotIt->second == nullptr )
+			{
+				GAIA_WARN( "{}: material {} is not in {}, using {}", requester, subMesh.materialSlot, library.GetName(), Material::kErrorName );
+				slotIt->second = Material::FindErrorEntry( requester );
+			}
+		}
+
+		materials.push_back( slotIt->second );
+	}
+
+	return materials;
+}
+
+void Model::Draw( const DrawContext& context, const std::vector<const MaterialEntry*>& overrideMaterials ) const
+{
+	const bool bOverride = overrideMaterials.size() == m_SubMeshes.size();
+
+	glBindVertexArray( m_VertexArray );
+
+	for( u64 i = 0; i < m_SubMeshes.size(); ++i )
+	{
+		const SubMesh&       subMesh  = m_SubMeshes[i];
+		const MaterialEntry* material = bOverride ? overrideMaterials[i] : subMesh.material;
 		if( material == nullptr )
 			continue;
 

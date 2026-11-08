@@ -145,37 +145,38 @@ TEST( SessionTests, ShadersMaterialsAndTexturesHaveTheirOwnFolders )
 
 TEST( SessionTests, EveryEngineResourceTypeIsRegistered )
 {
-	for( const char* extension : { ".obj", ".lvl", ".level", ".glsl", ".mtl", ".bmp", ".png", ".jpg", ".jpeg" } )
+	for( const char* extension : { ".obj", ".lvl", ".glsl", ".mtl", ".bmp", ".png", ".jpg", ".jpeg", ".tga" } )
 	{
 		EXPECT_NE( Resource::FindResourceTypeByExtension( extension ), nullptr ) << extension;
 	}
 }
 
-TEST( SessionTests, EveryMaterialOfALibraryIsFoundByName )
+TEST( SessionTests, MaterialLibrariesAreNamedAfterTheirFile )
 {
 	ScopedTempDir directory;
-	directory.Write( "materials/sponza.mtl", "newmtl bricks\nKd 1 0 0\nnewmtl fabric\nKd 0 1 0\n" );
-	directory.Write( "materials/error.mtl", "newmtl error\n" );
+	directory.Write( "materials/sponza.mtl", "newmtl floor\nKd 1 0 0\nnewmtl arch\nKd 0 1 0\n" );
+	directory.Write( "materials/castle.mtl", "newmtl floor\n" );
 
 	Session session;
 	ASSERT_TRUE( session.Init( "", "", directory.GetPath() ) );
 
+	// Note: The materials inside a library are not resources, so the two floors don't clash
 	ResourceManager& manager = session.GetResourceManager();
-	EXPECT_EQ( manager.GetResourceNames<Material>(), ( std::vector<std::string>{ "bricks", "error", "fabric" } ) );
-	EXPECT_EQ( manager.FindResource<Material>( "fabric" )->GetEntry(), "fabric" );
+	EXPECT_EQ( manager.GetResourceNames<Material>(), ( std::vector<std::string>{ "castle", "sponza" } ) );
+	EXPECT_EQ( manager.FindResource<Material>( "floor" ), nullptr );
 }
 
-TEST( SessionTests, MaterialsNextToAModelAreFoundByName )
+TEST( SessionTests, MaterialLibrariesNextToAModelAreFoundByName )
 {
 	ScopedTempDir directory;
-	directory.Write( "models/sponza.mtl", "newmtl bricks\n" );
+	directory.Write( "models/sponza.mtl", "newmtl floor\n" );
 
 	Session session;
 	ASSERT_TRUE( session.Init( "", "", directory.GetPath() ) );
 
 	ResourceManager& manager = session.GetResourceManager();
-	EXPECT_EQ( manager.GetResourceNames<Material>(), ( std::vector<std::string>{ "models/bricks" } ) );
-	EXPECT_NE( manager.FindResource<Material>( "bricks" ), nullptr );
+	EXPECT_EQ( manager.GetResourceNames<Material>(), ( std::vector<std::string>{ "models/sponza" } ) );
+	EXPECT_NE( manager.FindResource<Material>( "sponza" ), nullptr );
 }
 
 TEST( SessionTests, TexturesAreFoundByTheFileNameAMaterialUses )
