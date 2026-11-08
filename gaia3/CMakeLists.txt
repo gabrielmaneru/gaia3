@@ -7,10 +7,14 @@ add_library(gaia3 STATIC
     src/core/session.cpp
     src/core/serializationTypes.cpp
     src/gfx/framebuffer.cpp
-    src/gfx/meshObj.cpp
+    src/gfx/material.cpp
     src/gfx/model.cpp
+    src/gfx/objImporter.cpp
     src/gfx/renderer.cpp
     src/gfx/rendererTypes.cpp
+    src/gfx/shader.cpp
+    src/gfx/texture.cpp
+    src/gfx/texture2D.cpp
     src/math/mathHelpers.cpp
     src/math/matrix.cpp
     src/math/matrixTransforms.cpp
@@ -50,6 +54,7 @@ find_package(jsoncpp CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(imguizmo CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 
 # Link against vcpkg packages
 target_link_libraries(gaia3 PUBLIC
@@ -61,3 +66,6 @@ target_link_libraries(gaia3 PUBLIC
 
 # Note: Private because ImGui is an implementation detail of the editor
 target_link_libraries(gaia3 PRIVATE imgui::imgui imguizmo::imguizmo)
+
+# Note: stb is header only, texture.cpp compiles the image loader
+target_include_directories(gaia3 PRIVATE ${Stb_INCLUDE_DIR})

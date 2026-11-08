@@ -1,0 +1,3 @@
+# Note: Used by faces without a material, and by materials that can't be found
+newmtl default
+Kd 0.8 0.8 0.8

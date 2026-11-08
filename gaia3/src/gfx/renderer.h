@@ -19,14 +19,7 @@ public:
 	const RenderCamera* GetCamera() const { return m_Cameras.empty() ? nullptr : m_Cameras[0]; }
 
 private:
-	bool InitializeDummyShaders();
-
 	Framebuffer m_RenderTarget;
-
-	u32 m_Program                  = 0;
-	int m_ModelMatrixLocation      = -1;
-	int m_ViewMatrixLocation       = -1;
-	int m_ProjectionMatrixLocation = -1;
 
 	std::vector<Renderable*>   m_Renderables;
 	std::vector<RenderCamera*> m_Cameras;

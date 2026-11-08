@@ -18,7 +18,8 @@ target_compile_definitions(sandbox PRIVATE
 )
 
 # Link against the core engine
-target_link_libraries(sandbox PRIVATE gaia3)
+# Note: Whole archive keeps every engine file, so every resource type and component registers itself
+target_link_libraries(sandbox PRIVATE "$<LINK_LIBRARY:WHOLE_ARCHIVE,gaia3>")
 
 # Note: These open a real window for a few frames, so they need a GPU and run one at a time
 add_test(NAME sandbox_docked_editor COMMAND sandbox -frames 30)

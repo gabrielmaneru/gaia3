@@ -1,7 +1,10 @@
 #include "testHelpers.h"
 
 #include <core/session.h>
+#include <gfx/material.h>
 #include <gfx/model.h>
+#include <gfx/shader.h>
+#include <gfx/texture.h>
 
 #include <filesystem>
 
@@ -119,6 +122,75 @@ TEST( SessionTests, SavingALevelFromAnotherFolderKeepsItThere )
 	Level reloaded( path );
 	ASSERT_TRUE( reloaded.Load() );
 	EXPECT_EQ( reloaded.GetEntities().size(), 2u );
+}
+
+TEST( SessionTests, ShadersMaterialsAndTexturesHaveTheirOwnFolders )
+{
+	ScopedTempDir directory;
+	directory.Write( "shaders/lit.glsl", "" );
+	directory.Write( "materials/bricks.mtl", "" );
+	directory.Write( "textures/bricks.png", "" );
+	directory.Write( "textures/grass.jpg", "" );
+	directory.Write( "textures/sky.jpeg", "" );
+	directory.Write( "textures/error.bmp", "" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "", "", directory.GetPath() ) );
+
+	ResourceManager& manager = session.GetResourceManager();
+	EXPECT_EQ( manager.GetResourceNames<Shader>(), ( std::vector<std::string>{ "lit" } ) );
+	EXPECT_EQ( manager.GetResourceNames<Material>(), ( std::vector<std::string>{ "bricks" } ) );
+	EXPECT_EQ( manager.GetResourceNames<Texture>(), ( std::vector<std::string>{ "bricks", "error", "grass", "sky" } ) );
+}
+
+TEST( SessionTests, EveryEngineResourceTypeIsRegistered )
+{
+	for( const char* extension : { ".obj", ".lvl", ".level", ".glsl", ".mtl", ".bmp", ".png", ".jpg", ".jpeg" } )
+	{
+		EXPECT_NE( Resource::FindResourceTypeByExtension( extension ), nullptr ) << extension;
+	}
+}
+
+TEST( SessionTests, EveryMaterialOfALibraryIsFoundByName )
+{
+	ScopedTempDir directory;
+	directory.Write( "materials/sponza.mtl", "newmtl bricks\nKd 1 0 0\nnewmtl fabric\nKd 0 1 0\n" );
+	directory.Write( "materials/error.mtl", "newmtl error\n" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "", "", directory.GetPath() ) );
+
+	ResourceManager& manager = session.GetResourceManager();
+	EXPECT_EQ( manager.GetResourceNames<Material>(), ( std::vector<std::string>{ "bricks", "error", "fabric" } ) );
+	EXPECT_EQ( manager.FindResource<Material>( "fabric" )->GetEntry(), "fabric" );
+}
+
+TEST( SessionTests, MaterialsNextToAModelAreFoundByName )
+{
+	ScopedTempDir directory;
+	directory.Write( "models/sponza.mtl", "newmtl bricks\n" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "", "", directory.GetPath() ) );
+
+	ResourceManager& manager = session.GetResourceManager();
+	EXPECT_EQ( manager.GetResourceNames<Material>(), ( std::vector<std::string>{ "models/bricks" } ) );
+	EXPECT_NE( manager.FindResource<Material>( "bricks" ), nullptr );
+}
+
+TEST( SessionTests, TexturesAreFoundByTheFileNameAMaterialUses )
+{
+	ScopedTempDir directory;
+	directory.Write( "textures/error.bmp", "" );
+
+	Session session;
+	ASSERT_TRUE( session.Init( "", "", directory.GetPath() ) );
+
+	ResourceManager&      manager = session.GetResourceManager();
+	const shared<Texture> texture = manager.FindResource<Texture>( "error" );
+	ASSERT_NE( texture, nullptr );
+	EXPECT_EQ( manager.FindResource<Texture>( "error.bmp" ), texture );
+	EXPECT_EQ( manager.FindResource<Texture>( "../textures/error.bmp" ), texture );
 }
 
 TEST( SessionTests, ModelsInTheModelsFolderAreFoundByName )

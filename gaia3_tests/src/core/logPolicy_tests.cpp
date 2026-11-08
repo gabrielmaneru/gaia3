@@ -3,7 +3,7 @@
 #include "scene/testComponents.h"
 
 #include <core/session.h>
-#include <gfx/meshObj.h>
+#include <gfx/objImporter.h>
 #include <math/mathHelpers.h>
 #include <math/matrixTransforms.h>
 #include <math/transform.h>
@@ -97,9 +97,9 @@ TEST( WarningLogTests, MeshWithoutNormalsLoadsAndWarns )
 	ScopedTempDir directory;
 	LogCapture    log;
 
-	const MeshObj mesh( directory.Write( "mesh.obj", "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n" ) );
+	ModelData data;
+	EXPECT_TRUE( ObjImporter::Import( directory.Write( "mesh.obj", "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n" ), data ) );
 
-	EXPECT_TRUE( mesh.bIsValid );
 	EXPECT_TRUE( log.Contains( "has no normals" ) );
 }
 
@@ -108,9 +108,9 @@ TEST( WarningLogTests, MeshWithNormalsDoesNotWarn )
 	ScopedTempDir directory;
 	LogCapture    log;
 
-	const MeshObj mesh( directory.Write( "mesh.obj", "v 0 0 0\nv 1 0 0\nv 0 1 0\nvn 0 0 1\nf 1//1 2//1 3//1\n" ) );
+	ModelData data;
+	EXPECT_TRUE( ObjImporter::Import( directory.Write( "mesh.obj", "v 0 0 0\nv 1 0 0\nv 0 1 0\nvn 0 0 1\nf 1//1 2//1 3//1\n" ), data ) );
 
-	EXPECT_TRUE( mesh.bIsValid );
 	EXPECT_FALSE( log.Contains( "warning" ) );
 }
 
@@ -275,8 +275,8 @@ TEST( ErrorLogTests, InvalidMeshesReportTheLine )
 	LogCapture    log;
 
 	const std::string path = directory.Write( "bad.obj", "v 0 0 0\nv 0 0\n" );
-	const MeshObj     mesh( path );
+	ModelData         data;
 
-	EXPECT_FALSE( mesh.bIsValid );
-	EXPECT_TRUE( log.Contains( "error: MeshObj: invalid data at " + path + ":2" ) );
+	EXPECT_FALSE( ObjImporter::Import( path, data ) );
+	EXPECT_TRUE( log.Contains( "error: ObjImporter: invalid data at " + path + ":2" ) );
 }

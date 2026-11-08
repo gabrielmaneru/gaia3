@@ -13,6 +13,7 @@
     },
     "imguizmo",
     "jsoncpp",
-    "spdlog"
+    "spdlog",
+    "stb"
   ]
 }

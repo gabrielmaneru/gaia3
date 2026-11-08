@@ -2,6 +2,7 @@
 
 #include <components/cameraComponent.h>
 #include <components/modelComponent.h>
+#include <gfx/material.h>
 #include <math/mathHelpers.h>
 #include <math/quaternionTransforms.h>
 #include <math/vectorTransforms.h>
@@ -222,7 +223,7 @@ TEST( ModelComponentTests, DrawWithoutAResourceDoesNothing )
 	shared<ModelComponent> model = entity->AddComponent<ModelComponent>( "missing.obj" );
 
 	const Renderable& renderable = *model;
-	renderable.Draw();
+	renderable.Draw( DrawContext() );
 }
 
 TEST( ModelComponentTests, ModelIsSavedAsAResourceName )
@@ -249,7 +250,57 @@ TEST( ModelComponentTests, EmptyModelIsValidAndLogsNothing )
 	EXPECT_FALSE( log.Contains( "error" ) );
 
 	const Renderable& renderable = *model;
-	renderable.Draw();
+	renderable.Draw( DrawContext() );
+}
+
+TEST( ModelComponentTests, MaterialOverrideIsSavedAsAResourceName )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Model" );
+	entity->AddComponent<ModelComponent>( "cube", "error" );
+
+	Json::Value json;
+	ASSERT_TRUE( entity->SerializeComponents( json ) );
+
+	EXPECT_EQ( json[0]["m_Data"]["m_Model"].asString(), "cube" );
+	EXPECT_EQ( json[0]["m_Data"]["m_Material"].asString(), "error" );
+}
+
+TEST( ModelComponentTests, MaterialOverrideIsAResourceProperty )
+{
+	ModelComponent model;
+
+	const rtti::PropertyInfo* property = model.GetTypeInfo().FindProperty( "m_Material" );
+
+	ASSERT_NE( property, nullptr );
+	EXPECT_EQ( property->ResourceTypeId, GetTypeId<Material>() );
+}
+
+TEST( ModelComponentTests, MissingMaterialIsReported )
+{
+	Level      level;
+	Entity*    entity = level.CreateEntity( "Model" );
+	LogCapture log;
+
+	entity->AddComponent<ModelComponent>( "", "test" );
+
+	EXPECT_TRUE( log.Contains( "warning: ModelComponent: material test is not available, using error" ) );
+}
+
+TEST( ModelComponentTests, LevelsSavedBeforeMaterialsStillLoad )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Model" );
+
+	Json::Value oldComponent( Json::objectValue );
+	oldComponent["m_TypeName"]        = "ModelComponent";
+	oldComponent["m_Data"]["m_Model"] = "";
+
+	Json::Value components( Json::arrayValue );
+	components.append( oldComponent );
+
+	EXPECT_TRUE( entity->DeserializeComponents( components ) );
+	EXPECT_TRUE( entity->HasComponent( "ModelComponent" ) );
 }
 
 TEST( ModelComponentTests, MissingModelIsReported )

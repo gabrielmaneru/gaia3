@@ -1,6 +1,7 @@
 #pragma once
 
 #include <core/types.h>
+#include <gfx/texture2D.h>
 
 // Note: Call Destroy while the OpenGL context is alive, the destructor does not release anything
 class Framebuffer
@@ -15,11 +16,10 @@ public:
 
 	void BlitToWindow( rect canvas ) const;
 
-	u32 GetColorTexture() const { return m_ColorTexture; }
+	u32 GetColorTexture() const { return m_Color.GetId(); }
 
 private:
-	u32  m_Framebuffer  = 0;
-	u32  m_ColorTexture = 0;
-	u32  m_DepthBuffer  = 0;
-	rect m_Size         = {};
+	u32       m_Framebuffer = 0;
+	Texture2D m_Color;
+	Texture2D m_Depth;
 };

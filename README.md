@@ -6,14 +6,14 @@
 
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus&logoColor=white)
 ![OpenGL 3.3](https://img.shields.io/badge/OpenGL-3.3%20core-5586A4?logo=opengl&logoColor=white)
-![CMake](https://img.shields.io/badge/CMake-3.20%2B-064F8C?logo=cmake&logoColor=white)
+![CMake](https://img.shields.io/badge/CMake-3.24%2B-064F8C?logo=cmake&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
 </div>
 
 > [!NOTE]
-> gaia3 is in early development. It can author, save and reload levels, but rendering is still a placeholder: faces are coloured by their normal and there is no lighting yet. See [Current limits](#current-limits).
+> gaia3 is in early development. It can author, save and reload levels, and draws models with materials and textures, but lighting is still a single fixed sun in the default shader. See [Current limits](#current-limits).
 
 ## Contents
 
@@ -39,14 +39,20 @@
 - Components get a working Inspector for free, and can override it with their own
 
 **Resources**
-- Every resource type has its own folder: `levels/` for levels, `models/` for models
+- Every resource type has its own folder: `levels/`, `models/`, `materials/`, `shaders/` and `textures/`
 - Resources are found by short name, so `models/cube.obj` is simply `cube`
+- One file can hold several resources, like every material of a `.mtl` library
 - App assets override the engine's common assets
 - Typed references (`ResourceRef<Model>`) that save as names and pick from a dropdown in the Inspector
 
 **Rendering**
 - OpenGL 3.3 core renderer that draws into a framebuffer
-- Wavefront `.obj` model loading
+- Wavefront `.obj` models, where each object or group becomes a mesh with one sub-mesh per material
+- Materials from `.mtl` files with a colour, a texture and a shader
+- Shaders in `.glsl` files, with both stages in one file
+- BMP, PNG and JPEG textures, with optional import settings for filtering, wrapping and mipmaps
+- Texture formats and sampling described by `TextureProperties`, with presets shared by textures and render targets
+- Missing materials and textures draw with a recognisable error texture
 - One camera, with mouse look and WASD movement
 
 **Editor**
@@ -59,7 +65,7 @@
 **Foundations**
 - Math library: vectors, matrices, quaternions and transforms
 - Logging with a clear policy (see [Logging](#logging))
-- A GoogleTest suite with over 340 tests
+- A GoogleTest suite with over 400 tests
 
 ## Getting started
 
@@ -68,7 +74,7 @@
 | Tool | Notes |
 |---|---|
 | [MSYS2](https://www.msys2.org/) UCRT64 | GCC toolchain, with `C:\msys64\ucrt64\bin` on your `PATH` |
-| [CMake](https://cmake.org/) 3.20+ | |
+| [CMake](https://cmake.org/) 3.24+ | Apps link the engine as a whole archive, so every resource type and component registers itself |
 | [vcpkg](https://vcpkg.io/) | Expected at `C:/vcpkg`. Dependencies install automatically on the first configure |
 
 ### Visual Studio
@@ -166,8 +172,9 @@ int main()
 	camera->SetRotation( LookAtQuat( Vec3( 0.0f, 0.0f, 1.0f ), Vec3::V_Up ) );
 	camera->AddComponent<CameraComponent>();
 
+	// The second name overrides the model's own materials, leave it out to use them
 	Entity* cube = level->CreateEntity( "Cube" );
-	cube->AddComponent<ModelComponent>( "cube" );
+	cube->AddComponent<ModelComponent>( "cube", "error" );
 
 	App::Run();
 	App::Shutdown();
@@ -196,6 +203,35 @@ RTTI_DEFINE_COMP( HealthComponent,
 
 Override `DrawInspector` for a dedicated editing experience, as `CameraComponent` does for its yaw and pitch. Override `OnPropertyChanged` or `OnTransformChanged` to react to edits.
 
+### Materials, shaders and textures
+
+Materials are standard `.mtl` files in `materials/`. Every `newmtl` is its own material, found by that name:
+
+```text
+newmtl bricks
+Kd 1.0 1.0 1.0
+map_Kd bricks.png
+shader default
+```
+
+| Line | Meaning |
+|---|---|
+| `Kd` | Colour, multiplied with the texture |
+| `map_Kd` | Texture, looked up by file name in `textures/`. A texture that can't be found uses `error` with a warning |
+| `shader` | Shader in `shaders/`, a gaia3 extension other tools ignore. `default` when left out |
+
+A model's faces use the material their `usemtl` line names. Faces without one use `default`, and a material that can't be found uses `error` with a warning. A `ModelComponent` can also override every material of its model.
+
+Shaders are `.glsl` files holding both stages, each one after a `#type vertex` or `#type fragment` line. The default shader draws the material's colour and texture, lit by a fixed sun.
+
+A texture can have import settings in a `.meta` file next to it, such as `error.bmp.meta`:
+
+```json
+{ "filter": "nearest", "wrap": "repeat", "mipmaps": true }
+```
+
+`filter` is `nearest` or `linear`, `wrap` is `repeat`, `mirror` or `clamp`. Anything left out keeps the `V_DefaultColorRGBA` preset.
+
 ### Adding a resource type
 
 Each resource type declares its folder and file extensions. The folder is a required argument, so it can't be forgotten.
@@ -208,6 +244,8 @@ RTTI_DEFINE_RESOURCE( Level,
 ```
 
 Saving always writes into the type's folder. A file found in another folder still loads, and shows its whole path, such as `models/stray` for a level inside `models/`. If two files end up with the same name, the one in the type's folder wins and the other is ignored with a warning.
+
+A type with a static `ListEntries( path )` reads several resources from one file, each named by its entry. `Material` uses it to list the `newmtl` names of a `.mtl` file.
 
 ## How it fits together
 
@@ -223,6 +261,9 @@ graph TD
     Session --> Level
     ResourceManager --> Level
     ResourceManager --> Model
+    ResourceManager --> Material
+    ResourceManager --> Shader
+    ResourceManager --> Texture
 
     Level --> Entity
     Entity --> Component
@@ -232,6 +273,10 @@ graph TD
     CameraComponent -. registers with .-> Renderer
     ModelComponent -. registers with .-> Renderer
     ModelComponent -. references .-> Model
+    ModelComponent -. can override .-> Material
+    Model -. sub-meshes use .-> Material
+    Material -. uses .-> Shader
+    Material -. uses .-> Texture
 
     Editor -. edits .-> Level
 ```
@@ -259,11 +304,11 @@ graph TD
 ```text
 gaia3/
 ├── gaia3/                 Engine static library
-│   ├── assets/            Common assets: models and the editor font
+│   ├── assets/            Common assets: models, materials, shaders, textures and the editor font
 │   └── src/
 │       ├── components/    CameraComponent, ModelComponent
 │       ├── core/          App, Session, logging, type aliases
-│       ├── gfx/           Renderer, Framebuffer, Model, OBJ loading
+│       ├── gfx/           Renderer, Framebuffer, Model, Material, Shader, Texture, OBJ importer
 │       ├── math/          Vectors, matrices, quaternions, transforms
 │       ├── platform/      Window and Input
 │       ├── scene/         Level, Entity, Component, Editor, Inspector
@@ -276,13 +321,14 @@ gaia3/
 
 ## Current limits
 
-- **Rendering:** a single placeholder shader colours faces by their normal. There are no materials, textures or lights yet.
+- **Lighting:** the default shader is lit by a fixed sun, and there are no light components yet.
+- **Materials:** only the colour (`Kd`), the colour texture (`map_Kd`) and the shader are read from `.mtl` files.
+- **Model formats:** only OBJ for now. glTF and FBX importers are planned, along with skeletal animation.
 - **Cameras:** the renderer uses one camera, and extra ones are ignored. Choosing a render target per camera is planned.
 - **Undo:** there's no undo or redo yet, and no warning about unsaved changes. Both are planned.
 - **Selection:** entities are selected from the Hierarchy, as clicking in the Viewport doesn't pick them.
 - **Hierarchy:** entities have no parents.
 - **OBJ files:** only positive face indices are supported.
-- **Add Component:** a component only appears in the menu if the app's code references it, because the engine is a static library and unreferenced registrations get dropped.
 - **Platform:** built and tested on Windows with MinGW UCRT64.
 
 ## Dependencies
@@ -297,6 +343,7 @@ Installed through vcpkg from [`vcpkg.json`](vcpkg.json):
 | [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo) | Viewport gizmos |
 | [JsonCpp](https://github.com/open-source-parsers/jsoncpp) | Level serialization |
 | [spdlog](https://github.com/gabime/spdlog) | Logging |
+| [stb_image](https://github.com/nothings/stb) | Reading BMP, PNG and JPEG textures |
 | [GoogleTest](https://github.com/google/googletest) | Tests |
 
 The editor font is [Cascadia Mono](https://github.com/microsoft/cascadia-code), included under the SIL Open Font License. See [`LICENCE_OFL.txt`](gaia3/assets/fonts/LICENCE_OFL.txt).

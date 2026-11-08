@@ -62,7 +62,7 @@ void createDefaultLevel( Level* pLevel )
 	// Create cube in the middle
 	Entity* pCube = pLevel->CreateEntity( "Cube" );
 	{
-		pCube->AddComponent<ModelComponent>( "cube" );
+		pCube->AddComponent<ModelComponent>( "cube", "test" );
 	}
 }
 } // namespace

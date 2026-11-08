@@ -6,7 +6,10 @@ add_executable(gaia3_tests
     src/core/logPolicy_tests.cpp
     src/core/serializationTypes_tests.cpp
     src/core/session_tests.cpp
-    src/gfx/meshObj_tests.cpp
+    src/gfx/material_tests.cpp
+    src/gfx/objImporter_tests.cpp
+    src/gfx/shader_tests.cpp
+    src/gfx/texture_tests.cpp
     src/math/mathHelpers_tests.cpp
     src/math/matrix_tests.cpp
     src/math/quaternion_tests.cpp
@@ -33,12 +36,18 @@ target_include_directories(gaia3_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# Note: Lets tests check the engine's own assets
+target_compile_definitions(gaia3_tests PRIVATE
+    GAIA3_ASSETS_PATH="${CMAKE_SOURCE_DIR}/gaia3/assets/"
+)
+
 # Find vcpkg packages
 find_package(GTest REQUIRED)
 
 # Link against the core engine and vcpkg packages
-target_link_libraries(gaia3_tests PRIVATE 
-    gaia3 
+# Note: Whole archive keeps every engine file, so every resource type and component registers itself
+target_link_libraries(gaia3_tests PRIVATE
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,gaia3>"
     GTest::gtest_main
 )
 

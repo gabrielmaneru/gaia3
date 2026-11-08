@@ -34,7 +34,7 @@ protected:
 	bool SaveAsInternal( std::string_view path ) override { return bSaveWorks; }
 };
 
-shared<Resource> CreateNothing( std::string_view path )
+shared<Resource> CreateNothing( std::string_view path, std::string_view entry )
 {
 	return nullptr;
 }
@@ -134,6 +134,29 @@ TEST( ResourceTests, SetPathUpdatesPathAndName )
 
 	EXPECT_EQ( resource.GetPath(), "folder/second.obj" );
 	EXPECT_EQ( resource.GetName(), "second" );
+}
+
+TEST( ResourceTests, AnEntryNamesTheResource )
+{
+	TestResource resource( "materials/sponza.mtl" );
+	EXPECT_TRUE( resource.GetEntry().empty() );
+
+	resource.SetEntry( "bricks" );
+
+	EXPECT_EQ( resource.GetEntry(), "bricks" );
+	EXPECT_EQ( resource.GetName(), "bricks" );
+	EXPECT_EQ( resource.GetPath(), "materials/sponza.mtl" );
+}
+
+TEST( ResourceTests, MovingAnEntryKeepsItsName )
+{
+	TestResource resource( "materials/sponza.mtl" );
+	resource.SetEntry( "bricks" );
+
+	resource.SetPath( "materials/copy.mtl" );
+
+	EXPECT_EQ( resource.GetName(), "bricks" );
+	EXPECT_EQ( resource.GetPath(), "materials/copy.mtl" );
 }
 
 TEST( ResourceTests, SaveAsMarksNewResourceAsLoaded )
