@@ -13,7 +13,7 @@
 </div>
 
 > [!NOTE]
-> gaia3 is in early development. It can author, save and reload levels, and draws models with materials and textures, but lighting is still a single fixed sun in the default shader. See [Current limits](#current-limits).
+> gaia3 is in early development. It can author, save and reload levels, and draws models with materials, textures and normal maps lit by directional and point lights, but there are no shadows yet. See [Current limits](#current-limits).
 
 ## Contents
 
@@ -47,7 +47,7 @@
 **Rendering**
 - OpenGL 3.3 core renderer that draws into a framebuffer
 - Wavefront `.obj` models, where each object or group becomes a mesh with one sub-mesh per material
-- Material libraries from `.mtl` files, each material with a colour, a texture and a shader
+- Material libraries from `.mtl` files, each material with a colour, textures, a cut-out mask, a normal map, a shader and an optional two-sided flag
 - Shaders in `.glsl` files, with both stages in one file
 - BMP, PNG, JPEG and TGA textures, with optional import settings for filtering, wrapping and mipmaps
 - Texture formats and sampling described by `TextureProperties`, with presets shared by textures and render targets
@@ -57,7 +57,7 @@
 **Editor**
 - Docked layout with Hierarchy, Viewport and Inspector panels, built on ImGui
 - Create, clone, rename and delete entities, and add or remove components
-- Translate, rotate and scale gizmos in the Viewport
+- Translate, rotate and scale gizmos in the Viewport, along the world's axes or the entity's own
 - Unity and Unreal inspired theme that follows the Windows display scale
 - Off by default, each app turns it on through `AppConfig`
 
@@ -131,7 +131,8 @@ Hold the **right mouse button** in the Viewport to control the camera. It keeps 
 | Where | What you can do |
 |---|---|
 | **Level** menu | New, Open, Save, Save As |
-| **Gizmo** menu | Switch between Selection, Translate, Rotate and Scale |
+| **Gizmo** menu | Switch between Selection, Translate, Rotate and Scale, and between World and Local axes |
+| **Settings** menu | Draw mode, Lit or Normals (world-space normals as colours), an Alpha Test toggle that shows cut-outs as whole faces when off, and the camera linear and angular speed, shared by every camera. None of it is saved in levels |
 | **Hierarchy**, right click on an entity | Rename, Clone, Delete |
 | **Hierarchy**, right click on empty space | Create Entity |
 | **Inspector**, right click on empty space | Add Component, greyed out for types already present |
@@ -221,7 +222,10 @@ map_Kd arch.png
 |---|---|
 | `Kd` | Colour, multiplied with the texture |
 | `map_Kd` | Texture, looked up by file name in `textures/`. A texture that can't be found uses `error` with a warning |
+| `map_d` | Cut-out mask, pixels under half opacity aren't drawn. Its alpha when it has one, otherwise its red channel |
+| `map_Bump`, `bump`, `norm` | Tangent-space normal map |
 | `shader` | Shader in `shaders/`, a gaia3 extension other tools ignore. `default` when left out |
+| `two_sided` | Draws both sides of each face, for single-sheet geometry like leaves. A gaia3 extension other tools ignore |
 
 A model uses the libraries its `mtllib` lines name, found by file name wherever the `.mtl` is. Each sub-mesh then takes the material its `usemtl` line names from those libraries:
 
@@ -233,7 +237,7 @@ A model uses the libraries its `mtllib` lines name, found by file name wherever 
 
 A `ModelComponent` can set a material override, a library used instead of the model's own, with `SetMaterialOverride` or the Inspector's MaterialOverride field. Each sub-mesh then looks up its name in that library, and sub-meshes without a name take its first material, so a cube drawn with the `error` library shows the error texture. The libraries the model already uses can't be chosen, they're greyed out in the Inspector, and changing the model clears the override.
 
-Shaders are `.glsl` files holding both stages, each one after a `#type vertex` or `#type fragment` line. The default shader draws the material's colour and texture, lit by a fixed sun.
+Shaders are `.glsl` files holding both stages, each one after a `#type vertex` or `#type fragment` line. The default shader draws the material's colour, texture and normal map, lit by the level's directional and point lights.
 
 A texture can have import settings in a `.meta` file next to it, such as `error.bmp.meta`:
 
@@ -242,6 +246,8 @@ A texture can have import settings in a `.meta` file next to it, such as `error.
 ```
 
 `filter` is `nearest` or `linear`, `wrap` is `repeat`, `mirror` or `clamp`. Anything left out keeps the `V_DefaultColorRGBA` preset.
+
+Normal maps are read the OpenGL way, green pointing up the texture. A DirectX normal map, green pointing down, like Sponza's `_ddn` textures, needs `{ "flipGreen": true }` in its `.meta`, which inverts green once on load.
 
 ### Adding a resource type
 
@@ -315,7 +321,7 @@ gaia3/
 ├── gaia3/                 Engine static library
 │   ├── assets/            Common assets: models, materials, shaders, textures and the editor font
 │   └── src/
-│       ├── components/    CameraComponent, ModelComponent
+│       ├── components/    CameraComponent, ModelComponent, lights (DirectionalLightComponent, PointLightComponent)
 │       ├── core/          App, Session, logging, type aliases
 │       ├── gfx/           Renderer, Framebuffer, Model, Material, Shader, Texture, OBJ importer
 │       ├── math/          Vectors, matrices, quaternions, transforms
@@ -330,8 +336,8 @@ gaia3/
 
 ## Current limits
 
-- **Lighting:** the default shader is lit by a fixed sun, and there are no light components yet.
-- **Materials:** only the colour (`Kd`), the colour texture (`map_Kd`) and the shader are read from `.mtl` files.
+- **Lighting:** up to 8 directional and point lights, with a flat ambient term. No shadows, specular or PBR yet.
+- **Materials:** only the lines listed in [Materials, shaders and textures](#materials-shaders-and-textures) are read from `.mtl` files.
 - **Model formats:** only OBJ for now. glTF and FBX importers are planned, along with skeletal animation.
 - **Cameras:** the renderer uses one camera, and extra ones are ignored. Choosing a render target per camera is planned.
 - **Undo:** there's no undo or redo yet, and no warning about unsaved changes. Both are planned.

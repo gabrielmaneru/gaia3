@@ -1,6 +1,7 @@
 # Create Static library gaia3
 add_library(gaia3 STATIC
     src/components/cameraComponent.cpp
+    src/components/lightComponent.cpp
     src/components/modelComponent.cpp
     src/core/app.cpp
     src/core/log.cpp
@@ -9,6 +10,7 @@ add_library(gaia3 STATIC
     src/gfx/framebuffer.cpp
     src/gfx/material.cpp
     src/gfx/model.cpp
+    src/gfx/modelData.cpp
     src/gfx/objImporter.cpp
     src/gfx/renderer.cpp
     src/gfx/rendererTypes.cpp

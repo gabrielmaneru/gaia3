@@ -57,6 +57,67 @@ TEST( MaterialTests, TextureOptionsComeBeforeTheFileName )
 	EXPECT_EQ( result.materials[0].diffuseTexture, "textures/bricks.png" );
 }
 
+TEST( MaterialTests, ReadsTheOpacityMask )
+{
+	const ReadResult result = ReadMtlText( "newmtl leaf\nmap_Kd leaf.tga\nmap_d -imfchan l textures/leaf_mask.tga\nnewmtl stone\nmap_Kd stone.tga\n" );
+
+	ASSERT_TRUE( result.bRead );
+	ASSERT_EQ( result.materials.size(), 2u );
+	EXPECT_EQ( result.materials[0].opacityTexture, "textures/leaf_mask.tga" );
+	EXPECT_EQ( result.materials[0].diffuseTexture, "leaf.tga" );
+	EXPECT_TRUE( result.materials[1].opacityTexture.empty() );
+}
+
+TEST( MaterialTests, ReadsNormalMapsFromEveryBumpKeyword )
+{
+	const ReadResult result = ReadMtlText( "newmtl a\nmap_Bump -bm 1.5 a_ddn.tga\nnewmtl b\nmap_bump b_ddn.tga\nnewmtl c\nbump c_ddn.tga\n"
+	                                       "newmtl d\nnorm d_ddn.tga\nnewmtl e\nmap_Disp e_disp.tga\n" );
+
+	ASSERT_TRUE( result.bRead );
+	ASSERT_EQ( result.materials.size(), 5u );
+	EXPECT_EQ( result.materials[0].normalTexture, "a_ddn.tga" );
+	EXPECT_EQ( result.materials[1].normalTexture, "b_ddn.tga" );
+	EXPECT_EQ( result.materials[2].normalTexture, "c_ddn.tga" );
+	EXPECT_EQ( result.materials[3].normalTexture, "d_ddn.tga" );
+
+	// Note: map_Disp is a displacement map, it moves the surface rather than bending its lighting
+	EXPECT_TRUE( result.materials[4].normalTexture.empty() );
+}
+
+TEST( MaterialTests, ReadsTheTwoSidedLine )
+{
+	const ReadResult result = ReadMtlText( "newmtl leaf\nmap_Kd leaf.tga\ntwo_sided\nnewmtl stone\nmap_Kd stone.tga\n" );
+
+	ASSERT_TRUE( result.bRead );
+	ASSERT_EQ( result.materials.size(), 2u );
+	EXPECT_TRUE( result.materials[0].bTwoSided );
+
+	// Note: Materials are one-sided unless they say otherwise
+	EXPECT_FALSE( result.materials[1].bTwoSided );
+}
+
+TEST( MaterialTests, OnlyMaterialsWithAMaskAreAlphaTested )
+{
+	MaterialEntry leaf;
+	leaf.data.diffuseTexture = "leaf.tga";
+	leaf.data.opacityTexture = "leaf.tga";
+
+	MaterialEntry stone;
+	stone.data.diffuseTexture = "stone.tga";
+
+	EXPECT_TRUE( leaf.IsAlphaTested() );
+	EXPECT_FALSE( stone.IsAlphaTested() );
+}
+
+TEST( MaterialTests, DissolveValuesAreIgnored )
+{
+	// Note: Exporters often write d 0 for opaque materials, like Sponza does, so only map_d turns on cut-outs
+	const ReadResult result = ReadMtlText( "newmtl glass\nd 0.000000\nTr 1.0\n" );
+
+	ASSERT_TRUE( result.bRead );
+	EXPECT_TRUE( result.materials[0].opacityTexture.empty() );
+}
+
 TEST( MaterialTests, ReadsEveryMaterialOfALibraryInOrder )
 {
 	const ReadResult result = ReadMtlText( kLibrary );

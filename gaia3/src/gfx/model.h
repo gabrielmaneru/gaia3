@@ -44,6 +44,7 @@ private:
 	u32 m_PositionBuffer = 0;
 	u32 m_NormalBuffer   = 0;
 	u32 m_UVBuffer       = 0;
+	u32 m_TangentBuffer  = 0;
 	u32 m_IndexBuffer    = 0;
 
 	std::vector<SubMesh> m_SubMeshes;

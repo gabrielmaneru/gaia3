@@ -28,6 +28,7 @@ public:
 	virtual const rtti::TypeInfo& GetTypeInfo() const = 0;
 
 	Entity* GetOwner() const { return m_Owner; }
+	bool    HasOwner() const { return m_Owner != nullptr; }
 
 private:
 	friend class Entity;

@@ -20,16 +20,14 @@ public:
 	void OnRemoveComponent() override;
 	void OnPropertyChanged( std::string_view propertyName ) override;
 
-	// Note: Greys out the material libraries the model already uses, overriding with them would change nothing
 	void DrawInspector() override;
 
 	Matrix44 GetModelMatrix() const override;
 
-	// Note: A different model clears the material override, it was chosen for the previous model's materials
+	// Note: A different model clears the material override
 	void SetModel( std::string_view modelName );
 
-	// Note: An empty name goes back to the model's own material libraries. Returns false, clearing the override, when
-	// the model already uses that library
+	// Note: An empty name goes back to the model's own material libraries
 	bool SetMaterialOverride( std::string_view libraryName );
 
 private:

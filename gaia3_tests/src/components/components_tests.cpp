@@ -166,6 +166,45 @@ TEST( CameraComponentTests, YawAndPitchInOldLevelFilesAreIgnored )
 	EXPECT_NEAR( level.FindEntity( 1 )->GetComponent<CameraComponent>()->GetYaw(), -90.0f, 1e-3f );
 }
 
+TEST( CameraComponentTests, SpeedsAreSharedAndNotSaved )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Camera" );
+	entity->AddComponent<CameraComponent>();
+
+	Json::Value json;
+	ASSERT_TRUE( entity->SerializeComponents( json ) );
+
+	EXPECT_FALSE( json[0]["m_Data"].isMember( "m_LinearSpeed" ) );
+	EXPECT_FALSE( json[0]["m_Data"].isMember( "m_AngularSpeed" ) );
+
+	CameraComponent::SetLinearSpeed( 0.5f );
+	CameraComponent::SetAngularSpeed( 1.5f );
+	EXPECT_EQ( CameraComponent::GetLinearSpeed(), 0.5f );
+	EXPECT_EQ( CameraComponent::GetAngularSpeed(), 1.5f );
+
+	// Note: Restored so other tests see the defaults
+	CameraComponent::SetLinearSpeed( CameraComponent::kDefaultLinearSpeed );
+	CameraComponent::SetAngularSpeed( CameraComponent::kDefaultAngularSpeed );
+}
+
+TEST( CameraComponentTests, SpeedsInOldLevelFilesAreIgnored )
+{
+	ScopedTempDir directory;
+
+	Level level( directory.Write( "old.lvl", R"({
+		"m_Entities": [ {
+			"m_Name": "Camera",
+			"m_SerializedComponents": [ { "m_TypeName": "CameraComponent", "m_Data": { "m_LinearSpeed": 3.0, "m_AngularSpeed": 4.0 } } ]
+		} ]
+	})" ) );
+
+	ASSERT_TRUE( level.Load() );
+
+	EXPECT_EQ( CameraComponent::GetLinearSpeed(), CameraComponent::kDefaultLinearSpeed );
+	EXPECT_EQ( CameraComponent::GetAngularSpeed(), CameraComponent::kDefaultAngularSpeed );
+}
+
 TEST( CameraComponentTests, ViewMatrixMovesTheCameraToTheOrigin )
 {
 	Level   level;
@@ -254,6 +293,41 @@ TEST( ModelComponentTests, EmptyModelIsValidAndLogsNothing )
 
 	const Renderable& renderable = *model;
 	renderable.Draw( DrawContext() );
+}
+
+TEST( ModelComponentTests, EmptyResourcesStayValidAsPropertiesChange )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Model" );
+
+	shared<ModelComponent> model = entity->AddComponent<ModelComponent>();
+
+	LogCapture log;
+	model->SetModel( "" );
+	model->SetMaterialOverride( "" );
+	model->OnPropertyChanged( "m_Model" );
+	model->OnPropertyChanged( "m_MaterialOverride" );
+
+	EXPECT_FALSE( log.Contains( "error" ) );
+	EXPECT_FALSE( log.Contains( "warning" ) );
+
+	const Renderable& renderable = *model;
+	renderable.Draw( DrawContext() );
+}
+
+TEST( ModelComponentTests, AnEmptyModelKeepsItsOverride )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Model" );
+
+	shared<ModelComponent> model = entity->AddComponent<ModelComponent>();
+	model->SetMaterialOverride( "error" );
+	model->OnPropertyChanged( "m_Model" );
+
+	Json::Value json;
+	ASSERT_TRUE( entity->SerializeComponents( json ) );
+	EXPECT_EQ( json[0]["m_Data"]["m_Model"].asString(), "" );
+	EXPECT_EQ( json[0]["m_Data"]["m_MaterialOverride"].asString(), "error" );
 }
 
 TEST( ModelComponentTests, MaterialOverrideIsSavedAsAResourceName )

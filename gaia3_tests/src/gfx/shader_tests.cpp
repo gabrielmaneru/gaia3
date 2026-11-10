@@ -1,5 +1,6 @@
 #include "testHelpers.h"
 
+#include <gfx/rendererTypes.h>
 #include <gfx/shader.h>
 
 #include <fstream>
@@ -74,4 +75,23 @@ TEST( ShaderTests, TheEngineDefaultShaderHasBothStages )
 	EXPECT_EQ( fragment.find( "#version 330 core" ), 0u );
 	EXPECT_NE( fragment.find( "u_Color" ), std::string::npos );
 	EXPECT_NE( fragment.find( "u_Texture" ), std::string::npos );
+	EXPECT_NE( fragment.find( "u_AlphaTest" ), std::string::npos );
+	EXPECT_NE( fragment.find( "u_OpacityTexture" ), std::string::npos );
+	EXPECT_NE( fragment.find( "discard" ), std::string::npos );
+
+	// Note: The shader's light limit must match the renderer's
+	EXPECT_NE( fragment.find( "const int kMaxLights        = " + std::to_string( kMaxLights ) + ";" ), std::string::npos );
+	EXPECT_NE( fragment.find( "u_LightColor" ), std::string::npos );
+
+	// Note: The tangent attribute must match kTangentAttribute in gfx/model.cpp
+	EXPECT_NE( vertex.find( "layout( location = 3 ) in vec4 aTangent;" ), std::string::npos );
+	EXPECT_NE( fragment.find( "u_NormalTexture" ), std::string::npos );
+
+	// Note: Two-sided materials light their back faces with the normal flipped
+	EXPECT_NE( fragment.find( "gl_FrontFacing" ), std::string::npos );
+
+	// Note: The draw modes must match DrawMode
+	EXPECT_NE( fragment.find( "const int kDrawLit     = " + std::to_string( static_cast<int>( DrawMode::Lit ) ) + ";" ), std::string::npos );
+	EXPECT_NE( fragment.find( "const int kDrawNormals = " + std::to_string( static_cast<int>( DrawMode::Normals ) ) + ";" ), std::string::npos );
+	EXPECT_NE( fragment.find( "u_DrawMode" ), std::string::npos );
 }

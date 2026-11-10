@@ -52,6 +52,12 @@ bool Renderer::Init( ProcAddressFn procAddressLoader, rect canvas )
 
 	glEnable( GL_DEPTH_TEST );
 
+	// Note: Faces are counter-clockwise seen from their front, like the engine's models, and their backs aren't drawn.
+	// Two-sided materials turn culling off while they draw, see MaterialEntry::Bind
+	glEnable( GL_CULL_FACE );
+	glCullFace( GL_BACK );
+	glFrontFace( GL_CCW );
+
 	return true;
 }
 
@@ -80,6 +86,10 @@ void Renderer::Update( rect renderSize )
 		context.projection = camera->GetProjectionMatrix( renderSize );
 	}
 
+	context.lights     = GatherLights();
+	context.drawMode   = m_DrawMode;
+	context.bAlphaTest = m_bAlphaTest;
+
 	for( const Renderable* renderable : m_Renderables )
 	{
 		context.model = renderable->GetModelMatrix();
@@ -87,6 +97,28 @@ void Renderer::Update( rect renderSize )
 	}
 
 	Framebuffer::Unbind();
+}
+
+std::vector<LightParameters> Renderer::GatherLights()
+{
+	// Note: Warns once each time the limit is passed, not every frame
+	const bool bOverLimit = m_Lights.size() > kMaxLights;
+	if( bOverLimit && !m_bWarnedLightLimit )
+	{
+		GAIA_WARN( "Renderer: {} lights, only the first {} are used", m_Lights.size(), kMaxLights );
+	}
+	m_bWarnedLightLimit = bOverLimit;
+
+	std::vector<LightParameters> lights;
+	for( const RenderLight* light : m_Lights )
+	{
+		if( lights.size() == kMaxLights )
+			break;
+
+		lights.push_back( light->GetLightParameters() );
+	}
+
+	return lights;
 }
 
 void Renderer::PresentToWindow( rect canvas ) const
@@ -98,6 +130,7 @@ void Renderer::Shutdown()
 {
 	m_Renderables.clear();
 	m_Cameras.clear();
+	m_Lights.clear();
 
 	m_RenderTarget.Destroy();
 }

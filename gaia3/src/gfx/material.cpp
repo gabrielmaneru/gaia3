@@ -5,6 +5,8 @@
 #include <gfx/shader.h>
 #include <gfx/texture.h>
 
+#include <glad/glad.h>
+
 #include <algorithm>
 #include <fstream>
 #include <sstream>
@@ -16,10 +18,24 @@ RTTI_DEFINE_RESOURCE( Material,
 namespace
 {
 constexpr u32 kDiffuseTextureUnit = 0;
+constexpr u32 kOpacityTextureUnit = 1;
+constexpr u32 kNormalTextureUnit  = 2;
 
 bool ParseVec3( std::istringstream& stream, Vec3& outValue )
 {
 	return static_cast<bool>( stream >> outValue.x >> outValue.y >> outValue.z );
+}
+
+// Note: Options like "-s 1 1 1" come before the file name, so the file is the last word
+std::string ReadTextureName( std::istringstream& stream )
+{
+	std::string word;
+	std::string fileName;
+	while( stream >> word )
+	{
+		fileName = word;
+	}
+	return fileName;
 }
 } // namespace
 
@@ -28,10 +44,35 @@ void MaterialEntry::Bind( const DrawContext& context ) const
 	if( shader == nullptr )
 		return;
 
+	// Note: Every material sets culling itself, so a two-sided one never leaves it off for the next
+	if( data.bTwoSided )
+	{
+		glDisable( GL_CULL_FACE );
+	}
+	else
+	{
+		glEnable( GL_CULL_FACE );
+	}
+
 	shader->Use();
 	shader->SetMatrix44( "u_Model", context.model );
 	shader->SetMatrix44( "u_View", context.view );
 	shader->SetMatrix44( "u_Projection", context.projection );
+	shader->SetInt( "u_DrawMode", static_cast<int>( context.drawMode ) );
+
+	const u64 lightCount = std::min<u64>( context.lights.size(), kMaxLights );
+	shader->SetInt( "u_LightCount", static_cast<int>( lightCount ) );
+	for( u64 i = 0; i < lightCount; ++i )
+	{
+		const LightParameters& light = context.lights[i];
+		const std::string      index = "[" + std::to_string( i ) + "]";
+
+		shader->SetInt( ( "u_LightType" + index ).c_str(), static_cast<int>( light.type ) );
+		shader->SetVec3( ( "u_LightColor" + index ).c_str(), light.color );
+		shader->SetVec3( ( "u_LightPosition" + index ).c_str(), light.position );
+		shader->SetVec3( ( "u_LightDirection" + index ).c_str(), light.direction );
+		shader->SetFloat( ( "u_LightRange" + index ).c_str(), light.range );
+	}
 
 	shader->SetVec3( "u_Color", data.diffuseColor );
 	shader->SetInt( "u_UseTexture", diffuseTexture != nullptr ? 1 : 0 );
@@ -39,6 +80,22 @@ void MaterialEntry::Bind( const DrawContext& context ) const
 	{
 		diffuseTexture->Bind( kDiffuseTextureUnit );
 		shader->SetInt( "u_Texture", kDiffuseTextureUnit );
+	}
+
+	shader->SetInt( "u_AlphaTest", IsAlphaTested() && context.bAlphaTest ? 1 : 0 );
+	shader->SetInt( "u_UseOpacityTexture", opacityTexture != nullptr ? 1 : 0 );
+	if( opacityTexture != nullptr )
+	{
+		opacityTexture->Bind( kOpacityTextureUnit );
+		shader->SetInt( "u_OpacityTexture", kOpacityTextureUnit );
+		shader->SetInt( "u_OpacityFromAlpha", opacityTexture->HasAlphaChannel() ? 1 : 0 );
+	}
+
+	shader->SetInt( "u_UseNormalTexture", normalTexture != nullptr ? 1 : 0 );
+	if( normalTexture != nullptr )
+	{
+		normalTexture->Bind( kNormalTextureUnit );
+		shader->SetInt( "u_NormalTexture", kNormalTextureUnit );
 	}
 }
 
@@ -102,16 +159,23 @@ bool Material::ReadMtl( std::string_view path, std::vector<MaterialData>& outMat
 		}
 		else if( keyword == "map_Kd" )
 		{
-			// Note: Options like "-s 1 1 1" come before the file name, so the file is the last word
-			std::string word;
-			while( lineStream >> word )
-			{
-				currentMaterial().diffuseTexture = word;
-			}
+			currentMaterial().diffuseTexture = ReadTextureName( lineStream );
+		}
+		else if( keyword == "map_d" )
+		{
+			currentMaterial().opacityTexture = ReadTextureName( lineStream );
+		}
+		else if( keyword == "map_Bump" || keyword == "map_bump" || keyword == "bump" || keyword == "norm" )
+		{
+			currentMaterial().normalTexture = ReadTextureName( lineStream );
 		}
 		else if( keyword == "shader" )
 		{
 			lineStream >> currentMaterial().shader;
+		}
+		else if( keyword == "two_sided" )
+		{
+			currentMaterial().bTwoSided = true;
 		}
 	}
 
@@ -171,6 +235,28 @@ bool Material::LoadInternal()
 		if( !data.diffuseTexture.empty() )
 		{
 			entry.diffuseTexture = Texture::FindOrError( data.diffuseTexture, "Material " + std::string( GetName() ) );
+		}
+
+		// Note: A missing mask falls back to the diffuse texture's alpha rather than the error texture, which as a
+		// mask would only punch a checker pattern of holes
+		if( !data.opacityTexture.empty() )
+		{
+			entry.opacityTexture = manager.FindResource<Texture>( data.opacityTexture, true );
+			if( entry.opacityTexture == nullptr )
+			{
+				GAIA_WARN( "Material {}: opacity texture {} of {} is not available, using the alpha of its colour texture", GetName(), data.opacityTexture, data.name );
+			}
+		}
+
+		// Note: A missing normal map leaves the surface flat rather than using the error texture, which as a normal map
+		// would only bend the lighting in a checker pattern
+		if( !data.normalTexture.empty() )
+		{
+			entry.normalTexture = manager.FindResource<Texture>( data.normalTexture, true );
+			if( entry.normalTexture == nullptr )
+			{
+				GAIA_WARN( "Material {}: normal map {} of {} is not available, using the model's normals", GetName(), data.normalTexture, data.name );
+			}
 		}
 
 		entry.data = std::move( data );

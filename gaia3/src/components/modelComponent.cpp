@@ -109,7 +109,7 @@ void ModelComponent::SetModel( std::string_view modelName )
 	m_Model.SetName( modelName );
 
 	// Note: Before the component is on an entity, OnAddComponent resolves it instead
-	if( GetOwner() != nullptr )
+	if( HasOwner() )
 	{
 		ResolveResources();
 	}
@@ -120,7 +120,7 @@ bool ModelComponent::SetMaterialOverride( std::string_view libraryName )
 	m_MaterialOverride.SetName( libraryName );
 
 	// Note: Before the component is on an entity, OnAddComponent resolves it instead
-	if( GetOwner() != nullptr )
+	if( HasOwner() )
 	{
 		ResolveResources();
 	}

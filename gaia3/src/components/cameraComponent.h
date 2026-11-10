@@ -24,6 +24,15 @@ public:
 	float GetPitch() const { return m_Pitch; }
 	void  SetRotationAngles( float yaw, float pitch );
 
+	// Note: Shared by every camera and not saved in levels, the editor changes them from its Settings menu
+	static float GetLinearSpeed() { return m_LinearSpeed; }
+	static float GetAngularSpeed() { return m_AngularSpeed; }
+	static void  SetLinearSpeed( float speed ) { m_LinearSpeed = speed; }
+	static void  SetAngularSpeed( float speed ) { m_AngularSpeed = speed; }
+
+	static constexpr float kDefaultLinearSpeed  = 0.01f;
+	static constexpr float kDefaultAngularSpeed = 0.2f; // deg
+
 private:
 	void ComputeAnglesFromRotation();
 	void RecomputeRotation();
@@ -37,6 +46,7 @@ private:
 	float m_Pitch{ 0.0f }; // deg
 	// Assume m_Roll = 0.0f
 
-	float m_LinearSpeed{ 0.05f };
-	float m_AngularSpeed{ 0.2f }; // deg
+	// Note: Units per frame and degrees per pixel of mouse movement
+	static float m_LinearSpeed;
+	static float m_AngularSpeed;
 };

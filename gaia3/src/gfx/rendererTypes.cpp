@@ -37,3 +37,20 @@ void RenderCamera::Unregister()
 	if( it != vecCameras.end() )
 		vecCameras.erase( it );
 }
+
+void RenderLight::Register()
+{
+	std::vector<RenderLight*>& vecLights = App::GetRenderer().m_Lights;
+
+	if( std::find( vecLights.begin(), vecLights.end(), this ) == vecLights.end() )
+		vecLights.push_back( this );
+}
+
+void RenderLight::Unregister()
+{
+	std::vector<RenderLight*>& vecLights = App::GetRenderer().m_Lights;
+
+	auto it = std::find( vecLights.begin(), vecLights.end(), this );
+	if( it != vecLights.end() )
+		vecLights.erase( it );
+}

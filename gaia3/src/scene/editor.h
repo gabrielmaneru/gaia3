@@ -19,6 +19,14 @@ enum class GizmoMode
 	Scale
 };
 
+// Note: The axes the gizmo's handles follow. World uses the level's axes, Local the entity's own rotation, so
+// translating along a local X moves the entity towards its own right. Scale always follows the entity's own axes
+enum class GizmoSpace
+{
+	World,
+	Local
+};
+
 // Note: Samples choose the editor through AppConfig::editor, nothing is created unless enabled is true
 struct EditorConfig
 {
@@ -27,7 +35,8 @@ struct EditorConfig
 	// Note: Floating mode (false) is currently only used for testing, it will serve custom non-sandbox projects
 	bool docked = false;
 
-	GizmoMode gizmoMode = GizmoMode::Selection;
+	GizmoMode  gizmoMode  = GizmoMode::Selection;
+	GizmoSpace gizmoSpace = GizmoSpace::World;
 };
 
 // Note: Returns transform with only the part the mode edits taken from gizmoMatrix, the rest is kept as it was
@@ -57,6 +66,9 @@ public:
 	GizmoMode GetGizmoMode() const { return m_GizmoMode; }
 	void      SetGizmoMode( GizmoMode mode ) { m_GizmoMode = mode; }
 
+	GizmoSpace GetGizmoSpace() const { return m_GizmoSpace; }
+	void       SetGizmoSpace( GizmoSpace space ) { m_GizmoSpace = space; }
+
 	void NewLevel();
 	bool OpenLevel( std::string_view levelName );
 	bool SaveLevel();
@@ -68,6 +80,8 @@ public:
 
 private:
 	void DrawMenuBar();
+	void DrawRenderSettings();
+	void DrawCameraSettings();
 	void DrawSaveAsPopup();
 	void DrawRenamePopup();
 	void DrawDockSpace();
@@ -91,6 +105,7 @@ private:
 	u64          m_SelectedEntityId   = 0;
 	u64          m_RenameEntityId     = 0;
 	GizmoMode    m_GizmoMode          = GizmoMode::Selection;
+	GizmoSpace   m_GizmoSpace         = GizmoSpace::World;
 
 	// Note: Euler angles are kept between frames, reading them back from the rotation makes them jump while dragging
 	u64  m_EulerEntityId = 0;

@@ -16,7 +16,18 @@ struct MaterialData
 	std::string name;
 	Vec3        diffuseColor = Vec3( 1.0f, 1.0f, 1.0f );
 	std::string diffuseTexture;
+
+	// Note: The map_d texture, a cut-out mask. Having one turns on alpha testing, see MaterialEntry
+	std::string opacityTexture;
+
+	// Note: A tangent-space normal map, from a map_Bump, bump or norm line
+	std::string normalTexture;
+
 	std::string shader = "default";
+
+	// Note: From a "two_sided" line, a gaia3 extension. Both sides of each face are drawn, for single-sheet geometry
+	// like leaves, and the back side is lit as its own surface
+	bool bTwoSided = false;
 };
 
 // Note: One newmtl of a material library, ready to draw with
@@ -25,6 +36,17 @@ struct MaterialEntry
 	MaterialData    data;
 	shared<Shader>  shader;
 	shared<Texture> diffuseTexture;
+
+	// Note: The map_d texture. Its alpha is the opacity when it has an alpha channel, so map_d can name the colour
+	// texture itself, otherwise its red channel is, as for grey masks. Null when the mask can't be found, then the
+	// diffuse texture's alpha is used
+	shared<Texture> opacityTexture;
+
+	// Note: Null without a normal map, or when it can't be found, then the surface uses the model's normals
+	shared<Texture> normalTexture;
+
+	// Note: Pixels whose opacity is under half aren't drawn, only for materials with a map_d line
+	bool IsAlphaTested() const { return !data.opacityTexture.empty(); }
 
 	// Note: Selects the shader, then sets the material's values and the object's matrices
 	void Bind( const DrawContext& context ) const;
@@ -41,9 +63,9 @@ public:
 
 	explicit Material( std::string_view path, ResourceState state = ResourceState::NotLoaded );
 
-	// Note: Reads every newmtl of a .mtl file in order: its Kd colour, its map_Kd texture and a "shader" line, a
-	// gaia3 extension other tools skip like any line they don't know. A file without newmtl lines is one unnamed
-	// material
+	// Note: Reads every newmtl of a .mtl file in order: its Kd colour, its textures, and the "shader" and "two_sided"
+	// lines, gaia3 extensions other tools skip like any line they don't know. A file without newmtl lines is one
+	// unnamed material
 	static bool ReadMtl( std::string_view path, std::vector<MaterialData>& outMaterials );
 
 	// Note: Returns the named library, or the error library with a warning so a missing one stands out

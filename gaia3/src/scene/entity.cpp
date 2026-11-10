@@ -165,7 +165,7 @@ void Entity::AttachToLevel( Level* level )
 
 bool Entity::AddComponentInternal( const shared<Component>& component )
 {
-	if( component == nullptr || component->GetOwner() != nullptr )
+	if( component == nullptr || component->HasOwner() )
 		return false;
 
 	if( HasComponent( component->GetTypeInfo().Name ) )

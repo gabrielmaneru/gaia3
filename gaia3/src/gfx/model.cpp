@@ -19,6 +19,7 @@ namespace
 constexpr u32 kPositionAttribute = 0;
 constexpr u32 kNormalAttribute   = 1;
 constexpr u32 kUVAttribute       = 2;
+constexpr u32 kTangentAttribute  = 3;
 
 template <typename T>
 u32 CreateAttributeBuffer( u32 attribute, const std::vector<T>& data )
@@ -93,12 +94,19 @@ bool Model::LoadInternal()
 		return false;
 	}
 
+	// Note: OBJ files have no tangents, formats like glTF can bring their own
+	if( data.tangents.size() != data.positions.size() )
+	{
+		data.ComputeTangents();
+	}
+
 	glGenVertexArrays( 1, &m_VertexArray );
 	glBindVertexArray( m_VertexArray );
 	{
 		m_PositionBuffer = CreateAttributeBuffer( kPositionAttribute, data.positions );
 		m_NormalBuffer   = CreateAttributeBuffer( kNormalAttribute, data.normals );
 		m_UVBuffer       = CreateAttributeBuffer( kUVAttribute, data.uvs );
+		m_TangentBuffer  = CreateAttributeBuffer( kTangentAttribute, data.tangents );
 
 		glGenBuffers( 1, &m_IndexBuffer );
 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, m_IndexBuffer );
@@ -161,14 +169,15 @@ bool Model::LoadInternal()
 
 bool Model::UnloadInternal()
 {
-	const u32 buffers[] = { m_PositionBuffer, m_NormalBuffer, m_UVBuffer, m_IndexBuffer };
-	glDeleteBuffers( 4, buffers );
+	const u32 buffers[] = { m_PositionBuffer, m_NormalBuffer, m_UVBuffer, m_TangentBuffer, m_IndexBuffer };
+	glDeleteBuffers( 5, buffers );
 	glDeleteVertexArrays( 1, &m_VertexArray );
 
 	m_VertexArray    = 0;
 	m_PositionBuffer = 0;
 	m_NormalBuffer   = 0;
 	m_UVBuffer       = 0;
+	m_TangentBuffer  = 0;
 	m_IndexBuffer    = 0;
 
 	m_SubMeshes.clear();

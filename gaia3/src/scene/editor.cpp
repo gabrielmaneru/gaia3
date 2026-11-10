@@ -1,6 +1,7 @@
 #include "gaia3_pch.h"
 #include "editor.h"
 
+#include <components/cameraComponent.h>
 #include <core/app.h>
 #include <scene/inspector.h>
 
@@ -166,6 +167,39 @@ ImGuizmo::OPERATION ToGizmoOperation( GizmoMode mode )
 	}
 }
 
+struct GizmoSpaceItem
+{
+	const char* label;
+	GizmoSpace  space;
+};
+
+constexpr GizmoSpaceItem kGizmoSpaceItems[] = {
+    { "World", GizmoSpace::World },
+    { "Local", GizmoSpace::Local },
+};
+
+struct DrawModeItem
+{
+	const char* label;
+	DrawMode    mode;
+};
+
+constexpr DrawModeItem kDrawModeItems[] = {
+    { "Lit", DrawMode::Lit },
+    { "Normals", DrawMode::Normals },
+};
+
+ImGuizmo::MODE ToGizmoSpace( GizmoSpace space )
+{
+	switch( space )
+	{
+	case GizmoSpace::Local:
+		return ImGuizmo::LOCAL;
+	default:
+		return ImGuizmo::WORLD;
+	}
+}
+
 Vec3 GetMatrixAxis( const Matrix44& matrix, int axis )
 {
 	const Vec4& column = matrix.col[axis];
@@ -246,7 +280,7 @@ Transform ApplyGizmoMatrix( GizmoMode mode, const Transform& transform, const Ma
 }
 
 Editor::Editor( const EditorConfig& config )
-    : m_Config( config ), m_GizmoMode( config.gizmoMode )
+    : m_Config( config ), m_GizmoMode( config.gizmoMode ), m_GizmoSpace( config.gizmoSpace )
 {
 }
 
@@ -497,6 +531,22 @@ void Editor::DrawMenuBar()
 				}
 			}
 
+			ImGui::Separator();
+			for( const GizmoSpaceItem& item : kGizmoSpaceItems )
+			{
+				if( ImGui::MenuItem( item.label, nullptr, m_GizmoSpace == item.space ) )
+				{
+					SetGizmoSpace( item.space );
+				}
+			}
+
+			ImGui::EndMenu();
+		}
+
+		if( ImGui::BeginMenu( "Settings" ) )
+		{
+			DrawRenderSettings();
+			DrawCameraSettings();
 			ImGui::EndMenu();
 		}
 
@@ -504,6 +554,52 @@ void Editor::DrawMenuBar()
 	}
 
 	DrawSaveAsPopup();
+}
+
+void Editor::DrawRenderSettings()
+{
+	ImGui::SeparatorText( "Draw Mode" );
+
+	Renderer& renderer = App::GetRenderer();
+	for( const DrawModeItem& item : kDrawModeItems )
+	{
+		if( ImGui::MenuItem( item.label, nullptr, renderer.GetDrawMode() == item.mode ) )
+		{
+			renderer.SetDrawMode( item.mode );
+		}
+	}
+
+	ImGui::Separator();
+	if( ImGui::MenuItem( "Alpha Test", nullptr, renderer.IsAlphaTestEnabled() ) )
+	{
+		renderer.SetAlphaTestEnabled( !renderer.IsAlphaTestEnabled() );
+	}
+}
+
+void Editor::DrawCameraSettings()
+{
+	ImGui::SeparatorText( "Camera" );
+	ImGui::PushItemWidth( 120.0f * m_DisplayScale );
+
+	float linearSpeed = CameraComponent::GetLinearSpeed();
+	if( ImGui::DragFloat( "Linear speed", &linearSpeed, 0.001f, 0.001f, 10.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ) )
+	{
+		CameraComponent::SetLinearSpeed( linearSpeed );
+	}
+
+	float angularSpeed = CameraComponent::GetAngularSpeed();
+	if( ImGui::DragFloat( "Angular speed", &angularSpeed, 0.005f, 0.01f, 5.0f, "%.2f deg", ImGuiSliderFlags_AlwaysClamp ) )
+	{
+		CameraComponent::SetAngularSpeed( angularSpeed );
+	}
+
+	ImGui::PopItemWidth();
+
+	if( ImGui::Button( "Reset" ) )
+	{
+		CameraComponent::SetLinearSpeed( CameraComponent::kDefaultLinearSpeed );
+		CameraComponent::SetAngularSpeed( CameraComponent::kDefaultAngularSpeed );
+	}
 }
 
 void Editor::DrawSaveAsPopup()
@@ -630,7 +726,7 @@ void Editor::DrawGizmo( Vec2 position, Vec2 size )
 	Matrix44        matrix    = transform.ToMatrix44();
 
 	ImGuizmo::SetRect( position.x, position.y, size.x, size.y );
-	if( ImGuizmo::Manipulate( &view.m00, &projection.m00, ToGizmoOperation( m_GizmoMode ), ImGuizmo::WORLD, &matrix.m00 ) )
+	if( ImGuizmo::Manipulate( &view.m00, &projection.m00, ToGizmoOperation( m_GizmoMode ), ToGizmoSpace( m_GizmoSpace ), &matrix.m00 ) )
 	{
 		entity->SetTransform( ApplyGizmoMatrix( m_GizmoMode, transform, matrix ) );
 	}

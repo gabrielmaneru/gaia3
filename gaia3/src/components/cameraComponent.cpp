@@ -11,9 +11,10 @@
 RTTI_DEFINE_COMP( CameraComponent,
                   RTTI_PROPERTY( m_HorizontalFOV ),
                   RTTI_PROPERTY( m_NearPlane ),
-                  RTTI_PROPERTY( m_FarPlane ),
-                  RTTI_PROPERTY( m_LinearSpeed ),
-                  RTTI_PROPERTY( m_AngularSpeed ) )
+                  RTTI_PROPERTY( m_FarPlane ) )
+
+float CameraComponent::m_LinearSpeed  = CameraComponent::kDefaultLinearSpeed;
+float CameraComponent::m_AngularSpeed = CameraComponent::kDefaultAngularSpeed;
 
 void CameraComponent::OnAddComponent()
 {

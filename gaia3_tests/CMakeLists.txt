@@ -2,11 +2,13 @@
 add_executable(gaia3_tests
     src/main.cpp
     src/components/components_tests.cpp
+    src/components/light_tests.cpp
     src/core/log_tests.cpp
     src/core/logPolicy_tests.cpp
     src/core/serializationTypes_tests.cpp
     src/core/session_tests.cpp
     src/gfx/material_tests.cpp
+    src/gfx/modelData_tests.cpp
     src/gfx/objImporter_tests.cpp
     src/gfx/shader_tests.cpp
     src/gfx/texture_tests.cpp

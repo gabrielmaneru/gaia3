@@ -90,6 +90,34 @@ TEST( EditorDefaultsTests, GizmoModeCanChange )
 	EXPECT_EQ( editor.GetGizmoMode(), GizmoMode::Scale );
 }
 
+TEST( EditorDefaultsTests, GizmoStartsInWorldSpace )
+{
+	const EditorConfig config;
+	const Editor       editor( config );
+
+	EXPECT_EQ( config.gizmoSpace, GizmoSpace::World );
+	EXPECT_EQ( editor.GetGizmoSpace(), GizmoSpace::World );
+}
+
+TEST( EditorDefaultsTests, GizmoStartsInTheConfiguredSpace )
+{
+	EditorConfig config;
+	config.gizmoSpace = GizmoSpace::Local;
+
+	const Editor editor( config );
+
+	EXPECT_EQ( editor.GetGizmoSpace(), GizmoSpace::Local );
+}
+
+TEST( EditorDefaultsTests, GizmoSpaceCanChange )
+{
+	Editor editor;
+
+	editor.SetGizmoSpace( GizmoSpace::Local );
+
+	EXPECT_EQ( editor.GetGizmoSpace(), GizmoSpace::Local );
+}
+
 TEST( GizmoMatrixTests, SelectionChangesNothing )
 {
 	const Transform transform( Vec3( 1.0f, 2.0f, 3.0f ), QuatFromEuler( Vec3( 10.0f, 20.0f, 30.0f ) ), Vec3( 2.0f, 3.0f, 4.0f ) );
@@ -192,6 +220,24 @@ TEST( RendererCameraTests, NoCameraWithoutARegisteredOne )
 	const Renderer renderer;
 
 	EXPECT_EQ( renderer.GetCamera(), nullptr );
+}
+
+TEST( RendererDrawModeTests, StartsLitAndCanChange )
+{
+	Renderer renderer;
+	EXPECT_EQ( renderer.GetDrawMode(), DrawMode::Lit );
+
+	renderer.SetDrawMode( DrawMode::Normals );
+	EXPECT_EQ( renderer.GetDrawMode(), DrawMode::Normals );
+}
+
+TEST( RendererDrawModeTests, AlphaTestStartsOnAndCanBeTurnedOff )
+{
+	Renderer renderer;
+	EXPECT_TRUE( renderer.IsAlphaTestEnabled() );
+
+	renderer.SetAlphaTestEnabled( false );
+	EXPECT_FALSE( renderer.IsAlphaTestEnabled() );
 }
 
 TEST( EditorDefaultsTests, NoLevelMeansNoSelection )

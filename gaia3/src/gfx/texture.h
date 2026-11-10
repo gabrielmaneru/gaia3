@@ -12,6 +12,20 @@ struct TextureData
 	u32             width  = 0;
 	u32             height = 0;
 	std::vector<u8> pixels;
+
+	// Note: How many channels the file has, 2 or 4 when it holds an alpha channel. The pixels are RGBA either way
+	u32 fileChannels = 0;
+
+	// Note: Inverts the green channel, which turns a DirectX normal map (green down) into an OpenGL one (green up)
+	void FlipGreen();
+};
+
+// Note: What a .meta file next to an image can change. The properties are how the GPU samples the texture, the rest
+// changes the pixels once on load
+struct TextureImportSettings
+{
+	TextureProperties properties = TextureProperties::V_DefaultColorRGBA;
+	bool              bFlipGreen = false;
 };
 
 // Note: A texture loaded from an image file in textures/
@@ -29,10 +43,17 @@ public:
 	static bool ReadImage( std::string_view path, TextureData& outData );
 
 	// Note: Optional import settings in a .meta file next to the image, like error.bmp.meta. They can set "filter"
-	// (nearest or linear), "wrap" (repeat, mirror or clamp) and "mipmaps" (true or false), anything missing keeps its
-	// value. Returns false, keeping the values, when the file has something it can't use
-	static bool ReadImportSettings( std::string_view metaPath, TextureProperties& inOutProperties );
+	// (nearest or linear), "wrap" (repeat, mirror or clamp), "mipmaps" (true or false) and "flipGreen" (true for
+	// DirectX normal maps), anything missing keeps its value. Returns false, keeping the values, when the file has
+	// something it can't use
+	static bool ReadImportSettings( std::string_view metaPath, TextureImportSettings& inOutSettings );
 
 	bool LoadInternal() override;
 	bool UnloadInternal() override;
+
+	// Note: True when the image file has its own alpha channel, rather than the opaque alpha added to fill RGBA
+	bool HasAlphaChannel() const { return m_bHasAlphaChannel; }
+
+private:
+	bool m_bHasAlphaChannel = false;
 };

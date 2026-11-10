@@ -89,15 +89,22 @@ bool Texture::ReadImage( std::string_view path, TextureData& outData )
 		return false;
 	}
 
-	outData.width  = static_cast<u32>( width );
-	outData.height = static_cast<u32>( height );
+	outData.width        = static_cast<u32>( width );
+	outData.height       = static_cast<u32>( height );
+	outData.fileChannels = static_cast<u32>( channels );
 	outData.pixels.assign( pixels, pixels + static_cast<u64>( width ) * height * 4 );
 
 	stbi_image_free( pixels );
 	return true;
 }
 
-bool Texture::ReadImportSettings( std::string_view metaPath, TextureProperties& inOutProperties )
+void TextureData::FlipGreen()
+{
+	for( u64 i = 1; i < pixels.size(); i += 4 )
+		pixels[i] = static_cast<u8>( 255 - pixels[i] );
+}
+
+bool Texture::ReadImportSettings( std::string_view metaPath, TextureImportSettings& inOutSettings )
 {
 	// Note: Import settings are optional
 	std::ifstream file{ std::string( metaPath ) };
@@ -121,15 +128,20 @@ bool Texture::ReadImportSettings( std::string_view metaPath, TextureProperties& 
 		bool bUsed = false;
 		if( settingName == "filter" )
 		{
-			bUsed = ReadFilter( value, inOutProperties.filter );
+			bUsed = ReadFilter( value, inOutSettings.properties.filter );
 		}
 		else if( settingName == "wrap" )
 		{
-			bUsed = ReadWrap( value, inOutProperties.wrap );
+			bUsed = ReadWrap( value, inOutSettings.properties.wrap );
 		}
 		else if( settingName == "mipmaps" && value.isBool() )
 		{
-			inOutProperties.bMipmaps = value.asBool();
+			inOutSettings.properties.bMipmaps = value.asBool();
+			bUsed                             = true;
+		}
+		else if( settingName == "flipGreen" && value.isBool() )
+		{
+			inOutSettings.bFlipGreen = value.asBool();
 			bUsed                    = true;
 		}
 
@@ -149,10 +161,16 @@ bool Texture::LoadInternal()
 	if( !ReadImage( GetPath(), image ) )
 		return false;
 
-	TextureProperties properties = TextureProperties::V_DefaultColorRGBA;
-	ReadImportSettings( std::string( GetPath() ) + ".meta", properties );
+	TextureImportSettings settings;
+	ReadImportSettings( std::string( GetPath() ) + ".meta", settings );
 
-	if( !Create( rect{ static_cast<int>( image.width ), static_cast<int>( image.height ) }, properties, image.pixels.data() ) )
+	if( settings.bFlipGreen )
+		image.FlipGreen();
+
+	// Note: stb_image counts grey with alpha as 2 channels and RGBA as 4
+	m_bHasAlphaChannel = image.fileChannels == 2 || image.fileChannels == 4;
+
+	if( !Create( rect{ static_cast<int>( image.width ), static_cast<int>( image.height ) }, settings.properties, image.pixels.data() ) )
 		return false;
 
 	GAIA_INFO( "Texture {}: {}x{}", GetName(), image.width, image.height );

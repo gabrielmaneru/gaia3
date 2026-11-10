@@ -65,8 +65,8 @@ std::string MakeTwoPixelBmp()
 
 struct SettingsResult
 {
-	bool              bAllUsed = false;
-	TextureProperties properties;
+	bool                  bAllUsed = false;
+	TextureImportSettings settings;
 };
 
 SettingsResult ReadSettingsText( const std::string& text )
@@ -74,7 +74,7 @@ SettingsResult ReadSettingsText( const std::string& text )
 	ScopedTempDir directory;
 
 	SettingsResult result;
-	result.bAllUsed = Texture::ReadImportSettings( directory.Write( "image.png.meta", text ), result.properties );
+	result.bAllUsed = Texture::ReadImportSettings( directory.Write( "image.png.meta", text ), result.settings );
 	return result;
 }
 } // namespace
@@ -106,6 +106,37 @@ TEST( TextureTests, ReadsATgaAsRgba )
 	EXPECT_EQ( image.width, 2u );
 	EXPECT_EQ( image.height, 1u );
 	EXPECT_EQ( image.pixels, ( std::vector<u8>{ 255, 0, 0, 255, 0, 255, 0, 255 } ) );
+}
+
+TEST( TextureTests, ReportsTheChannelsOfTheFile )
+{
+	// Note: A 32 bit TGA with a transparent and an opaque pixel, like Sponza's leaves with their cut-out in the alpha
+	const unsigned char withAlpha[] = {
+		0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 32, 8, // header, 8 alpha bits
+		0, 0, 255, 0, 0, 255, 0, 255                          // pixels, blue green red alpha
+	};
+	const unsigned char withoutAlpha[] = {
+		0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 24, 0,
+		0, 0, 255, 0, 255, 0
+	};
+
+	ScopedTempDir directory;
+	TextureData   rgba;
+	TextureData   rgb;
+	ASSERT_TRUE( Texture::ReadImage( directory.Write( "rgba.tga", std::string( reinterpret_cast<const char*>( withAlpha ), sizeof( withAlpha ) ) ), rgba ) );
+	ASSERT_TRUE( Texture::ReadImage( directory.Write( "rgb.tga", std::string( reinterpret_cast<const char*>( withoutAlpha ), sizeof( withoutAlpha ) ) ), rgb ) );
+
+	EXPECT_EQ( rgba.fileChannels, 4u );
+	EXPECT_EQ( rgba.pixels, ( std::vector<u8>{ 255, 0, 0, 0, 0, 255, 0, 255 } ) );
+	EXPECT_EQ( rgb.fileChannels, 3u );
+	EXPECT_EQ( rgb.pixels[3], 255 );
+}
+
+TEST( TextureTests, AnUnloadedTextureHasNoAlphaChannel )
+{
+	const Texture texture( "textures/leaf.tga" );
+
+	EXPECT_FALSE( texture.HasAlphaChannel() );
 }
 
 TEST( TextureTests, ReadsTheEngineErrorTexture )
@@ -146,14 +177,15 @@ TEST( TextureTests, MissingTexturesFallBackToErrorWithAWarning )
 	EXPECT_TRUE( log.Contains( "error: Material wall: the error texture is not available either, using the colour alone" ) );
 }
 
-TEST( TextureTests, WithoutImportSettingsThePropertiesStay )
+TEST( TextureTests, WithoutImportSettingsTheDefaultsStay )
 {
-	TextureProperties properties = TextureProperties::V_DefaultColorRGBA;
+	TextureImportSettings settings;
 
-	EXPECT_TRUE( Texture::ReadImportSettings( "this/file/does/not/exist.png.meta", properties ) );
-	EXPECT_EQ( properties.filter, TextureFilter::Linear );
-	EXPECT_EQ( properties.wrap, TextureWrap::Repeat );
-	EXPECT_TRUE( properties.bMipmaps );
+	EXPECT_TRUE( Texture::ReadImportSettings( "this/file/does/not/exist.png.meta", settings ) );
+	EXPECT_EQ( settings.properties.filter, TextureFilter::Linear );
+	EXPECT_EQ( settings.properties.wrap, TextureWrap::Repeat );
+	EXPECT_TRUE( settings.properties.bMipmaps );
+	EXPECT_FALSE( settings.bFlipGreen );
 }
 
 TEST( TextureTests, ImportSettingsChangeTheSampling )
@@ -161,15 +193,39 @@ TEST( TextureTests, ImportSettingsChangeTheSampling )
 	const SettingsResult result = ReadSettingsText( R"({ "filter": "nearest", "wrap": "clamp", "mipmaps": false })" );
 
 	ASSERT_TRUE( result.bAllUsed );
-	EXPECT_EQ( result.properties.filter, TextureFilter::Nearest );
-	EXPECT_EQ( result.properties.wrap, TextureWrap::ClampToEdge );
-	EXPECT_FALSE( result.properties.bMipmaps );
-	EXPECT_EQ( result.properties.internalFormat, TextureInternalFormat::RGBA8 );
+	EXPECT_EQ( result.settings.properties.filter, TextureFilter::Nearest );
+	EXPECT_EQ( result.settings.properties.wrap, TextureWrap::ClampToEdge );
+	EXPECT_FALSE( result.settings.properties.bMipmaps );
+	EXPECT_EQ( result.settings.properties.internalFormat, TextureInternalFormat::RGBA8 );
 }
 
 TEST( TextureTests, MirrorWrapIsRead )
 {
-	EXPECT_EQ( ReadSettingsText( R"({ "wrap": "mirror" })" ).properties.wrap, TextureWrap::MirroredRepeat );
+	EXPECT_EQ( ReadSettingsText( R"({ "wrap": "mirror" })" ).settings.properties.wrap, TextureWrap::MirroredRepeat );
+}
+
+TEST( TextureTests, FlipGreenIsRead )
+{
+	const SettingsResult result = ReadSettingsText( R"({ "flipGreen": true })" );
+
+	ASSERT_TRUE( result.bAllUsed );
+	EXPECT_TRUE( result.settings.bFlipGreen );
+
+	LogCapture log;
+	EXPECT_FALSE( ReadSettingsText( R"({ "flipGreen": "yes" })" ).bAllUsed );
+	EXPECT_TRUE( log.Contains( "ignoring the flipGreen setting" ) );
+}
+
+TEST( TextureTests, FlipGreenInvertsOnlyTheGreenChannel )
+{
+	TextureData image;
+	image.width  = 2;
+	image.height = 1;
+	image.pixels = { 10, 0, 30, 40, 50, 200, 70, 80 };
+
+	image.FlipGreen();
+
+	EXPECT_EQ( image.pixels, ( std::vector<u8>{ 10, 255, 30, 40, 50, 55, 70, 80 } ) );
 }
 
 TEST( TextureTests, UnknownImportSettingsAreIgnoredWithAWarning )
@@ -178,8 +234,8 @@ TEST( TextureTests, UnknownImportSettingsAreIgnoredWithAWarning )
 	const SettingsResult result = ReadSettingsText( R"({ "filter": "blurry", "colour": "red", "wrap": "clamp" })" );
 
 	EXPECT_FALSE( result.bAllUsed );
-	EXPECT_EQ( result.properties.filter, TextureFilter::Linear );
-	EXPECT_EQ( result.properties.wrap, TextureWrap::ClampToEdge );
+	EXPECT_EQ( result.settings.properties.filter, TextureFilter::Linear );
+	EXPECT_EQ( result.settings.properties.wrap, TextureWrap::ClampToEdge );
 	EXPECT_TRUE( log.Contains( "ignoring the filter setting" ) );
 	EXPECT_TRUE( log.Contains( "ignoring the colour setting" ) );
 }
@@ -195,10 +251,10 @@ TEST( TextureTests, ImportSettingsThatAreNotJsonAreIgnored )
 
 TEST( TextureTests, TheErrorTextureIsNotSmoothed )
 {
-	TextureProperties properties = TextureProperties::V_DefaultColorRGBA;
+	TextureImportSettings settings;
 
-	EXPECT_TRUE( Texture::ReadImportSettings( GAIA3_ASSETS_PATH "textures/error.bmp.meta", properties ) );
-	EXPECT_EQ( properties.filter, TextureFilter::Nearest );
+	EXPECT_TRUE( Texture::ReadImportSettings( GAIA3_ASSETS_PATH "textures/error.bmp.meta", settings ) );
+	EXPECT_EQ( settings.properties.filter, TextureFilter::Nearest );
 }
 
 TEST( TexturePropertiesTests, ColourPresetsRepeatAndUseMipmaps )

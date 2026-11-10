@@ -22,6 +22,7 @@ public:
 
 	// Note: Values for uniforms the shader doesn't declare are ignored
 	void SetInt( const char* name, int value ) const;
+	void SetFloat( const char* name, float value ) const;
 	void SetVec3( const char* name, const Vec3& value ) const;
 	void SetMatrix44( const char* name, const Matrix44& value ) const;
 

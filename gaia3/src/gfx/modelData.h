@@ -29,9 +29,16 @@ struct ModelData
 	std::vector<Vec3> normals;
 	std::vector<Vec2> uvs;
 
+	// Note: The direction the texture's U runs along the surface, xyz, and in w the side the V direction is on, +1 or
+	// -1, so the bitangent is cross( normal, tangent ) * w. Filled by ComputeTangents when the importer has none
+	std::vector<Vec4> tangents;
+
 	std::vector<u32>      indices;
 	std::vector<MeshData> meshes;
 
 	// Note: Material files the model names, the materials themselves are found by name in every scanned .mtl
 	std::vector<std::string> materialLibraries;
+
+	// Note: Works out tangents from positions, normals and UVs, for normal maps. Needs every other stream filled
+	void ComputeTangents();
 };
