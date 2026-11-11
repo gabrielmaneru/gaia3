@@ -61,6 +61,63 @@ TEST( LightComponentTests, DirectionalLightShinesAlongItsEntitysForward )
 	ExpectNear( light.color, Vec3( 2.0f, 1.0f, 0.5f ) );
 }
 
+TEST( LightComponentTests, OnlyDirectionalLightsCastShadows )
+{
+	Level   level;
+	Entity* sunEntity  = level.CreateEntity( "Sun" );
+	Entity* lampEntity = level.CreateEntity( "Lamp" );
+
+	shared<DirectionalLightComponent> sun = sunEntity->AddComponent<DirectionalLightComponent>();
+	EXPECT_TRUE( sun->GetCastShadows() );
+	EXPECT_TRUE( sun->GetLightParameters().bCastShadows );
+
+	sun->SetCastShadows( false );
+	EXPECT_FALSE( sun->GetLightParameters().bCastShadows );
+
+	EXPECT_FALSE( lampEntity->AddComponent<PointLightComponent>()->GetLightParameters().bCastShadows );
+}
+
+TEST( LightComponentTests, ShadowSettingsAreSaved )
+{
+	Level   source;
+	Entity* sourceEntity = source.CreateEntity( "Sun" );
+
+	shared<DirectionalLightComponent> sun = sourceEntity->AddComponent<DirectionalLightComponent>();
+	sun->SetCastShadows( false );
+	sun->SetShadowSize( 46.0f );
+	sun->SetShadowDepth( 60.0f );
+
+	Json::Value json;
+	ASSERT_TRUE( sourceEntity->SerializeComponents( json ) );
+	EXPECT_FALSE( json[0]["m_Data"]["m_bCastShadows"].asBool() );
+	EXPECT_FLOAT_EQ( json[0]["m_Data"]["m_ShadowSize"].asFloat(), 46.0f );
+
+	Level   target;
+	Entity* targetEntity = target.CreateEntity( "Sun" );
+	ASSERT_TRUE( targetEntity->DeserializeComponents( json ) );
+
+	const DirectionalLightComponent* loaded = targetEntity->GetComponent<DirectionalLightComponent>();
+	EXPECT_FALSE( loaded->GetCastShadows() );
+	EXPECT_FLOAT_EQ( loaded->GetShadowSize(), 46.0f );
+	EXPECT_FLOAT_EQ( loaded->GetShadowDepth(), 60.0f );
+}
+
+TEST( LightComponentTests, TheShadowBoxIsCentredOnTheSun )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Sun" );
+	entity->SetPosition( Vec3( -0.6f, 6.5f, -0.4f ) );
+
+	shared<DirectionalLightComponent> sun = entity->AddComponent<DirectionalLightComponent>();
+	sun->SetShadowSize( 46.0f );
+	sun->SetShadowDepth( 50.0f );
+
+	const LightParameters light = sun->GetLightParameters();
+	ExpectNear( light.position, Vec3( -0.6f, 6.5f, -0.4f ) );
+	EXPECT_FLOAT_EQ( light.shadowSize, 46.0f );
+	EXPECT_FLOAT_EQ( light.shadowDepth, 50.0f );
+}
+
 TEST( LightComponentTests, DirectionalLightWithoutRotationShinesForward )
 {
 	Level   level;

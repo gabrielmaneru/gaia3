@@ -136,3 +136,11 @@ void ModelComponent::Draw( const DrawContext& context ) const
 		m_Model.Get()->Draw( context, m_SubMeshOverrides );
 	}
 }
+
+void ModelComponent::DrawShadow( const DrawContext& context, const Shader& shadowShader ) const
+{
+	if( m_Model.Get() != nullptr )
+	{
+		m_Model.Get()->DrawShadow( context, m_SubMeshOverrides, shadowShader );
+	}
+}

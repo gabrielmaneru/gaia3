@@ -451,3 +451,58 @@ TEST( MatrixTransformsTests, PerspectiveClampsInvalidInputs )
 	EXPECT_NEAR( p.m22, ( clampedFar + clampedNear ) / ( clampedNear - clampedFar ), 1e-5f );
 	EXPECT_NEAR( p.m23, ( 2.0f * clampedFar * clampedNear ) / ( clampedNear - clampedFar ), 1e-5f );
 }
+
+TEST( MatrixTests, Matrix33TransformsAVec3 )
+{
+	Matrix33 m;
+	m.SetRow( 0, Vec3( 1.0f, 2.0f, 3.0f ) );
+	m.SetRow( 1, Vec3( 0.0f, -1.0f, 4.0f ) );
+	m.SetRow( 2, Vec3( 5.0f, 0.0f, 1.0f ) );
+
+	const Vec3 v = m * Vec3( 1.0f, 2.0f, 3.0f );
+	EXPECT_FLOAT_EQ( v.x, 14.0f );
+	EXPECT_FLOAT_EQ( v.y, 10.0f );
+	EXPECT_FLOAT_EQ( v.z, 8.0f );
+
+	// Note: A rotation built from axes as columns maps each local axis to its column
+	const Matrix33 axes( Vec3( 0.0f, 1.0f, 0.0f ), Vec3( -1.0f, 0.0f, 0.0f ), Vec3( 0.0f, 0.0f, 1.0f ) );
+	const Vec3     x = axes * Vec3::V_Right;
+	EXPECT_FLOAT_EQ( x.x, 0.0f );
+	EXPECT_FLOAT_EQ( x.y, 1.0f );
+	EXPECT_FLOAT_EQ( x.z, 0.0f );
+}
+
+TEST( MatrixTests, Matrix44TransformsAVec4 )
+{
+	Matrix44 m;
+	m.SetRow( 0, Vec4( 1.0f, 2.0f, 3.0f, 4.0f ) );
+	m.SetRow( 1, Vec4( 0.0f, 1.0f, 0.0f, -2.0f ) );
+
+	const Vec4 point = m * Vec4( 1.0f, 1.0f, 1.0f, 1.0f );
+	EXPECT_FLOAT_EQ( point.x, 10.0f );
+	EXPECT_FLOAT_EQ( point.y, -1.0f );
+	EXPECT_FLOAT_EQ( point.z, 1.0f );
+	EXPECT_FLOAT_EQ( point.w, 1.0f );
+
+	// Note: A direction, w = 0, skips the translation
+	const Vec4 direction = m * Vec4( 0.0f, 1.0f, 0.0f, 0.0f );
+	EXPECT_FLOAT_EQ( direction.x, 2.0f );
+	EXPECT_FLOAT_EQ( direction.y, 1.0f );
+}
+
+TEST( MatrixTransformsTests, OrthographicMapsTheBoxToClipSpace )
+{
+	const Matrix44 p = Orthographic( -2.0f, 6.0f, -1.0f, 3.0f, 1.0f, 11.0f );
+
+	// Note: The box's corners, the planes being distances along -Z
+	const Vec4 nearCorner = p * Vec4( -2.0f, -1.0f, -1.0f, 1.0f );
+	const Vec4 farCorner  = p * Vec4( 6.0f, 3.0f, -11.0f, 1.0f );
+
+	EXPECT_NEAR( nearCorner.x, -1.0f, 1e-5f );
+	EXPECT_NEAR( nearCorner.y, -1.0f, 1e-5f );
+	EXPECT_NEAR( nearCorner.z, -1.0f, 1e-5f );
+	EXPECT_NEAR( farCorner.x, 1.0f, 1e-5f );
+	EXPECT_NEAR( farCorner.y, 1.0f, 1e-5f );
+	EXPECT_NEAR( farCorner.z, 1.0f, 1e-5f );
+	EXPECT_FLOAT_EQ( farCorner.w, 1.0f );
+}

@@ -24,6 +24,7 @@ struct Matrix33
 	Matrix33& operator*=( const Matrix33& rhs );
 	Matrix33  operator*( const Scalar& s ) const;
 	Matrix33& operator*=( const Scalar& s );
+	Vec3      operator*( const Vec3& v ) const;
 
 	static const Matrix33 V_Identity;
 
@@ -83,6 +84,7 @@ struct Matrix44
 	Matrix44& operator*=( const Matrix44& rhs );
 	Matrix44  operator*( const Scalar& s ) const;
 	Matrix44& operator*=( const Scalar& s );
+	Vec4      operator*( const Vec4& v ) const;
 
 	static const Matrix44 V_Identity;
 

@@ -1,12 +1,17 @@
 #include "gaia3_pch.h"
 #include "renderer.h"
 
+#include <core/app.h>
+#include <gfx/shader.h>
+
 #include <glad/glad.h>
 
 #include <algorithm>
 
 namespace
 {
+constexpr const char* kShadowShaderName = "shadow";
+
 void LogOpenGLInfo()
 {
 	auto getString = []( u32 name ) -> const char* {
@@ -69,13 +74,6 @@ void Renderer::Update( rect renderSize )
 		return;
 	}
 
-	m_RenderTarget.Bind();
-	glViewport( 0, 0, renderSize.x, renderSize.y );
-
-	// Clear buffer
-	glClearColor( 0.1f, 0.1f, 0.1f, 1.0f );
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
 	// Note: Without a camera, view and projection stay identity
 	DrawContext context;
 
@@ -90,6 +88,15 @@ void Renderer::Update( rect renderSize )
 	context.drawMode   = m_DrawMode;
 	context.bAlphaTest = m_bAlphaTest;
 
+	DrawShadowMap( context );
+
+	m_RenderTarget.Bind();
+	glViewport( 0, 0, renderSize.x, renderSize.y );
+
+	// Clear buffer
+	glClearColor( 0.1f, 0.1f, 0.1f, 1.0f );
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
 	for( const Renderable* renderable : m_Renderables )
 	{
 		context.model = renderable->GetModelMatrix();
@@ -97,6 +104,73 @@ void Renderer::Update( rect renderSize )
 	}
 
 	Framebuffer::Unbind();
+}
+
+void Renderer::DrawShadowMap( DrawContext& context )
+{
+	context.shadowLight = -1;
+	m_ShadowCaster      = nullptr;
+
+	const int shadowLight = FindShadowLight( context.lights );
+	if( !m_ShadowSettings.bEnabled || shadowLight < 0 )
+		return;
+
+	if( m_ShadowShader == nullptr )
+	{
+		m_ShadowShader = App::GetSession().GetResourceManager().FindResource<Shader>( kShadowShaderName, true );
+		if( m_ShadowShader == nullptr )
+		{
+			// Note: Reported once, it is looked up again every frame in case it becomes available
+			if( !m_bReportedShadowShader )
+			{
+				GAIA_ERROR( "Renderer: the {} shader is not available, drawing without shadows", kShadowShaderName );
+				m_bReportedShadowShader = true;
+			}
+			return;
+		}
+	}
+
+	if( !m_ShadowMap.Resize( m_ShadowSettings.mapSize ) )
+		return;
+
+	const LightParameters& light      = context.lights[shadowLight];
+	const ShadowView       shadowView = FitShadowToBox( light.position, light.direction, light.shadowSize, light.shadowDepth, m_ShadowSettings.mapSize );
+
+	// Note: GatherLights keeps the registration order, so the index is the same in m_Lights
+	m_ShadowCaster = m_Lights[shadowLight];
+
+	context.shadowLight        = shadowLight;
+	context.shadowMatrix       = shadowView.viewProjection;
+	context.shadowMap          = m_ShadowMap.GetDepthTexture();
+	context.shadowDepthBias    = m_ShadowSettings.depthBias;
+	context.shadowNormalOffset = m_ShadowSettings.normalBias * shadowView.texelWorldSize;
+
+	m_ShadowMap.Bind();
+	glViewport( 0, 0, static_cast<int>( m_ShadowSettings.mapSize ), static_cast<int>( m_ShadowSettings.mapSize ) );
+	glClear( GL_DEPTH_BUFFER_BIT );
+
+	// Note: Casters between the light and the shadow map's box are flattened onto its near side instead of cut away
+	glEnable( GL_DEPTH_CLAMP );
+
+	for( const Renderable* renderable : m_Renderables )
+	{
+		context.model = renderable->GetModelMatrix();
+		renderable->DrawShadow( context, *m_ShadowShader );
+	}
+
+	glDisable( GL_DEPTH_CLAMP );
+	Framebuffer::Unbind();
+}
+
+int Renderer::FindShadowLight( const std::vector<LightParameters>& lights )
+{
+	for( u64 i = 0; i < lights.size(); ++i )
+	{
+		if( lights[i].type == LightType::Directional && lights[i].bCastShadows )
+			return static_cast<int>( i );
+	}
+
+	return -1;
 }
 
 std::vector<LightParameters> Renderer::GatherLights()
@@ -132,5 +206,8 @@ void Renderer::Shutdown()
 	m_Cameras.clear();
 	m_Lights.clear();
 
+	m_ShadowShader.reset();
+	m_ShadowCaster = nullptr;
+	m_ShadowMap.Destroy();
 	m_RenderTarget.Destroy();
 }

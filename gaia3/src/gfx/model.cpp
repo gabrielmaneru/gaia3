@@ -239,3 +239,25 @@ void Model::Draw( const DrawContext& context, const std::vector<const MaterialEn
 
 	glBindVertexArray( 0 );
 }
+
+void Model::DrawShadow( const DrawContext& context, const std::vector<const MaterialEntry*>& overrideMaterials, const Shader& shadowShader ) const
+{
+	const bool bOverride = overrideMaterials.size() == m_SubMeshes.size();
+
+	glBindVertexArray( m_VertexArray );
+
+	for( u64 i = 0; i < m_SubMeshes.size(); ++i )
+	{
+		const SubMesh&       subMesh  = m_SubMeshes[i];
+		const MaterialEntry* material = bOverride ? overrideMaterials[i] : subMesh.material;
+		if( material == nullptr )
+			continue;
+
+		material->BindShadow( context, shadowShader );
+
+		const u64 byteOffset = static_cast<u64>( subMesh.indexOffset ) * sizeof( u32 );
+		glDrawElements( GL_TRIANGLES, subMesh.indexCount, GL_UNSIGNED_INT, reinterpret_cast<const void*>( byteOffset ) );
+	}
+
+	glBindVertexArray( 0 );
+}

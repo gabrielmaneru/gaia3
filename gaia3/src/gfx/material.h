@@ -50,6 +50,9 @@ struct MaterialEntry
 
 	// Note: Selects the shader, then sets the material's values and the object's matrices
 	void Bind( const DrawContext& context ) const;
+
+	// Note: Selects the shadow pass's shader with only what changes the depth: the matrices, culling and the cut-out
+	void BindShadow( const DrawContext& context, const Shader& shadowShader ) const;
 };
 
 // Note: A .mtl file in materials/, named after the file. Its materials are only seen by the models that use the

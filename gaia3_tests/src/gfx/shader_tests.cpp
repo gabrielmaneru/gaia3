@@ -93,5 +93,33 @@ TEST( ShaderTests, TheEngineDefaultShaderHasBothStages )
 	// Note: The draw modes must match DrawMode
 	EXPECT_NE( fragment.find( "const int kDrawLit     = " + std::to_string( static_cast<int>( DrawMode::Lit ) ) + ";" ), std::string::npos );
 	EXPECT_NE( fragment.find( "const int kDrawNormals = " + std::to_string( static_cast<int>( DrawMode::Normals ) ) + ";" ), std::string::npos );
+	EXPECT_NE( fragment.find( "const int kDrawShadows = " + std::to_string( static_cast<int>( DrawMode::Shadows ) ) + ";" ), std::string::npos );
 	EXPECT_NE( fragment.find( "u_DrawMode" ), std::string::npos );
+
+	// Note: The names MaterialEntry::Bind sets for the sun's shadow
+	EXPECT_NE( fragment.find( "uniform sampler2DShadow u_ShadowMap;" ), std::string::npos );
+	EXPECT_NE( fragment.find( "u_ShadowLight" ), std::string::npos );
+	EXPECT_NE( fragment.find( "u_ShadowMatrix" ), std::string::npos );
+	EXPECT_NE( fragment.find( "u_ShadowDepthBias" ), std::string::npos );
+	EXPECT_NE( fragment.find( "u_ShadowNormalOffset" ), std::string::npos );
+}
+
+TEST( ShaderTests, TheEngineShadowShaderHasBothStages )
+{
+	std::ifstream file( GAIA3_ASSETS_PATH "shaders/shadow.glsl" );
+	ASSERT_TRUE( file.is_open() );
+
+	std::stringstream text;
+	text << file.rdbuf();
+
+	std::string vertex;
+	std::string fragment;
+	ASSERT_TRUE( Shader::SplitStages( text.str(), vertex, fragment ) );
+
+	// Note: The attributes must match gfx/model.cpp, the uniforms MaterialEntry::BindShadow
+	EXPECT_NE( vertex.find( "layout( location = 0 ) in vec3 aPosition;" ), std::string::npos );
+	EXPECT_NE( vertex.find( "layout( location = 2 ) in vec2 aUV;" ), std::string::npos );
+	EXPECT_NE( vertex.find( "u_ShadowMatrix" ), std::string::npos );
+	EXPECT_NE( fragment.find( "u_AlphaTest" ), std::string::npos );
+	EXPECT_NE( fragment.find( "discard" ), std::string::npos );
 }

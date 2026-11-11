@@ -187,6 +187,7 @@ struct DrawModeItem
 constexpr DrawModeItem kDrawModeItems[] = {
     { "Lit", DrawMode::Lit },
     { "Normals", DrawMode::Normals },
+    { "Shadows", DrawMode::Shadows },
 };
 
 ImGuizmo::MODE ToGizmoSpace( GizmoSpace space )
@@ -546,6 +547,7 @@ void Editor::DrawMenuBar()
 		if( ImGui::BeginMenu( "Settings" ) )
 		{
 			DrawRenderSettings();
+			DrawShadowSettings();
 			DrawCameraSettings();
 			ImGui::EndMenu();
 		}
@@ -573,6 +575,46 @@ void Editor::DrawRenderSettings()
 	if( ImGui::MenuItem( "Alpha Test", nullptr, renderer.IsAlphaTestEnabled() ) )
 	{
 		renderer.SetAlphaTestEnabled( !renderer.IsAlphaTestEnabled() );
+	}
+}
+
+void Editor::DrawShadowSettings()
+{
+	ImGui::SeparatorText( "Shadows" );
+	ImGui::PushItemWidth( 120.0f * m_DisplayScale );
+
+	Renderer&      renderer = App::GetRenderer();
+	ShadowSettings settings = renderer.GetShadowSettings();
+	bool           bChanged = ImGui::Checkbox( "Sun shadows", &settings.bEnabled );
+
+	// Note: Square maps, each step doubles the detail and quadruples the memory
+	if( ImGui::BeginCombo( "Map size", std::to_string( settings.mapSize ).c_str() ) )
+	{
+		for( const u32 size : { 1024u, 2048u, 4096u } )
+		{
+			if( ImGui::Selectable( std::to_string( size ).c_str(), settings.mapSize == size ) )
+			{
+				settings.mapSize = size;
+				bChanged         = true;
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	bChanged |= ImGui::DragFloat( "Depth bias", &settings.depthBias, 0.00001f, 0.0f, 0.01f, "%.5f", ImGuiSliderFlags_AlwaysClamp );
+	bChanged |= ImGui::DragFloat( "Normal bias", &settings.normalBias, 0.05f, 0.0f, 10.0f, "%.2f texels", ImGuiSliderFlags_AlwaysClamp );
+
+	ImGui::PopItemWidth();
+
+	if( ImGui::Button( "Reset##Shadows" ) )
+	{
+		settings = ShadowSettings();
+		bChanged = true;
+	}
+
+	if( bChanged )
+	{
+		renderer.SetShadowSettings( settings );
 	}
 }
 

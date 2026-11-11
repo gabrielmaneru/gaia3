@@ -3,6 +3,7 @@
 #include <components/cameraComponent.h>
 #include <components/lightComponent.h>
 #include <components/modelComponent.h>
+#include <components/sunComponent.h>
 
 #include <charconv>
 
@@ -72,14 +73,18 @@ void createDefaultLevel( Level* pLevel )
 		pModelComp->SetModel( "cube" );
 	}
 
-	// Create the sun, shining down at an angle
+	// Create the sun, following its path through the afternoon sky around the cube
 	Entity* pSun = pLevel->CreateEntity( "Sun" );
 	{
-		pSun->SetRotation( LookAtQuat( Vec3( -0.4f, -0.8f, -0.6f ).Normalized(), Vec3::V_Up ) );
-
 		shared<DirectionalLightComponent> pSunLight = pSun->AddComponent<DirectionalLightComponent>();
 		pSunLight->SetColor( Vec3( 1.0f, 0.95f, 0.85f ) );
 		pSunLight->SetIntensity( 1.0f );
+		pSunLight->SetShadowSize( 20.0f );
+		pSunLight->SetShadowDepth( 20.0f );
+
+		shared<SunComponent> pSunPath = pSun->AddComponent<SunComponent>();
+		pSunPath->SetDistance( 10.0f );
+		pSunPath->SetTime( 15.0f );
 	}
 
 	// Create a warm point light next to the cube, lighting its left side

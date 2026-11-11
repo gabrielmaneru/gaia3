@@ -287,6 +287,15 @@ TEST( TexturePropertiesTests, RenderTargetPresetsClampWithoutMipmaps )
 	EXPECT_EQ( gbuffer.filter, TextureFilter::Nearest );
 	EXPECT_FALSE( gbuffer.bMipmaps );
 
+	// Note: Linear filtering with depth compare blends the 4 nearest comparisons, which softens shadow edges
+	const TextureProperties& shadow = TextureProperties::V_ShadowMap;
+	EXPECT_EQ( shadow.internalFormat, TextureInternalFormat::Depth24 );
+	EXPECT_EQ( shadow.wrap, TextureWrap::ClampToEdge );
+	EXPECT_EQ( shadow.filter, TextureFilter::Linear );
+	EXPECT_FALSE( shadow.bMipmaps );
+	EXPECT_TRUE( shadow.bDepthCompare );
+	EXPECT_FALSE( depth.bDepthCompare );
+
 	const TextureProperties& target = TextureProperties::V_RenderTargetRGBA;
 	EXPECT_EQ( target.internalFormat, TextureInternalFormat::RGBA8 );
 	EXPECT_EQ( target.wrap, TextureWrap::ClampToEdge );

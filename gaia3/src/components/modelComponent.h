@@ -32,6 +32,7 @@ public:
 
 private:
 	void Draw( const DrawContext& context ) const override;
+	void DrawShadow( const DrawContext& context, const Shader& shadowShader ) const override;
 	void ResolveResources();
 
 	ResourceRef<Model> m_Model;

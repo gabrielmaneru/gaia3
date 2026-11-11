@@ -7,6 +7,7 @@
 #include <vector>
 
 class Material;
+class Shader;
 struct MaterialEntry;
 
 class Model : public Resource
@@ -30,6 +31,9 @@ public:
 
 	// Note: Draws each sub-mesh with its own material, or with overrideMaterials when it holds one per sub-mesh
 	void Draw( const DrawContext& context, const std::vector<const MaterialEntry*>& overrideMaterials ) const;
+
+	// Note: Draws depth only into the shadow map, using each sub-mesh's material for culling and cut-outs
+	void DrawShadow( const DrawContext& context, const std::vector<const MaterialEntry*>& overrideMaterials, const Shader& shadowShader ) const;
 
 private:
 	struct SubMesh

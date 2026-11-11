@@ -15,6 +15,7 @@ add_library(gaia3 STATIC
     src/gfx/renderer.cpp
     src/gfx/rendererTypes.cpp
     src/gfx/shader.cpp
+    src/gfx/shadowMap.cpp
     src/gfx/texture.cpp
     src/gfx/texture2D.cpp
     src/math/mathHelpers.cpp

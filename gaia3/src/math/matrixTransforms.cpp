@@ -69,3 +69,16 @@ Matrix44 Perspective( float fovRadians, float aspectRatio, float nearPlane, floa
 
 	return projection;
 }
+
+Matrix44 Orthographic( float left, float right, float bottom, float top, float nearPlane, float farPlane )
+{
+	GAIA_ASSERT( right != left && top != bottom && farPlane != nearPlane );
+
+	Matrix44 projection;
+	projection.SetRow( 0, Vec4( 2.0f / ( right - left ), 0.0f, 0.0f, -( right + left ) / ( right - left ) ) );
+	projection.SetRow( 1, Vec4( 0.0f, 2.0f / ( top - bottom ), 0.0f, -( top + bottom ) / ( top - bottom ) ) );
+	projection.SetRow( 2, Vec4( 0.0f, 0.0f, -2.0f / ( farPlane - nearPlane ), -( farPlane + nearPlane ) / ( farPlane - nearPlane ) ) );
+	projection.SetRow( 3, Vec4( 0.0f, 0.0f, 0.0f, 1.0f ) );
+
+	return projection;
+}

@@ -21,7 +21,9 @@ protected:
 	float m_Intensity = 1.0f;
 };
 
-// Note: A faraway light like the sun, it shines along its entity's forward direction (-Z) from everywhere
+// Note: A faraway light like the sun, it shines along its entity's forward direction (-Z) from everywhere. Its shadow
+// map covers a box that starts at its entity, ShadowSize wide and tall across the light, and runs ShadowDepth along
+// it, so shadows stay put whatever the camera does. A smaller box gives sharper shadows over less of the level
 class DirectionalLightComponent : public LightComponent
 {
 	RTTI_DECLARE_COMP( DirectionalLightComponent, LightComponent )
@@ -29,6 +31,23 @@ public:
 	DirectionalLightComponent() = default;
 
 	LightParameters GetLightParameters() const override;
+
+	// Note: Shows its shadow map under the properties, or why it has none
+	void DrawInspector() override;
+
+	// Note: Only the first directional light that casts shadows gets them, see Renderer::FindShadowLight
+	bool GetCastShadows() const { return m_bCastShadows; }
+	void SetCastShadows( bool bCastShadows ) { m_bCastShadows = bCastShadows; }
+
+	float GetShadowSize() const { return m_ShadowSize; }
+	void  SetShadowSize( float size ) { m_ShadowSize = size; }
+	float GetShadowDepth() const { return m_ShadowDepth; }
+	void  SetShadowDepth( float depth ) { m_ShadowDepth = depth; }
+
+private:
+	bool  m_bCastShadows = true;
+	float m_ShadowSize   = 50.0f;
+	float m_ShadowDepth  = 50.0f;
 };
 
 // Note: A light at its entity's position shining every way, fading out to nothing at its range

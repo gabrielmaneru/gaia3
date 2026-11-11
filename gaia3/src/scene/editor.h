@@ -81,6 +81,7 @@ public:
 private:
 	void DrawMenuBar();
 	void DrawRenderSettings();
+	void DrawShadowSettings();
 	void DrawCameraSettings();
 	void DrawSaveAsPopup();
 	void DrawRenamePopup();

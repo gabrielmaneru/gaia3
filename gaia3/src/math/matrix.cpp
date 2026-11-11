@@ -48,6 +48,13 @@ Matrix33& Matrix33::operator*=( const Scalar& s )
 	return *this;
 }
 
+Vec3 Matrix33::operator*( const Vec3& v ) const
+{
+	return Vec3( m00 * v.x + m01 * v.y + m02 * v.z,
+	             m10 * v.x + m11 * v.y + m12 * v.z,
+	             m20 * v.x + m21 * v.y + m22 * v.z );
+}
+
 void Matrix33::SetRow( int row, const Vec3& v )
 {
 	switch( row )
@@ -184,6 +191,14 @@ Matrix44& Matrix44::operator*=( const Scalar& s )
 	col[2] *= s;
 	col[3] *= s;
 	return *this;
+}
+
+Vec4 Matrix44::operator*( const Vec4& v ) const
+{
+	return Vec4( m00 * v.x + m01 * v.y + m02 * v.z + m03 * v.w,
+	             m10 * v.x + m11 * v.y + m12 * v.z + m13 * v.w,
+	             m20 * v.x + m21 * v.y + m22 * v.z + m23 * v.w,
+	             m30 * v.x + m31 * v.y + m32 * v.z + m33 * v.w );
 }
 
 void Matrix44::SetRow( int row, const Vec4& v )

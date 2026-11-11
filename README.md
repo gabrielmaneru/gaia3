@@ -13,7 +13,7 @@
 </div>
 
 > [!NOTE]
-> gaia3 is in early development. It can author, save and reload levels, and draws models with materials, textures and normal maps lit by directional and point lights, but there are no shadows yet. See [Current limits](#current-limits).
+> gaia3 is in early development. It can author, save and reload levels, and draws models with materials, textures and normal maps lit by directional and point lights, with a shadow map for the sun. See [Current limits](#current-limits).
 
 ## Contents
 
@@ -132,7 +132,7 @@ Hold the **right mouse button** in the Viewport to control the camera. It keeps 
 |---|---|
 | **Level** menu | New, Open, Save, Save As |
 | **Gizmo** menu | Switch between Selection, Translate, Rotate and Scale, and between World and Local axes |
-| **Settings** menu | Draw mode, Lit or Normals (world-space normals as colours), an Alpha Test toggle that shows cut-outs as whole faces when off, and the camera linear and angular speed, shared by every camera. None of it is saved in levels |
+| **Settings** menu | Draw mode: Lit, Normals (world-space normals as colours) or Shadows (white where the sun reaches). An Alpha Test toggle that shows cut-outs as whole faces when off. Sun shadow settings: on or off, map size and the two biases. The camera linear and angular speed, shared by every camera. None of it is saved in levels |
 | **Hierarchy**, right click on an entity | Rename, Clone, Delete |
 | **Hierarchy**, right click on empty space | Create Entity |
 | **Inspector**, right click on empty space | Add Component, greyed out for types already present |
@@ -237,7 +237,7 @@ A model uses the libraries its `mtllib` lines name, found by file name wherever 
 
 A `ModelComponent` can set a material override, a library used instead of the model's own, with `SetMaterialOverride` or the Inspector's MaterialOverride field. Each sub-mesh then looks up its name in that library, and sub-meshes without a name take its first material, so a cube drawn with the `error` library shows the error texture. The libraries the model already uses can't be chosen, they're greyed out in the Inspector, and changing the model clears the override.
 
-Shaders are `.glsl` files holding both stages, each one after a `#type vertex` or `#type fragment` line. The default shader draws the material's colour, texture and normal map, lit by the level's directional and point lights.
+Shaders are `.glsl` files holding both stages, each one after a `#type vertex` or `#type fragment` line. The default shader draws the material's colour, texture and normal map, lit by the level's directional and point lights. The first directional light with `m_bCastShadows` gets a shadow map, drawn with `shadow.glsl`. It covers a box that starts at the light's entity, `m_ShadowSize` wide across the light, and runs `m_ShadowDepth` along it, whatever the camera does, and the light's Inspector shows it. Cut-out materials cast the shape of their cut-out.
 
 A texture can have import settings in a `.meta` file next to it, such as `error.bmp.meta`:
 
@@ -336,7 +336,7 @@ gaia3/
 
 ## Current limits
 
-- **Lighting:** up to 8 directional and point lights, with a flat ambient term. No shadows, specular or PBR yet.
+- **Lighting:** up to 8 directional and point lights, with a flat ambient term. Only one directional light gets shadows, from a single shadow map over a fixed box, so they get blurrier as the box grows. Cascaded shadows, point light shadows, specular and PBR are planned.
 - **Materials:** only the lines listed in [Materials, shaders and textures](#materials-shaders-and-textures) are read from `.mtl` files.
 - **Model formats:** only OBJ for now. glTF and FBX importers are planned, along with skeletal animation.
 - **Cameras:** the renderer uses one camera, and extra ones are ignored. Choosing a render target per camera is planned.

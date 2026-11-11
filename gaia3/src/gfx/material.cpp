@@ -20,6 +20,40 @@ namespace
 constexpr u32 kDiffuseTextureUnit = 0;
 constexpr u32 kOpacityTextureUnit = 1;
 constexpr u32 kNormalTextureUnit  = 2;
+constexpr u32 kShadowMapUnit      = 3;
+
+// Note: Every material sets culling itself, so a two-sided one never leaves it off for the next
+void SetCulling( bool bTwoSided )
+{
+	if( bTwoSided )
+	{
+		glDisable( GL_CULL_FACE );
+	}
+	else
+	{
+		glEnable( GL_CULL_FACE );
+	}
+}
+
+// Note: The values that decide which pixels a cut-out material drops, shared by the colour and shadow passes
+void BindCutOut( const MaterialEntry& material, const Shader& shader, bool bAlphaTest )
+{
+	shader.SetInt( "u_UseTexture", material.diffuseTexture != nullptr ? 1 : 0 );
+	if( material.diffuseTexture != nullptr )
+	{
+		material.diffuseTexture->Bind( kDiffuseTextureUnit );
+		shader.SetInt( "u_Texture", kDiffuseTextureUnit );
+	}
+
+	shader.SetInt( "u_AlphaTest", bAlphaTest ? 1 : 0 );
+	shader.SetInt( "u_UseOpacityTexture", material.opacityTexture != nullptr ? 1 : 0 );
+	if( material.opacityTexture != nullptr )
+	{
+		material.opacityTexture->Bind( kOpacityTextureUnit );
+		shader.SetInt( "u_OpacityTexture", kOpacityTextureUnit );
+		shader.SetInt( "u_OpacityFromAlpha", material.opacityTexture->HasAlphaChannel() ? 1 : 0 );
+	}
+}
 
 bool ParseVec3( std::istringstream& stream, Vec3& outValue )
 {
@@ -44,15 +78,7 @@ void MaterialEntry::Bind( const DrawContext& context ) const
 	if( shader == nullptr )
 		return;
 
-	// Note: Every material sets culling itself, so a two-sided one never leaves it off for the next
-	if( data.bTwoSided )
-	{
-		glDisable( GL_CULL_FACE );
-	}
-	else
-	{
-		glEnable( GL_CULL_FACE );
-	}
+	SetCulling( data.bTwoSided );
 
 	shader->Use();
 	shader->SetMatrix44( "u_Model", context.model );
@@ -75,21 +101,7 @@ void MaterialEntry::Bind( const DrawContext& context ) const
 	}
 
 	shader->SetVec3( "u_Color", data.diffuseColor );
-	shader->SetInt( "u_UseTexture", diffuseTexture != nullptr ? 1 : 0 );
-	if( diffuseTexture != nullptr )
-	{
-		diffuseTexture->Bind( kDiffuseTextureUnit );
-		shader->SetInt( "u_Texture", kDiffuseTextureUnit );
-	}
-
-	shader->SetInt( "u_AlphaTest", IsAlphaTested() && context.bAlphaTest ? 1 : 0 );
-	shader->SetInt( "u_UseOpacityTexture", opacityTexture != nullptr ? 1 : 0 );
-	if( opacityTexture != nullptr )
-	{
-		opacityTexture->Bind( kOpacityTextureUnit );
-		shader->SetInt( "u_OpacityTexture", kOpacityTextureUnit );
-		shader->SetInt( "u_OpacityFromAlpha", opacityTexture->HasAlphaChannel() ? 1 : 0 );
-	}
+	BindCutOut( *this, *shader, IsAlphaTested() && context.bAlphaTest );
 
 	shader->SetInt( "u_UseNormalTexture", normalTexture != nullptr ? 1 : 0 );
 	if( normalTexture != nullptr )
@@ -97,6 +109,28 @@ void MaterialEntry::Bind( const DrawContext& context ) const
 		normalTexture->Bind( kNormalTextureUnit );
 		shader->SetInt( "u_NormalTexture", kNormalTextureUnit );
 	}
+
+	// Note: The shadow sampler always gets its own unit, a sampler2DShadow sharing one with a sampler2D fails to draw
+	shader->SetInt( "u_ShadowMap", kShadowMapUnit );
+	shader->SetInt( "u_ShadowLight", context.shadowLight );
+	if( context.shadowLight >= 0 )
+	{
+		glActiveTexture( GL_TEXTURE0 + kShadowMapUnit );
+		glBindTexture( GL_TEXTURE_2D, context.shadowMap );
+		shader->SetMatrix44( "u_ShadowMatrix", context.shadowMatrix );
+		shader->SetFloat( "u_ShadowDepthBias", context.shadowDepthBias );
+		shader->SetFloat( "u_ShadowNormalOffset", context.shadowNormalOffset );
+	}
+}
+
+void MaterialEntry::BindShadow( const DrawContext& context, const Shader& shadowShader ) const
+{
+	SetCulling( data.bTwoSided );
+
+	shadowShader.Use();
+	shadowShader.SetMatrix44( "u_Model", context.model );
+	shadowShader.SetMatrix44( "u_ShadowMatrix", context.shadowMatrix );
+	BindCutOut( *this, shadowShader, IsAlphaTested() && context.bAlphaTest );
 }
 
 Material::Material( std::string_view path, ResourceState state )

@@ -19,6 +19,16 @@ const TextureProperties TextureProperties::V_DefaultDepth = {
     .bMipmaps       = false,
 };
 
+const TextureProperties TextureProperties::V_ShadowMap = {
+    .internalFormat = TextureInternalFormat::Depth24,
+    .pixelFormat    = TexturePixelFormat::Depth,
+    .dataType       = TextureDataType::UnsignedInt,
+    .wrap           = TextureWrap::ClampToEdge,
+    .filter         = TextureFilter::Linear,
+    .bMipmaps       = false,
+    .bDepthCompare  = true,
+};
+
 const TextureProperties TextureProperties::V_GBufferRGB = {
     .internalFormat = TextureInternalFormat::RGB16F,
     .pixelFormat    = TexturePixelFormat::RGB,
@@ -138,6 +148,12 @@ bool Texture2D::Create( rect size, const TextureProperties& properties, const vo
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ToGL( properties.wrap ) );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, ToGLMinFilter( properties.filter, properties.bMipmaps ) );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, ToGLMagFilter( properties.filter ) );
+
+	if( properties.bDepthCompare )
+	{
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL );
+	}
 
 	glBindTexture( GL_TEXTURE_2D, 0 );
 	return true;

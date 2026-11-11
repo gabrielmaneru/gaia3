@@ -49,9 +49,14 @@ struct TextureProperties
 	TextureFilter         filter         = TextureFilter::Linear;
 	bool                  bMipmaps       = true;
 
+	// Note: For depth textures read by a sampler2DShadow, sampling compares a depth with the stored one and returns
+	// how much of the area passes, blended over neighbouring texels when filtering is linear
+	bool bDepthCompare = false;
+
 	static const TextureProperties V_DefaultColorRGBA;
 	static const TextureProperties V_DefaultColorRGB;
 	static const TextureProperties V_DefaultDepth;
+	static const TextureProperties V_ShadowMap;
 	static const TextureProperties V_GBufferRGB;
 	static const TextureProperties V_RenderTargetRGBA;
 };

@@ -11,6 +11,9 @@
 namespace Inspector
 {
 bool EditFloat( const char* label, float& value, float speed = 0.1f );
+
+// Note: A slider that keeps the value between minValue and maxValue, format is printf style like "%.1f deg"
+bool EditSlider( const char* label, float& value, float minValue, float maxValue, const char* format = "%.2f" );
 bool EditVec3( const char* label, Vec3& value, float speed = 0.1f );
 bool EditString( const char* label, std::string& value );
 
@@ -19,4 +22,11 @@ bool EditResource( const char* label, u64 resourceTypeId, std::string& resourceN
 
 // Note: Picks the editor from the property's serialized shape, and returns true once the new value is applied
 bool EditProperty( void* instance, const rtti::PropertyInfo& property );
+
+// Note: Greyed-out text, for notes about a component rather than values to edit
+void ShowNote( const char* text );
+
+// Note: Shows a square depth texture in grey, black near and white far, at most maxSize wide. It works for depth
+// textures that compare, like the shadow map, which turns comparing off only while it is drawn
+void ShowDepthTexture( u32 textureId, float maxSize );
 } // namespace Inspector
