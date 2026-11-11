@@ -13,7 +13,7 @@
 </div>
 
 > [!NOTE]
-> gaia3 is in early development. It can author, save and reload levels, and draws models with materials, textures and normal maps lit by directional and point lights, with a shadow map for the sun. See [Current limits](#current-limits).
+> gaia3 is in early development. It can author, save and reload levels, and draws models with PBR materials, textures and normal maps lit by directional and point lights, with a shadow map for the sun. See [Current limits](#current-limits).
 
 ## Contents
 
@@ -47,7 +47,8 @@
 **Rendering**
 - OpenGL 3.3 core renderer that draws into a framebuffer
 - Wavefront `.obj` models, where each object or group becomes a mesh with one sub-mesh per material
-- Material libraries from `.mtl` files, each material with a colour, textures, a cut-out mask, a normal map, a shader and an optional two-sided flag
+- Material libraries from `.mtl` files, each material with a colour, textures, a cut-out mask, a normal map, metallic-roughness PBR values or textures, a shader and an optional two-sided flag
+- Metallic-roughness PBR lighting (GGX) in linear colour, tone mapped for the screen
 - Shaders in `.glsl` files, with both stages in one file
 - BMP, PNG, JPEG and TGA textures, with optional import settings for filtering, wrapping and mipmaps
 - Texture formats and sampling described by `TextureProperties`, with presets shared by textures and render targets
@@ -132,7 +133,7 @@ Hold the **right mouse button** in the Viewport to control the camera. It keeps 
 |---|---|
 | **Level** menu | New, Open, Save, Save As |
 | **Gizmo** menu | Switch between Selection, Translate, Rotate and Scale, and between World and Local axes |
-| **Settings** menu | Draw mode: Lit, Normals (world-space normals as colours) or Shadows (white where the sun reaches). An Alpha Test toggle that shows cut-outs as whole faces when off. Sun shadow settings: on or off, map size and the two biases. The camera linear and angular speed, shared by every camera. None of it is saved in levels |
+| **Settings** menu | Draw mode: Lit, Normals (world-space normals as colours), Shadows (white where the sun reaches), Roughness or Metallic (the PBR values in grey). An Alpha Test toggle that shows cut-outs as whole faces when off. Sun shadow settings: on or off, map size and the two biases. The camera linear and angular speed, shared by every camera. None of it is saved in levels |
 | **Hierarchy**, right click on an entity | Rename, Clone, Delete |
 | **Hierarchy**, right click on empty space | Create Entity |
 | **Inspector**, right click on empty space | Add Component, greyed out for types already present |
@@ -225,6 +226,9 @@ map_Kd arch.png
 | `map_d` | Cut-out mask, pixels under half opacity aren't drawn. Its alpha when it has one, otherwise its red channel |
 | `map_Bump`, `bump`, `norm` | Tangent-space normal map |
 | `shader` | Shader in `shaders/`, a gaia3 extension other tools ignore. `default` when left out |
+| `Pr`, `Pm` | PBR roughness and metallic, 0 to 1 |
+| `map_Pr`, `map_Pm` | Roughness and metallic textures, read from red and multiplied by `Pr` and `Pm` when given |
+| `Ns` | Classic shininess, turned into roughness for materials without `Pr` or `map_Pr`. Without any, roughness is 0.5 and metallic 0 |
 | `two_sided` | Draws both sides of each face, for single-sheet geometry like leaves. A gaia3 extension other tools ignore |
 
 A model uses the libraries its `mtllib` lines name, found by file name wherever the `.mtl` is. Each sub-mesh then takes the material its `usemtl` line names from those libraries:
@@ -237,7 +241,9 @@ A model uses the libraries its `mtllib` lines name, found by file name wherever 
 
 A `ModelComponent` can set a material override, a library used instead of the model's own, with `SetMaterialOverride` or the Inspector's MaterialOverride field. Each sub-mesh then looks up its name in that library, and sub-meshes without a name take its first material, so a cube drawn with the `error` library shows the error texture. The libraries the model already uses can't be chosen, they're greyed out in the Inspector, and changing the model clears the override.
 
-Shaders are `.glsl` files holding both stages, each one after a `#type vertex` or `#type fragment` line. The default shader draws the material's colour, texture and normal map, lit by the level's directional and point lights. The first directional light with `m_bCastShadows` gets a shadow map, drawn with `shadow.glsl`. It covers a box that starts at the light's entity, `m_ShadowSize` wide across the light, and runs `m_ShadowDepth` along it, whatever the camera does, and the light's Inspector shows it. Cut-out materials cast the shape of their cut-out.
+Shaders are `.glsl` files holding both stages, each one after a `#type vertex` or `#type fragment` line. The default shader draws the material's colour, texture and normal map, lit by the level's directional and point lights with metallic-roughness PBR. Colour textures are turned from sRGB into linear values, lighting adds up in linear, and the result is tone mapped back to sRGB for the screen.
+
+Shaders can share code with `#include "pbr.glsli"`. Include files are `.glsli` resources in `shaders/`, found by name like any resource, so an app can override them. Each one is pasted once per stage, even when several files include it, and compile errors name the file by number, listed in the message, like `1(4)` for line 4 of the first include. The first directional light with `m_bCastShadows` gets a shadow map, drawn with `shadow.glsl`. It covers a box that starts at the light's entity, `m_ShadowSize` wide across the light, and runs `m_ShadowDepth` along it, whatever the camera does, and the light's Inspector shows it. Cut-out materials cast the shape of their cut-out.
 
 A texture can have import settings in a `.meta` file next to it, such as `error.bmp.meta`:
 
@@ -336,7 +342,7 @@ gaia3/
 
 ## Current limits
 
-- **Lighting:** up to 8 directional and point lights, with a flat ambient term. Only one directional light gets shadows, from a single shadow map over a fixed box, so they get blurrier as the box grows. Cascaded shadows, point light shadows, specular and PBR are planned.
+- **Lighting:** up to 8 directional and point lights, with a flat ambient term. Only one directional light gets shadows, from a single shadow map over a fixed box, so they get blurrier as the box grows. Without reflections of the surroundings (image-based lighting), metals only shine where a light hits them. Cascaded shadows, point light shadows and image-based lighting are planned.
 - **Materials:** only the lines listed in [Materials, shaders and textures](#materials-shaders-and-textures) are read from `.mtl` files.
 - **Model formats:** only OBJ for now. glTF and FBX importers are planned, along with skeletal animation.
 - **Cameras:** the renderer uses one camera, and extra ones are ignored. Choosing a render target per camera is planned.

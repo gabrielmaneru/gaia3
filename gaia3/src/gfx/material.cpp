@@ -21,6 +21,34 @@ constexpr u32 kDiffuseTextureUnit = 0;
 constexpr u32 kOpacityTextureUnit = 1;
 constexpr u32 kNormalTextureUnit  = 2;
 constexpr u32 kShadowMapUnit      = 3;
+constexpr u32 kRoughnessUnit      = 4;
+constexpr u32 kMetallicUnit       = 5;
+
+// Note: Optional textures that leave the material without them rather than using the error texture, which would only
+// bend or tint the result in a checker pattern
+shared<Texture> FindOptionalTexture( ResourceManager& manager, const std::string& textureName, std::string_view what, std::string_view materialName, std::string_view libraryName )
+{
+	if( textureName.empty() )
+		return nullptr;
+
+	shared<Texture> texture = manager.FindResource<Texture>( textureName, true );
+	if( texture == nullptr )
+	{
+		GAIA_WARN( "Material {}: {} {} of {} is not available, drawing without it", libraryName, what, textureName, materialName );
+	}
+	return texture;
+}
+
+// Note: Binds an optional texture and tells the shader whether there is one
+void BindOptionalTexture( const Shader& shader, const shared<Texture>& texture, u32 unit, const char* useName, const char* samplerName )
+{
+	shader.SetInt( useName, texture != nullptr ? 1 : 0 );
+	if( texture != nullptr )
+	{
+		texture->Bind( unit );
+		shader.SetInt( samplerName, static_cast<int>( unit ) );
+	}
+}
 
 // Note: Every material sets culling itself, so a two-sided one never leaves it off for the next
 void SetCulling( bool bTwoSided )
@@ -60,6 +88,11 @@ bool ParseVec3( std::istringstream& stream, Vec3& outValue )
 	return static_cast<bool>( stream >> outValue.x >> outValue.y >> outValue.z );
 }
 
+bool ParseFloat( std::istringstream& stream, float& outValue )
+{
+	return static_cast<bool>( stream >> outValue );
+}
+
 // Note: Options like "-s 1 1 1" come before the file name, so the file is the last word
 std::string ReadTextureName( std::istringstream& stream )
 {
@@ -72,6 +105,29 @@ std::string ReadTextureName( std::istringstream& stream )
 	return fileName;
 }
 } // namespace
+
+float MaterialData::GetRoughness() const
+{
+	if( roughness >= 0.0f )
+		return roughness;
+
+	if( !roughnessTexture.empty() )
+		return 1.0f;
+
+	// Note: The usual match between a Blinn-Phong exponent and GGX roughness, a medium 0.5 without one
+	if( shininess > 0.0f )
+		return sqrtf( 2.0f / ( shininess + 2.0f ) );
+
+	return 0.5f;
+}
+
+float MaterialData::GetMetallic() const
+{
+	if( metallic >= 0.0f )
+		return metallic;
+
+	return metallicTexture.empty() ? 0.0f : 1.0f;
+}
 
 void MaterialEntry::Bind( const DrawContext& context ) const
 {
@@ -100,15 +156,16 @@ void MaterialEntry::Bind( const DrawContext& context ) const
 		shader->SetFloat( ( "u_LightRange" + index ).c_str(), light.range );
 	}
 
+	shader->SetVec3( "u_CameraPosition", context.cameraPosition );
 	shader->SetVec3( "u_Color", data.diffuseColor );
 	BindCutOut( *this, *shader, IsAlphaTested() && context.bAlphaTest );
 
-	shader->SetInt( "u_UseNormalTexture", normalTexture != nullptr ? 1 : 0 );
-	if( normalTexture != nullptr )
-	{
-		normalTexture->Bind( kNormalTextureUnit );
-		shader->SetInt( "u_NormalTexture", kNormalTextureUnit );
-	}
+	BindOptionalTexture( *shader, normalTexture, kNormalTextureUnit, "u_UseNormalTexture", "u_NormalTexture" );
+
+	shader->SetFloat( "u_Roughness", data.GetRoughness() );
+	shader->SetFloat( "u_Metallic", data.GetMetallic() );
+	BindOptionalTexture( *shader, roughnessTexture, kRoughnessUnit, "u_UseRoughnessTexture", "u_RoughnessTexture" );
+	BindOptionalTexture( *shader, metallicTexture, kMetallicUnit, "u_UseMetallicTexture", "u_MetallicTexture" );
 
 	// Note: The shadow sampler always gets its own unit, a sampler2DShadow sharing one with a sampler2D fails to draw
 	shader->SetInt( "u_ShadowMap", kShadowMapUnit );
@@ -203,6 +260,24 @@ bool Material::ReadMtl( std::string_view path, std::vector<MaterialData>& outMat
 		{
 			currentMaterial().normalTexture = ReadTextureName( lineStream );
 		}
+		else if( keyword == "Ns" || keyword == "Pr" || keyword == "Pm" )
+		{
+			MaterialData& material = currentMaterial();
+			float&        value    = keyword == "Ns" ? material.shininess : ( keyword == "Pr" ? material.roughness : material.metallic );
+			if( !ParseFloat( lineStream, value ) )
+			{
+				GAIA_ERROR( "Material: invalid {} at {}:{}", keyword, path, lineNumber );
+				return false;
+			}
+		}
+		else if( keyword == "map_Pr" )
+		{
+			currentMaterial().roughnessTexture = ReadTextureName( lineStream );
+		}
+		else if( keyword == "map_Pm" )
+		{
+			currentMaterial().metallicTexture = ReadTextureName( lineStream );
+		}
 		else if( keyword == "shader" )
 		{
 			lineStream >> currentMaterial().shader;
@@ -282,16 +357,9 @@ bool Material::LoadInternal()
 			}
 		}
 
-		// Note: A missing normal map leaves the surface flat rather than using the error texture, which as a normal map
-		// would only bend the lighting in a checker pattern
-		if( !data.normalTexture.empty() )
-		{
-			entry.normalTexture = manager.FindResource<Texture>( data.normalTexture, true );
-			if( entry.normalTexture == nullptr )
-			{
-				GAIA_WARN( "Material {}: normal map {} of {} is not available, using the model's normals", GetName(), data.normalTexture, data.name );
-			}
-		}
+		entry.normalTexture    = FindOptionalTexture( manager, data.normalTexture, "normal map", data.name, GetName() );
+		entry.roughnessTexture = FindOptionalTexture( manager, data.roughnessTexture, "roughness texture", data.name, GetName() );
+		entry.metallicTexture  = FindOptionalTexture( manager, data.metallicTexture, "metallic texture", data.name, GetName() );
 
 		entry.data = std::move( data );
 		m_Entries.push_back( std::move( entry ) );

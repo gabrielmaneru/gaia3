@@ -80,8 +80,9 @@ void Renderer::Update( rect renderSize )
 	const RenderCamera* camera = GetCamera();
 	if( camera != nullptr )
 	{
-		context.view       = camera->GetViewMatrix();
-		context.projection = camera->GetProjectionMatrix( renderSize );
+		context.view           = camera->GetViewMatrix();
+		context.projection     = camera->GetProjectionMatrix( renderSize );
+		context.cameraPosition = Vec3( context.view.Inverse().col[3] );
 	}
 
 	context.lights     = GatherLights();

@@ -1,0 +1,54 @@
+// Note: Metallic-roughness PBR lighting, the model glTF, Unity and Unreal use. Roughness goes from mirror-like at 0 to
+// matte at 1, metallic from stone, wood or cloth at 0 to bare metal at 1
+
+const float kPi = 3.14159265;
+
+// Note: A perfectly smooth surface would focus each light into a single point, so roughness keeps a small minimum
+const float kMinRoughness = 0.045;
+
+// Note: How many tiny facets of the surface face halfway between the light and the eye, GGX
+float DistributionGGX( float normalDotHalf, float roughness )
+{
+	float alpha        = roughness * roughness;
+	float alphaSquared = alpha * alpha;
+	float denominator  = normalDotHalf * normalDotHalf * ( alphaSquared - 1.0 ) + 1.0;
+	return alphaSquared / ( kPi * denominator * denominator );
+}
+
+// Note: How many of those facets aren't hidden by others from the light or the eye, Smith with Schlick-GGX
+float GeometrySmith( float normalDotView, float normalDotLight, float roughness )
+{
+	float k = ( roughness + 1.0 ) * ( roughness + 1.0 ) / 8.0;
+	return ( normalDotView / ( normalDotView * ( 1.0 - k ) + k ) ) * ( normalDotLight / ( normalDotLight * ( 1.0 - k ) + k ) );
+}
+
+// Note: How much light the surface reflects rather than takes in, more at grazing angles, Schlick
+vec3 FresnelSchlick( float cosine, vec3 reflectanceAtNormal )
+{
+	return reflectanceAtNormal + ( 1.0 - reflectanceAtNormal ) * pow( 1.0 - cosine, 5.0 );
+}
+
+// Note: The light one light sends towards the eye, before its colour, distance and shadow. Light that isn't reflected
+// enters the surface and comes back out coloured, except in metals. Non-metals reflect about 4% of light head-on
+// whatever their colour, metals reflect their colour. Light colours are such that a white matte surface facing a
+// light of intensity 1 shows 1, so the diffuse part is the albedo rather than albedo / pi, and the specular part is
+// multiplied by pi to match
+vec3 GetPbrLighting( vec3 normal, vec3 toEye, vec3 toLight, vec3 albedo, float roughness, float metallic )
+{
+	float normalDotLight = dot( normal, toLight );
+	if( normalDotLight <= 0.0 )
+		return vec3( 0.0 );
+
+	roughness = clamp( roughness, kMinRoughness, 1.0 );
+	metallic  = clamp( metallic, 0.0, 1.0 );
+
+	vec3  reflectanceAtNormal = mix( vec3( 0.04 ), albedo, metallic );
+	float normalDotView       = max( dot( normal, toEye ), 0.0001 );
+	vec3  halfway             = normalize( toEye + toLight );
+	float normalDotHalf       = max( dot( normal, halfway ), 0.0 );
+	vec3  reflected           = FresnelSchlick( max( dot( halfway, toEye ), 0.0 ), reflectanceAtNormal );
+	vec3  specular            = DistributionGGX( normalDotHalf, roughness ) * GeometrySmith( normalDotView, normalDotLight, roughness ) * reflected / ( 4.0 * normalDotView * normalDotLight );
+	vec3  diffuse             = ( 1.0 - reflected ) * ( 1.0 - metallic ) * albedo;
+
+	return ( diffuse + specular * kPi ) * normalDotLight;
+}

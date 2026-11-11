@@ -1,5 +1,5 @@
-// Note: Draws a material's colour, multiplied by its texture when it has one, lit by the scene's lights and shadowed
-// by the sun's shadow map
+// Note: Draws a material's colour, multiplied by its texture when it has one, lit by the scene's lights with
+// metallic-roughness PBR and shadowed by the sun's shadow map. Lighting is done in linear colour, then tone mapped
 
 #type vertex
 #version 330 core
@@ -46,9 +46,11 @@ const int kDirectionalLight = 0;
 const int kPointLight       = 1;
 
 // Note: Must match DrawMode in gfx/rendererTypes.h
-const int kDrawLit     = 0;
-const int kDrawNormals = 1;
-const int kDrawShadows = 2;
+const int kDrawLit       = 0;
+const int kDrawNormals   = 1;
+const int kDrawShadows   = 2;
+const int kDrawRoughness = 3;
+const int kDrawMetallic  = 4;
 
 uniform int u_DrawMode;
 
@@ -59,8 +61,11 @@ uniform mat4            u_ShadowMatrix;
 uniform float           u_ShadowDepthBias;
 uniform float           u_ShadowNormalOffset;
 
-// Note: Light that reaches every surface, so places no light reaches aren't black, until there is a sky or bounce light
-const float kAmbient = 0.15;
+// Note: Light that reaches every surface, so places no light reaches aren't black, until there is a sky or bounce light.
+// It is in linear light, so it shows about as bright as 0.15 did before lighting moved to linear colour
+const float kAmbient = 0.02;
+
+uniform vec3 u_CameraPosition;
 
 uniform int   u_LightCount;
 uniform int   u_LightType[kMaxLights];
@@ -81,7 +86,35 @@ uniform sampler2D u_OpacityTexture;
 uniform bool      u_UseNormalTexture;
 uniform sampler2D u_NormalTexture;
 
+// Note: Metallic-roughness PBR, each value multiplied by its texture's red channel when there is one, see pbr.glsli
+uniform float     u_Roughness;
+uniform bool      u_UseRoughnessTexture;
+uniform sampler2D u_RoughnessTexture;
+uniform float     u_Metallic;
+uniform bool      u_UseMetallicTexture;
+uniform sampler2D u_MetallicTexture;
+
 out vec4 FragColor;
+
+#include "pbr.glsli"
+
+// Note: Colour textures are stored for the eye (sRGB), lighting adds light up in linear values, and the screen expects
+// sRGB again. A 2.2 power is close enough to the exact sRGB curve
+vec3 SrgbToLinear( vec3 color )
+{
+	return pow( color, vec3( 2.2 ) );
+}
+
+vec3 LinearToSrgb( vec3 color )
+{
+	return pow( color, vec3( 1.0 / 2.2 ) );
+}
+
+// Note: Rolls bright values off smoothly instead of clipping them at 1, Krzysztof Narkowicz's fit of the ACES curve
+vec3 ToneMap( vec3 color )
+{
+	return clamp( ( color * ( 2.51 * color + 0.03 ) ) / ( color * ( 2.43 * color + 0.59 ) + 0.14 ), 0.0, 1.0 );
+}
 
 // Note: The surface's normal, bent by the normal map when there is one. A normal map stores a direction relative to
 // the surface, x along the tangent, y along the bitangent and z along the normal, each squeezed from -1..1 into 0..1
@@ -134,7 +167,7 @@ float GetShadow()
 void main()
 {
 	vec4 texel  = u_UseTexture ? texture( u_Texture, vUV ) : vec4( 1.0 );
-	vec3 albedo = u_Color * texel.rgb;
+	vec3 albedo = u_Color * SrgbToLinear( texel.rgb );
 
 	// Note: Cut-out materials, like leaves, skip the pixels their mask marks as see-through. A mask with an alpha
 	// channel is read from its alpha, a grey mask from its red channel, and without a mask the colour texture's alpha
@@ -169,7 +202,22 @@ void main()
 		return;
 	}
 
-	vec3 lighting = vec3( kAmbient );
+	// Note: Data textures hold values, not colours, so they are read as they are
+	float roughness = u_Roughness * ( u_UseRoughnessTexture ? texture( u_RoughnessTexture, vUV ).r : 1.0 );
+	float metallic  = u_Metallic * ( u_UseMetallicTexture ? texture( u_MetallicTexture, vUV ).r : 1.0 );
+	if( u_DrawMode == kDrawRoughness )
+	{
+		FragColor = vec4( vec3( roughness ), 1.0 );
+		return;
+	}
+	if( u_DrawMode == kDrawMetallic )
+	{
+		FragColor = vec4( vec3( metallic ), 1.0 );
+		return;
+	}
+
+	vec3 toEye = normalize( u_CameraPosition - vWorldPosition );
+	vec3 color = albedo * kAmbient;
 
 	for( int i = 0; i < u_LightCount; ++i )
 	{
@@ -193,8 +241,8 @@ void main()
 			attenuation *= shadow;
 		}
 
-		lighting += u_LightColor[i] * max( dot( normal, toLight ), 0.0 ) * attenuation;
+		color += GetPbrLighting( normal, toEye, toLight, albedo, roughness, metallic ) * u_LightColor[i] * attenuation;
 	}
 
-	FragColor = vec4( albedo * lighting, 1.0 );
+	FragColor = vec4( LinearToSrgb( ToneMap( color ) ), 1.0 );
 }

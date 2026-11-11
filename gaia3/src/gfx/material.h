@@ -23,11 +23,25 @@ struct MaterialData
 	// Note: A tangent-space normal map, from a map_Bump, bump or norm line
 	std::string normalTexture;
 
+	// Note: The PBR lines most tools write: Pr and Pm set roughness and metallic from 0 to 1, map_Pr and map_Pm give
+	// them per pixel from the textures' red channel. Negative means the line is missing, see GetRoughness and
+	// GetMetallic. shininess is the classic Ns line, only used for the roughness of materials without PBR lines
+	float       roughness = -1.0f;
+	float       metallic  = -1.0f;
+	float       shininess = 0.0f;
+	std::string roughnessTexture;
+	std::string metallicTexture;
+
 	std::string shader = "default";
 
 	// Note: From a "two_sided" line, a gaia3 extension. Both sides of each face are drawn, for single-sheet geometry
 	// like leaves, and the back side is lit as its own surface
 	bool bTwoSided = false;
+
+	// Note: The value the shader multiplies each texture by, like glTF's factors: Pr or Pm when given, otherwise 1 with
+	// a texture so it is used as is. Without either, roughness comes from Ns as old exporters write it, and metallic is 0
+	float GetRoughness() const;
+	float GetMetallic() const;
 };
 
 // Note: One newmtl of a material library, ready to draw with
@@ -44,6 +58,10 @@ struct MaterialEntry
 
 	// Note: Null without a normal map, or when it can't be found, then the surface uses the model's normals
 	shared<Texture> normalTexture;
+
+	// Note: Null without them, or when they can't be found, then GetRoughness and GetMetallic are used alone
+	shared<Texture> roughnessTexture;
+	shared<Texture> metallicTexture;
 
 	// Note: Pixels whose opacity is under half aren't drawn, only for materials with a map_d line
 	bool IsAlphaTested() const { return !data.opacityTexture.empty(); }

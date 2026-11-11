@@ -84,6 +84,58 @@ TEST( MaterialTests, ReadsNormalMapsFromEveryBumpKeyword )
 	EXPECT_TRUE( result.materials[4].normalTexture.empty() );
 }
 
+TEST( MaterialTests, ReadsThePbrLines )
+{
+	const ReadResult result = ReadMtlText( "newmtl metal\nPr 0.25\nPm 1\nnewmtl stone\nmap_Pr -bm 1 stone_rough.tga\nmap_Pm stone_metal.tga\n" );
+
+	ASSERT_TRUE( result.bRead );
+	ASSERT_EQ( result.materials.size(), 2u );
+	EXPECT_FLOAT_EQ( result.materials[0].GetRoughness(), 0.25f );
+	EXPECT_FLOAT_EQ( result.materials[0].GetMetallic(), 1.0f );
+
+	// Note: With only textures, they are used as they are
+	EXPECT_EQ( result.materials[1].roughnessTexture, "stone_rough.tga" );
+	EXPECT_EQ( result.materials[1].metallicTexture, "stone_metal.tga" );
+	EXPECT_FLOAT_EQ( result.materials[1].GetRoughness(), 1.0f );
+	EXPECT_FLOAT_EQ( result.materials[1].GetMetallic(), 1.0f );
+}
+
+TEST( MaterialTests, OldMaterialsGetRoughnessFromTheirShininess )
+{
+	const ReadResult result = ReadMtlText( "newmtl old\nNs 7.843137\nnewmtl plain\nKd 1 1 1\nnewmtl both\nNs 100\nPr 0.8\n" );
+
+	ASSERT_TRUE( result.bRead );
+	ASSERT_EQ( result.materials.size(), 3u );
+
+	// Note: sqrt( 2 / ( Ns + 2 ) ), about 0.45 for Sponza's 7.84
+	EXPECT_NEAR( result.materials[0].GetRoughness(), 0.4508f, 1e-3f );
+	EXPECT_FLOAT_EQ( result.materials[0].GetMetallic(), 0.0f );
+
+	EXPECT_FLOAT_EQ( result.materials[1].GetRoughness(), 0.5f );
+	EXPECT_FLOAT_EQ( result.materials[1].GetMetallic(), 0.0f );
+
+	// Note: Pr wins over Ns
+	EXPECT_FLOAT_EQ( result.materials[2].GetRoughness(), 0.8f );
+}
+
+TEST( MaterialTests, AmbientAndShininessMapsAreNotPbr )
+{
+	// Note: Only the PBR names count, map_Ka is ambient and often the colour texture again, as in the original Sponza
+	const ReadResult result = ReadMtlText( "newmtl bricks\nmap_Ka bricks.tga\nmap_Ns bricks_spec.tga\n" );
+
+	ASSERT_TRUE( result.bRead );
+	EXPECT_TRUE( result.materials[0].metallicTexture.empty() );
+	EXPECT_TRUE( result.materials[0].roughnessTexture.empty() );
+}
+
+TEST( MaterialTests, InvalidPbrValuesFail )
+{
+	LogCapture log;
+
+	EXPECT_FALSE( ReadMtlText( "newmtl bad\nPr rough\n" ).bRead );
+	EXPECT_TRUE( log.Contains( "error: Material: invalid Pr at" ) );
+}
+
 TEST( MaterialTests, ReadsTheTwoSidedLine )
 {
 	const ReadResult result = ReadMtlText( "newmtl leaf\nmap_Kd leaf.tga\ntwo_sided\nnewmtl stone\nmap_Kd stone.tga\n" );

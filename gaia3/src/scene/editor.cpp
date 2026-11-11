@@ -188,6 +188,8 @@ constexpr DrawModeItem kDrawModeItems[] = {
     { "Lit", DrawMode::Lit },
     { "Normals", DrawMode::Normals },
     { "Shadows", DrawMode::Shadows },
+    { "Roughness", DrawMode::Roughness },
+    { "Metallic", DrawMode::Metallic },
 };
 
 ImGuizmo::MODE ToGizmoSpace( GizmoSpace space )

@@ -20,12 +20,15 @@ class Shader;
 
 // Note: What the default shader outputs. Normals shows each pixel's world-space normal, after normal mapping, as a
 // colour: x to red, y to green and z to blue, each from -1..1 into 0..1. Shadows shows how much of the sun reaches
-// each pixel, white when lit and black in shadow. The values must match shaders/default.glsl
+// each pixel, white when lit and black in shadow. Roughness and Metallic show those PBR values in grey, from black at
+// 0 to white at 1. The values must match shaders/default.glsl
 enum class DrawMode : int
 {
-	Lit     = 0,
-	Normals = 1,
-	Shadows = 2
+	Lit       = 0,
+	Normals   = 1,
+	Shadows   = 2,
+	Roughness = 3,
+	Metallic  = 4
 };
 
 // Note: The sun's shadow map, the area it covers is set on the light. The biases keep a surface from shadowing itself:
@@ -64,6 +67,9 @@ struct DrawContext
 	Matrix44 model;
 	Matrix44 view;
 	Matrix44 projection;
+
+	// Note: Where the camera is in the world, shiny surfaces reflect light towards it
+	Vec3 cameraPosition;
 
 	std::vector<LightParameters> lights;
 
