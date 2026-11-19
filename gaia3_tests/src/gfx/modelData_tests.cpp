@@ -87,7 +87,7 @@ TEST( ModelDataTests, SquashedUVsStillGiveATangentAlongTheSurface )
 
 TEST( ModelDataTests, TheEngineShapesGetTangentsAlongTheirSurface )
 {
-	for( const char* shape : { "cube", "tetrahedron", "octahedron", "icosahedron", "dodecahedron", "quad", "triangle" } )
+	for( const char* shape : { "cube", "tetrahedron", "octahedron", "icosahedron", "dodecahedron", "quad", "triangle", "plane" } )
 	{
 		ModelData data;
 		ASSERT_TRUE( ObjImporter::Import( std::string( GAIA3_ASSETS_PATH "models/" ) + shape + ".obj", data ) ) << shape;
@@ -103,4 +103,120 @@ TEST( ModelDataTests, TheEngineShapesGetTangentsAlongTheirSurface )
 			EXPECT_FLOAT_EQ( fabsf( data.tangents[i].w ), 1.0f ) << shape;
 		}
 	}
+}
+
+TEST( ModelDataTests, TheEngineShapesFaceTheirNormals )
+{
+	// Note: Faces are counter-clockwise seen from the front, so each triangle's winding has to agree with its normals,
+	// otherwise culling hides the lit side
+	for( const char* shape : { "cube", "tetrahedron", "octahedron", "icosahedron", "dodecahedron", "quad", "triangle", "plane" } )
+	{
+		ModelData data;
+		ASSERT_TRUE( ObjImporter::Import( std::string( GAIA3_ASSETS_PATH "models/" ) + shape + ".obj", data ) ) << shape;
+
+		for( u64 i = 0; i + 2 < data.indices.size(); i += 3 )
+		{
+			const u32  a           = data.indices[i];
+			const u32  b           = data.indices[i + 1];
+			const u32  c           = data.indices[i + 2];
+			const Vec3 faceNormal  = Cross( data.positions[b] - data.positions[a], data.positions[c] - data.positions[a] );
+			const Vec3 storedTotal = data.normals[a] + data.normals[b] + data.normals[c];
+			EXPECT_GT( Dot( faceNormal, storedTotal ), 0.0f ) << shape << " triangle " << i / 3;
+		}
+	}
+}
+
+TEST( ModelDataTests, FlatShapesFaceTheViewerAndThePlaneFacesUp )
+{
+	// Note: The camera looks down -Z, so flat shapes face +Z to be seen from its starting side, like glTF models
+	for( const char* shape : { "quad", "triangle" } )
+	{
+		ModelData data;
+		ASSERT_TRUE( ObjImporter::Import( std::string( GAIA3_ASSETS_PATH "models/" ) + shape + ".obj", data ) ) << shape;
+		for( const Vec3& normal : data.normals )
+		{
+			EXPECT_TRUE( normal == Vec3( 0.0f, 0.0f, 1.0f ) ) << shape;
+		}
+	}
+
+	ModelData plane;
+	ASSERT_TRUE( ObjImporter::Import( GAIA3_ASSETS_PATH "models/plane.obj", plane ) );
+	for( const Vec3& normal : plane.normals )
+	{
+		EXPECT_TRUE( normal == Vec3::V_Up );
+	}
+
+	// Note: One unit across, lying at y 0
+	const AABB boundingVolume = plane.GetBoundingVolume();
+	EXPECT_TRUE( boundingVolume.min == Vec3( -0.5f, 0.0f, -0.5f ) );
+	EXPECT_TRUE( boundingVolume.max == Vec3( 0.5f, 0.0f, 0.5f ) );
+}
+
+namespace
+{
+// Note: Two meshes, the first with two sub-meshes, spread out so each one has its own box
+ModelData MakeTwoMeshes()
+{
+	ModelData data;
+	data.positions = {
+	    Vec3( 0.0f, 0.0f, 0.0f ), Vec3( 1.0f, 0.0f, 0.0f ), Vec3( 0.0f, 1.0f, 0.0f ),
+	    Vec3( 2.0f, 0.0f, 0.0f ), Vec3( 3.0f, 0.0f, 0.0f ), Vec3( 2.0f, 0.0f, 1.0f ),
+	    Vec3( -5.0f, 4.0f, 2.0f ), Vec3( -4.0f, 4.0f, 2.0f ), Vec3( -5.0f, 6.0f, 3.0f ),
+	    Vec3( 100.0f, 100.0f, 100.0f ), // Note: Not used by any triangle
+	};
+	data.indices = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+
+	MeshData first;
+	first.name      = "first";
+	first.subMeshes = { SubMeshData{ 0, 3, "stone" }, SubMeshData{ 3, 3, "wood" } };
+
+	MeshData second;
+	second.name      = "second";
+	second.subMeshes = { SubMeshData{ 6, 3, "metal" } };
+
+	data.meshes = { first, second };
+	return data;
+}
+} // namespace
+
+TEST( ModelDataTests, BoundingVolumeCoversTheVerticesTrianglesUse )
+{
+	const ModelData data           = MakeTwoMeshes();
+	const AABB      boundingVolume = data.GetBoundingVolume();
+
+	// Note: The unused vertex at 100 is left out
+	EXPECT_TRUE( boundingVolume.min == Vec3( -5.0f, 0.0f, 0.0f ) );
+	EXPECT_TRUE( boundingVolume.max == Vec3( 3.0f, 6.0f, 3.0f ) );
+	EXPECT_EQ( data.GetTriangleCount(), 3u );
+}
+
+TEST( ModelDataTests, MeshAndSubMeshBoundingVolumes )
+{
+	const ModelData data = MakeTwoMeshes();
+
+	const AABB first = data.GetMeshBoundingVolume( 0 );
+	EXPECT_TRUE( first.min == Vec3( 0.0f, 0.0f, 0.0f ) );
+	EXPECT_TRUE( first.max == Vec3( 3.0f, 1.0f, 1.0f ) );
+
+	const AABB wood = data.GetSubMeshBoundingVolume( 0, 1 );
+	EXPECT_TRUE( wood.min == Vec3( 2.0f, 0.0f, 0.0f ) );
+	EXPECT_TRUE( wood.max == Vec3( 3.0f, 0.0f, 1.0f ) );
+
+	const AABB second = data.GetMeshBoundingVolume( 1 );
+	EXPECT_TRUE( second.min == Vec3( -5.0f, 4.0f, 2.0f ) );
+	EXPECT_TRUE( second.max == Vec3( -4.0f, 6.0f, 3.0f ) );
+}
+
+TEST( ModelDataTests, BoundingVolumesOutOfRangeAreEmpty )
+{
+	const ModelData data = MakeTwoMeshes();
+
+	EXPECT_TRUE( data.GetMeshBoundingVolume( 2 ).IsEmpty() );
+	EXPECT_TRUE( data.GetSubMeshBoundingVolume( 1, 1 ).IsEmpty() );
+	EXPECT_TRUE( ModelData().GetBoundingVolume().IsEmpty() );
+
+	// Note: A sub-mesh reaching past the indices only counts the ones that exist
+	ModelData broken = data;
+	broken.meshes[1].subMeshes[0].indexCount = 30;
+	EXPECT_TRUE( broken.GetMeshBoundingVolume( 1 ).max == Vec3( -4.0f, 6.0f, 3.0f ) );
 }

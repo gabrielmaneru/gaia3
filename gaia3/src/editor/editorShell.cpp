@@ -1,52 +1,26 @@
-#include "gaia3_pch.h"
-#include "editor.h"
+#include "editorShell.h"
 
 #include <components/cameraComponent.h>
 #include <core/app.h>
-#include <scene/inspector.h>
+#include <core/log.h>
+#include <editor/editorStyle.h>
+#include <math/mathHelpers.h>
+#include <math/quaternionTransforms.h>
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_internal.h>
-
 #include <ImGuizmo.h>
 
 #include <cmath>
-#include <cstring>
 #include <filesystem>
+
+using namespace EditorStyle;
 
 namespace
 {
-constexpr const char* kHierarchyWindow = "Hierarchy";
-constexpr const char* kInspectorWindow = "Inspector";
-constexpr const char* kViewportWindow  = "Viewport";
-constexpr const char* kSaveAsPopup     = "Save Level As";
-constexpr const char* kRenamePopup     = "Rename Entity";
-
-constexpr ImGuiPopupFlags kEmptySpaceContextMenu = ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems;
-
 constexpr float kFontSize = 15.0f;
-
-constexpr ImVec4 RgbColor( u32 hex, float alpha = 1.0f )
-{
-	return ImVec4( ( ( hex >> 16 ) & 0xFF ) / 255.0f, ( ( hex >> 8 ) & 0xFF ) / 255.0f, ( hex & 0xFF ) / 255.0f, alpha );
-}
-
-constexpr ImVec4 kColorPanel         = RgbColor( 0x333333 );
-constexpr ImVec4 kColorStrip         = RgbColor( 0x232323 );
-constexpr ImVec4 kColorField         = RgbColor( 0x262626 );
-constexpr ImVec4 kColorFieldHovered  = RgbColor( 0x2E2E2E );
-constexpr ImVec4 kColorControl       = RgbColor( 0x454545 );
-constexpr ImVec4 kColorControlHover  = RgbColor( 0x525252 );
-constexpr ImVec4 kColorControlActive = RgbColor( 0x5E5E5E );
-constexpr ImVec4 kColorBorder        = RgbColor( 0x1A1A1A );
-constexpr ImVec4 kColorAccent        = RgbColor( 0x2C5D87 );
-constexpr ImVec4 kColorAccentHover   = RgbColor( 0x3A76AB );
-constexpr ImVec4 kColorAccentBright  = RgbColor( 0x4C9BE0 );
-constexpr ImVec4 kColorText          = RgbColor( 0xD4D4D4 );
-constexpr ImVec4 kColorTextDisabled  = RgbColor( 0x7E7E7E );
-constexpr ImVec4 kColorInvisible     = RgbColor( 0x000000, 0.0f );
 
 // Note: Neutral greys with one blue accent, like the Unity and Unreal editors. The sizes are for a 100% display, Init scales them
 void ApplyEditorStyle()
@@ -208,43 +182,6 @@ Vec3 GetMatrixAxis( const Matrix44& matrix, int axis )
 	const Vec4& column = matrix.col[axis];
 	return Vec3( column.x, column.y, column.z );
 }
-
-// Note: Draws the contents of a modal popup that asks for a name, and returns true once it is confirmed
-bool DrawNamePrompt( const char* confirmLabel, char* name, size_t nameSize )
-{
-	if( ImGui::IsWindowAppearing() )
-	{
-		ImGui::SetKeyboardFocusHere();
-	}
-
-	const bool bConfirmed = ImGui::InputText( "Name", name, nameSize, ImGuiInputTextFlags_EnterReturnsTrue );
-	const bool bHasName   = name[0] != '\0';
-
-	ImGui::BeginDisabled( !bHasName );
-	const bool bConfirmPressed = ImGui::Button( confirmLabel );
-	ImGui::EndDisabled();
-
-	ImGui::SameLine();
-	const bool bCancelPressed = ImGui::Button( "Cancel" );
-
-	if( ( bConfirmed || bConfirmPressed ) && bHasName )
-	{
-		ImGui::CloseCurrentPopup();
-		return true;
-	}
-
-	if( bCancelPressed )
-	{
-		ImGui::CloseCurrentPopup();
-	}
-
-	return false;
-}
-
-bool IsSameRotation( const Quat& a, const Quat& b )
-{
-	return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
-}
 } // namespace
 
 Transform ApplyGizmoMatrix( GizmoMode mode, const Transform& transform, const Matrix44& gizmoMatrix )
@@ -282,12 +219,12 @@ Transform ApplyGizmoMatrix( GizmoMode mode, const Transform& transform, const Ma
 	return result;
 }
 
-Editor::Editor( const EditorConfig& config )
+EditorShell::EditorShell( const EditorConfig& config )
     : m_Config( config ), m_GizmoMode( config.gizmoMode ), m_GizmoSpace( config.gizmoSpace )
 {
 }
 
-bool Editor::Init( std::string_view commonPath )
+bool EditorShell::Init( std::string_view commonPath )
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -345,7 +282,7 @@ bool Editor::Init( std::string_view commonPath )
 	return true;
 }
 
-void Editor::Draw()
+void EditorShell::Draw()
 {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -372,157 +309,85 @@ void Editor::Draw()
 		DrawGizmo( Vec2( 0.0f, 0.0f ), Vec2( static_cast<float>( canvas.x ), static_cast<float>( canvas.y ) ) );
 	}
 
-	DrawHierarchy();
-	DrawInspector();
+	DrawPanels();
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
 }
 
-void Editor::Shutdown()
+void EditorShell::Shutdown()
 {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 }
 
-bool Editor::WantsMouse() const
+bool EditorShell::WantsMouse() const
 {
 	// Note: The Viewport window is the game, so the mouse belongs to the game while hovering it, unless a gizmo is dragged
 	return m_bGizmoInUse || ( ImGui::GetIO().WantCaptureMouse && !m_bViewportHovered && !m_bGameHoldsMouse );
 }
 
-bool Editor::WantsKeyboard() const
+bool EditorShell::WantsKeyboard() const
 {
 	return ImGui::GetIO().WantCaptureKeyboard;
 }
 
-Level* Editor::GetLevel() const
+bool EditorShell::ProjectToViewport( const Vec3& worldPoint, Vec2 position, Vec2 size, Vec2& outScreenPoint )
 {
-	return App::GetSession().GetCurrentLevel();
-}
-
-Entity* Editor::GetSelectedEntity() const
-{
-	Level* level = GetLevel();
-	if( level == nullptr )
-		return nullptr;
-
-	return level->FindEntity( m_SelectedEntityId );
-}
-
-void Editor::SelectEntity( const Entity* entity )
-{
-	m_SelectedEntityId = entity != nullptr ? entity->GetId() : 0;
-}
-
-void Editor::NewLevel()
-{
-	App::GetSession().NewLevel();
-	SelectEntity( nullptr );
-}
-bool Editor::OpenLevel( std::string_view levelName )
-{
-	if( !App::GetSession().OpenLevel( levelName ) )
+	const RenderCamera* camera = App::GetRenderer().GetCamera();
+	if( camera == nullptr )
 		return false;
 
-	// Note: Entity ids restart in every level, so the old selection could match an unrelated entity
-	SelectEntity( nullptr );
+	const rect     viewportSize = { Max( static_cast<int>( size.x ), 1 ), Max( static_cast<int>( size.y ), 1 ) };
+	const Matrix44 viewProjection = camera->GetProjectionMatrix( viewportSize ) * camera->GetViewMatrix();
+	const Vec4     clip           = viewProjection * Vec4( worldPoint.x, worldPoint.y, worldPoint.z, 1.0f );
+	if( clip.w <= 0.0001f )
+		return false;
+
+	// Note: Clip space has y up, screen pixels have y down
+	const float x  = clip.x / clip.w;
+	const float y  = clip.y / clip.w;
+	outScreenPoint = Vec2( position.x + ( x * 0.5f + 0.5f ) * size.x, position.y + ( 0.5f - y * 0.5f ) * size.y );
 	return true;
 }
 
-bool Editor::SaveLevel()
+bool EditorShell::DrawNamePrompt( const char* confirmLabel, char* name, u64 nameSize )
 {
-	return App::GetSession().SaveCurrentLevel();
-}
-
-bool Editor::SaveLevelAs( std::string_view fileName )
-{
-	std::filesystem::path path( fileName );
-	if( !path.has_extension() )
+	if( ImGui::IsWindowAppearing() )
 	{
-		path.replace_extension( ".lvl" );
+		ImGui::SetKeyboardFocusHere();
 	}
 
-	return App::GetSession().SaveCurrentLevelAs( path.string() );
-}
+	const bool bConfirmed = ImGui::InputText( "Name", name, nameSize, ImGuiInputTextFlags_EnterReturnsTrue );
+	const bool bHasName   = name[0] != '\0';
 
-Entity* Editor::CreateEntity( std::string_view name )
-{
-	Level* level = GetLevel();
-	if( level == nullptr )
-		return nullptr;
+	ImGui::BeginDisabled( !bHasName );
+	const bool bConfirmPressed = ImGui::Button( confirmLabel );
+	ImGui::EndDisabled();
 
-	Entity* entity = level->CreateEntity( name );
-	SelectEntity( entity );
-	return entity;
-}
+	ImGui::SameLine();
+	const bool bCancelPressed = ImGui::Button( "Cancel" );
 
-Entity* Editor::CloneEntity( u64 id )
-{
-	Level* level = GetLevel();
-	if( level == nullptr )
-		return nullptr;
-
-	Entity* clone = level->CloneEntity( id );
-	if( clone != nullptr )
+	if( ( bConfirmed || bConfirmPressed ) && bHasName )
 	{
-		SelectEntity( clone );
+		ImGui::CloseCurrentPopup();
+		return true;
 	}
 
-	return clone;
+	if( bCancelPressed )
+	{
+		ImGui::CloseCurrentPopup();
+	}
+
+	return false;
 }
 
-bool Editor::DeleteEntity( u64 id )
-{
-	Level* level = GetLevel();
-	return level != nullptr && level->RemoveEntity( id );
-}
-void Editor::DrawMenuBar()
+void EditorShell::DrawMenuBar()
 {
 	if( ImGui::BeginMainMenuBar() )
 	{
-		if( ImGui::BeginMenu( "Level" ) )
-		{
-			if( ImGui::MenuItem( "New" ) )
-			{
-				NewLevel();
-			}
-
-			const std::vector<std::string> levelNames = App::GetSession().GetResourceManager().GetResourceNames<Level>();
-			if( ImGui::BeginMenu( "Open", !levelNames.empty() ) )
-			{
-				for( const std::string& levelName : levelNames )
-				{
-					if( ImGui::MenuItem( levelName.c_str() ) )
-					{
-						OpenLevel( levelName );
-					}
-				}
-
-				ImGui::EndMenu();
-			}
-
-			const Level* level = GetLevel();
-			if( ImGui::MenuItem( "Save", nullptr, false, level != nullptr ) )
-			{
-				if( level->IsNew() )
-				{
-					m_bSaveAsRequested = true;
-				}
-				else
-				{
-					SaveLevel();
-				}
-			}
-
-			if( ImGui::MenuItem( "Save As...", nullptr, false, level != nullptr ) )
-			{
-				m_bSaveAsRequested = true;
-			}
-
-			ImGui::EndMenu();
-		}
+		DrawMenus();
 
 		if( ImGui::BeginMenu( "Gizmo" ) )
 		{
@@ -556,11 +421,9 @@ void Editor::DrawMenuBar()
 
 		ImGui::EndMainMenuBar();
 	}
-
-	DrawSaveAsPopup();
 }
 
-void Editor::DrawRenderSettings()
+void EditorShell::DrawRenderSettings()
 {
 	ImGui::SeparatorText( "Draw Mode" );
 
@@ -580,7 +443,7 @@ void Editor::DrawRenderSettings()
 	}
 }
 
-void Editor::DrawShadowSettings()
+void EditorShell::DrawShadowSettings()
 {
 	ImGui::SeparatorText( "Shadows" );
 	ImGui::PushItemWidth( 120.0f * m_DisplayScale );
@@ -620,75 +483,33 @@ void Editor::DrawShadowSettings()
 	}
 }
 
-void Editor::DrawCameraSettings()
+void EditorShell::DrawCameraSettings()
 {
 	ImGui::SeparatorText( "Camera" );
 	ImGui::PushItemWidth( 120.0f * m_DisplayScale );
 
-	float linearSpeed = CameraComponent::GetLinearSpeed();
+	float linearSpeed = FreeCameraComponent::GetLinearSpeed();
 	if( ImGui::DragFloat( "Linear speed", &linearSpeed, 0.001f, 0.001f, 10.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ) )
 	{
-		CameraComponent::SetLinearSpeed( linearSpeed );
+		FreeCameraComponent::SetLinearSpeed( linearSpeed );
 	}
 
-	float angularSpeed = CameraComponent::GetAngularSpeed();
+	float angularSpeed = FreeCameraComponent::GetAngularSpeed();
 	if( ImGui::DragFloat( "Angular speed", &angularSpeed, 0.005f, 0.01f, 5.0f, "%.2f deg", ImGuiSliderFlags_AlwaysClamp ) )
 	{
-		CameraComponent::SetAngularSpeed( angularSpeed );
+		FreeCameraComponent::SetAngularSpeed( angularSpeed );
 	}
 
 	ImGui::PopItemWidth();
 
 	if( ImGui::Button( "Reset" ) )
 	{
-		CameraComponent::SetLinearSpeed( CameraComponent::kDefaultLinearSpeed );
-		CameraComponent::SetAngularSpeed( CameraComponent::kDefaultAngularSpeed );
+		FreeCameraComponent::SetLinearSpeed( FreeCameraComponent::kDefaultLinearSpeed );
+		FreeCameraComponent::SetAngularSpeed( FreeCameraComponent::kDefaultAngularSpeed );
 	}
 }
 
-void Editor::DrawSaveAsPopup()
-{
-	if( m_bSaveAsRequested )
-	{
-		m_bSaveAsRequested = false;
-		m_SaveAsName[0]    = '\0';
-		ImGui::OpenPopup( kSaveAsPopup );
-	}
-
-	if( ImGui::BeginPopupModal( kSaveAsPopup, nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
-	{
-		if( DrawNamePrompt( "Save", m_SaveAsName, sizeof( m_SaveAsName ) ) )
-		{
-			SaveLevelAs( m_SaveAsName );
-		}
-
-		ImGui::EndPopup();
-	}
-}
-
-void Editor::DrawRenamePopup()
-{
-	if( m_bRenameRequested )
-	{
-		m_bRenameRequested = false;
-		ImGui::OpenPopup( kRenamePopup );
-	}
-
-	if( ImGui::BeginPopupModal( kRenamePopup, nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
-	{
-		if( DrawNamePrompt( "Rename", m_RenameName, sizeof( m_RenameName ) ) )
-		{
-			Entity* entity = GetLevel() != nullptr ? GetLevel()->FindEntity( m_RenameEntityId ) : nullptr;
-			if( entity != nullptr )
-			{
-				entity->SetName( m_RenameName );
-			}
-		}
-
-		ImGui::EndPopup();
-	}
-}
-void Editor::DrawDockSpace()
+void EditorShell::DrawDockSpace()
 {
 	const ImGuiViewport* viewport    = ImGui::GetMainViewport();
 	const ImGuiID        dockspaceId = ImGui::GetID( "EditorDockSpace" );
@@ -701,24 +522,17 @@ void Editor::DrawDockSpace()
 		ImGui::DockBuilderAddNode( dockspaceId, ImGuiDockNodeFlags_DockSpace );
 		ImGui::DockBuilderSetNodeSize( dockspaceId, viewport->WorkSize );
 
-		ImGuiID hierarchyNode = 0;
-		ImGuiID remainingNode = 0;
-		ImGui::DockBuilderSplitNode( dockspaceId, ImGuiDir_Left, 0.2f, &hierarchyNode, &remainingNode );
+		u32 viewportNode = dockspaceId;
+		BuildDockLayout( viewportNode );
 
-		ImGuiID inspectorNode = 0;
-		ImGuiID viewportNode  = 0;
-		ImGui::DockBuilderSplitNode( remainingNode, ImGuiDir_Right, 0.25f, &inspectorNode, &viewportNode );
-
-		ImGui::DockBuilderDockWindow( kHierarchyWindow, hierarchyNode );
 		ImGui::DockBuilderDockWindow( kViewportWindow, viewportNode );
-		ImGui::DockBuilderDockWindow( kInspectorWindow, inspectorNode );
 		ImGui::DockBuilderFinish( dockspaceId );
 	}
 
 	ImGui::DockSpaceOverViewport( dockspaceId, viewport, ImGuiDockNodeFlags_NoWindowMenuButton );
 }
 
-void Editor::DrawViewport()
+void EditorShell::DrawViewport()
 {
 	m_bViewportHovered = false;
 
@@ -732,12 +546,14 @@ void Editor::DrawViewport()
 		const ImVec2 size     = ImGui::GetContentRegionAvail();
 
 		// Note: A collapsed panel can report no space, and a render target needs at least one pixel
-		m_ViewportSize     = rect{ std::max( static_cast<int>( size.x ), 1 ), std::max( static_cast<int>( size.y ), 1 ) };
+		m_ViewportSize     = rect{ Max( static_cast<int>( size.x ), 1 ), Max( static_cast<int>( size.y ), 1 ) };
 		m_bViewportHovered = ImGui::IsWindowHovered();
 
 		// Note: The UVs are flipped because OpenGL textures start at the bottom left
 		const u32 texture = App::GetRenderer().GetRenderTarget().GetColorTexture();
 		ImGui::Image( static_cast<ImTextureID>( texture ), size, ImVec2( 0.0f, 1.0f ), ImVec2( 1.0f, 0.0f ) );
+
+		DrawViewportOverlay( Vec2( position.x, position.y ), Vec2( size.x, size.y ) );
 
 		ImGuizmo::SetDrawlist();
 		DrawGizmo( Vec2( position.x, position.y ), Vec2( size.x, size.y ) );
@@ -754,224 +570,24 @@ void Editor::DrawViewport()
 	ImGui::End();
 }
 
-void Editor::DrawGizmo( Vec2 position, Vec2 size )
+void EditorShell::DrawGizmo( Vec2 position, Vec2 size )
 {
 	m_bGizmoInUse = false;
 
-	Entity*             entity = GetSelectedEntity();
+	Transform           transform;
 	const RenderCamera* camera = App::GetRenderer().GetCamera();
-	if( m_GizmoMode == GizmoMode::Selection || entity == nullptr || camera == nullptr )
+	if( m_GizmoMode == GizmoMode::Selection || camera == nullptr || !GetGizmoTarget( transform ) )
 		return;
 
 	const Matrix44 view       = camera->GetViewMatrix();
 	const Matrix44 projection = camera->GetProjectionMatrix( m_ViewportSize );
-
-	const Transform transform = entity->GetTransform();
-	Matrix44        matrix    = transform.ToMatrix44();
+	Matrix44       matrix     = transform.ToMatrix44();
 
 	ImGuizmo::SetRect( position.x, position.y, size.x, size.y );
 	if( ImGuizmo::Manipulate( &view.m00, &projection.m00, ToGizmoOperation( m_GizmoMode ), ToGizmoSpace( m_GizmoSpace ), &matrix.m00 ) )
 	{
-		entity->SetTransform( ApplyGizmoMatrix( m_GizmoMode, transform, matrix ) );
+		SetGizmoTarget( ApplyGizmoMatrix( m_GizmoMode, transform, matrix ) );
 	}
 
 	m_bGizmoInUse = ImGuizmo::IsUsing();
-}
-
-void Editor::DrawHierarchy()
-{
-	ImGui::SetNextWindowPos( ImVec2( 10.0f * m_DisplayScale, 10.0f * m_DisplayScale ), ImGuiCond_FirstUseEver );
-	ImGui::SetNextWindowSize( ImVec2( 260.0f * m_DisplayScale, 300.0f * m_DisplayScale ), ImGuiCond_FirstUseEver );
-
-	if( ImGui::Begin( kHierarchyWindow ) )
-	{
-		const Level* level = GetLevel();
-		if( level != nullptr )
-		{
-			ImGui::Text( "Level: %s", level->IsNew() ? "New" : std::string( level->GetName() ).c_str() );
-			ImGui::Separator();
-
-			// Note: Changes to the entity list wait until the loop ends, they would invalidate it
-			u64 entityToClone  = 0;
-			u64 entityToDelete = 0;
-
-			const Entity* selectedEntity = GetSelectedEntity();
-			for( const unique<Entity>& entity : level->GetEntities() )
-			{
-				if( entity == nullptr )
-					continue;
-
-				ImGui::PushID( static_cast<int>( entity->GetId() ) );
-				if( ImGui::Selectable( std::string( entity->GetName() ).c_str(), entity.get() == selectedEntity ) )
-				{
-					SelectEntity( entity.get() );
-				}
-
-				if( ImGui::BeginPopupContextItem() )
-				{
-					SelectEntity( entity.get() );
-
-					if( ImGui::MenuItem( "Rename..." ) )
-					{
-						m_RenameEntityId   = entity->GetId();
-						m_bRenameRequested = true;
-
-						const std::string name( entity->GetName() );
-						std::strncpy( m_RenameName, name.c_str(), sizeof( m_RenameName ) - 1 );
-					}
-
-					if( ImGui::MenuItem( "Clone" ) )
-					{
-						entityToClone = entity->GetId();
-					}
-
-					if( ImGui::MenuItem( "Delete" ) )
-					{
-						entityToDelete = entity->GetId();
-					}
-
-					ImGui::EndPopup();
-				}
-				ImGui::PopID();
-			}
-
-			if( ImGui::BeginPopupContextWindow( "HierarchyContextMenu", kEmptySpaceContextMenu ) )
-			{
-				if( ImGui::MenuItem( "Create Entity" ) )
-				{
-					CreateEntity( "Entity" );
-				}
-
-				ImGui::EndPopup();
-			}
-
-			if( entityToClone != 0 )
-			{
-				CloneEntity( entityToClone );
-			}
-
-			if( entityToDelete != 0 )
-			{
-				DeleteEntity( entityToDelete );
-			}
-		}
-
-		DrawRenamePopup();
-	}
-	ImGui::End();
-}
-
-void Editor::DrawInspector()
-{
-	ImGui::SetNextWindowPos( ImVec2( 10.0f * m_DisplayScale, 320.0f * m_DisplayScale ), ImGuiCond_FirstUseEver );
-	ImGui::SetNextWindowSize( ImVec2( 260.0f * m_DisplayScale, 500.0f * m_DisplayScale ), ImGuiCond_FirstUseEver );
-
-	if( ImGui::Begin( kInspectorWindow ) )
-	{
-		Entity* entity = GetSelectedEntity();
-		if( entity == nullptr )
-		{
-			ImGui::TextDisabled( "No entity selected" );
-		}
-		else
-		{
-			DrawEntityProperties( *entity );
-
-			// Note: Removing waits until the loop ends, it would invalidate the component list
-			Component* componentToRemove = nullptr;
-
-			int componentIndex = 0;
-			for( const shared<Component>& component : entity->GetComponents() )
-			{
-				if( component == nullptr )
-					continue;
-
-				ImGui::PushID( componentIndex++ );
-
-				// Note: Headers share their color with selected rows, which should be the only blue in the panels
-				ImGui::PushStyleColor( ImGuiCol_Header, kColorControl );
-				ImGui::PushStyleColor( ImGuiCol_HeaderHovered, kColorControlHover );
-				ImGui::PushStyleColor( ImGuiCol_HeaderActive, kColorControlActive );
-				const bool bOpen = ImGui::CollapsingHeader( component->GetTypeInfo().Name, ImGuiTreeNodeFlags_DefaultOpen );
-				ImGui::PopStyleColor( 3 );
-
-				if( ImGui::BeginPopupContextItem() )
-				{
-					if( ImGui::MenuItem( "Remove Component" ) )
-					{
-						componentToRemove = component.get();
-					}
-
-					ImGui::EndPopup();
-				}
-
-				if( bOpen )
-				{
-					component->DrawInspector();
-				}
-
-				ImGui::PopID();
-			}
-
-			if( ImGui::BeginPopupContextWindow( "InspectorContextMenu", kEmptySpaceContextMenu ) )
-			{
-				if( ImGui::BeginMenu( "Add Component" ) )
-				{
-					for( const std::string& typeName : ComponentFactory::GetRegisteredTypeNames() )
-					{
-						if( ImGui::MenuItem( typeName.c_str(), nullptr, false, !entity->HasComponent( typeName ) ) )
-						{
-							entity->AddComponentByName( typeName );
-						}
-					}
-
-					ImGui::EndMenu();
-				}
-
-				ImGui::EndPopup();
-			}
-
-			if( componentToRemove != nullptr )
-			{
-				entity->RemoveComponent( componentToRemove );
-			}
-		}
-	}
-	ImGui::End();
-}
-
-void Editor::DrawEntityProperties( Entity& entity )
-{
-	std::string name( entity.GetName() );
-	if( Inspector::EditString( "Name", name ) )
-	{
-		entity.SetName( name );
-	}
-
-	ImGui::Separator();
-
-	Transform transform = entity.GetTransform();
-
-	if( entity.GetId() != m_EulerEntityId || !IsSameRotation( transform.rotation, m_EulerSource ) )
-	{
-		m_EulerEntityId = entity.GetId();
-		m_EulerSource   = transform.rotation;
-		m_EulerAngles   = EulerFromQuat( transform.rotation );
-	}
-
-	bool bTransformChanged = Inspector::EditVec3( "Position", transform.position );
-
-	if( Inspector::EditVec3( "Rotation", m_EulerAngles, 0.5f ) )
-	{
-		transform.rotation = QuatFromEuler( m_EulerAngles );
-		m_EulerSource      = transform.rotation;
-		bTransformChanged  = true;
-	}
-
-	bTransformChanged |= Inspector::EditVec3( "Scale", transform.scale, 0.01f );
-
-	if( bTransformChanged )
-	{
-		entity.SetTransform( transform );
-	}
 }

@@ -13,6 +13,11 @@ struct Vec2
 	    : x( _x ), y( _y )
 	{
 	}
+	// Note: Every component set to the same value
+	explicit Vec2( const Scalar& _s )
+	    : x( _s ), y( _s )
+	{
+	}
 
 	Vec2  operator-() const;
 	bool  operator==( const Vec2& rhs ) const;
@@ -44,6 +49,11 @@ struct Vec3
 	Vec3() = default;
 	explicit Vec3( float _x, float _y, float _z )
 	    : x( _x ), y( _y ), z( _z )
+	{
+	}
+	// Note: Every component set to the same value
+	explicit Vec3( const Scalar& _s )
+	    : x( _s ), y( _s ), z( _s )
 	{
 	}
 	explicit Vec3( const Vec2& _v, float _z = 0.0f );
@@ -81,6 +91,11 @@ struct Vec4
 	Vec4() = default;
 	explicit Vec4( float _x, float _y, float _z, float _w )
 	    : x( _x ), y( _y ), z( _z ), w( _w )
+	{
+	}
+	// Note: Every component set to the same value
+	explicit Vec4( const Scalar& _s )
+	    : x( _s ), y( _s ), z( _s ), w( _s )
 	{
 	}
 	explicit Vec4( const Vec2& _v, float _z = 0.0f, float _w = 0.0f );

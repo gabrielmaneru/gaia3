@@ -1,12 +1,11 @@
-#include "gaia3_pch.h"
 #include "inspector.h"
 
 #include <core/app.h>
+#include <math/mathHelpers.h>
 
 #include <glad/glad.h>
 #include <imgui.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <cstring>
 
@@ -264,7 +263,7 @@ void Inspector::ShowDepthTexture( u32 textureId, float maxSize )
 	if( textureId == 0 )
 		return;
 
-	const float size = std::min( ImGui::GetContentRegionAvail().x, maxSize );
+	const float size = Min( ImGui::GetContentRegionAvail().x, maxSize );
 
 	// Note: The callbacks run while ImGui renders, around the one image they surround
 	ImDrawList* drawList = ImGui::GetWindowDrawList();

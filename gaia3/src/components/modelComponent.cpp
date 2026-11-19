@@ -1,11 +1,11 @@
-#include "gaia3_pch.h"
 #include "modelComponent.h"
 
 #include <core/app.h>
+#include <core/log.h>
+#include <editor/inspector.h>
 #include <gfx/material.h>
 #include <gfx/model.h>
 #include <scene/entity.h>
-#include <scene/inspector.h>
 
 RTTI_DEFINE_COMP( ModelComponent,
                   RTTI_PROPERTY( m_Model ),

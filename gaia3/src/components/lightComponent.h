@@ -17,6 +17,9 @@ public:
 	void  SetIntensity( float intensity ) { m_Intensity = intensity; }
 
 protected:
+	// Note: Only the light types can be created, this is their shared base
+	LightComponent() = default;
+
 	Vec3  m_Color     = Vec3( 1.0f, 1.0f, 1.0f );
 	float m_Intensity = 1.0f;
 };

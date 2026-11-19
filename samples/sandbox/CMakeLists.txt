@@ -1,6 +1,6 @@
 # Create sandbox executable
 add_executable(sandbox
-    src/sandbox.cpp
+    src/main.cpp
     src/components/sunComponent.cpp
 )
 

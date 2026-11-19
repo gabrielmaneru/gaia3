@@ -1,5 +1,6 @@
-#include "gaia3_pch.h"
 #include "session.h"
+
+#include <core/log.h>
 
 bool Session::Init( std::string_view startLevel, std::string_view commonPath, std::string_view appPath )
 {

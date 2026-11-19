@@ -1,5 +1,6 @@
-#include "gaia3_pch.h"
 #include "resource.h"
+
+#include <core/log.h>
 
 #include <algorithm>
 #include <cctype>

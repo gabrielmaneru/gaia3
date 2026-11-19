@@ -1,5 +1,6 @@
-#include "gaia3_pch.h"
 #include "window.h"
+
+#include <core/log.h>
 
 #include <GLFW/glfw3.h>
 

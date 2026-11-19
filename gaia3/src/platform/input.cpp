@@ -1,5 +1,6 @@
-#include "gaia3_pch.h"
 #include "input.h"
+
+#include <core/log.h>
 
 #include <GLFW/glfw3.h>
 
@@ -13,6 +14,7 @@ bool Input::Init( GLFWwindow* windowHandle )
 	glfwSetKeyCallback( windowHandle, &Input::KeyCallback );
 	glfwSetCursorPosCallback( windowHandle, &Input::MousePositionCallback );
 	glfwSetMouseButtonCallback( windowHandle, &Input::MouseButtonCallback );
+	glfwSetScrollCallback( windowHandle, &Input::ScrollCallback );
 
 	return true;
 }
@@ -21,6 +23,7 @@ void Input::Update()
 {
 	m_MouseDeltaX = 0.0;
 	m_MouseDeltaY = 0.0;
+	m_MouseWheel  = 0.0;
 
 	for( u16 i = 0; i < (u16)eInputKeys::_KEY_COUNT; i++ )
 	{
@@ -151,4 +154,13 @@ void Input::MousePositionCallback( GLFWwindow* windowHandle, double xPos, double
 	s_Instance->m_MouseDeltaY = s_Instance->m_PrevMouseY - mouseY;
 	s_Instance->m_PrevMouseX  = mouseX;
 	s_Instance->m_PrevMouseY  = mouseY;
+}
+
+void Input::ScrollCallback( GLFWwindow* windowHandle, double, double yOffset )
+{
+	if( windowHandle == nullptr || s_Instance == nullptr )
+		return;
+
+	// Note: Added up, a fast roll can send several steps in one frame
+	s_Instance->m_MouseWheel += static_cast<float>( yOffset );
 }

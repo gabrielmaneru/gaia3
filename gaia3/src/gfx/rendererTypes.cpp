@@ -1,8 +1,9 @@
-#include "gaia3_pch.h"
 #include "rendererTypes.h"
 
 #include <core/app.h>
 #include <gfx/renderer.h>
+
+#include <algorithm>
 
 void Renderable::Register()
 {

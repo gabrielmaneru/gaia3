@@ -1,14 +1,10 @@
 #pragma once
 
 #include <core/types.h>
-#include <math/quaternion.h>
 #include <math/transform.h>
 #include <math/vector.h>
 
 #include <string_view>
-
-class Entity;
-class Level;
 
 // Note: Selection shows no handles on the selected entity
 enum class GizmoMode
@@ -42,10 +38,16 @@ struct EditorConfig
 // Note: Returns transform with only the part the mode edits taken from gizmoMatrix, the rest is kept as it was
 Transform ApplyGizmoMatrix( GizmoMode mode, const Transform& transform, const Matrix44& gizmoMatrix );
 
-class Editor
+// Note: What every editor shares: ImGui with the editor style and font, the dock space, the Viewport showing the
+// render target, the gizmo, and the Gizmo and Settings menus. Editors derive from it and fill in the hooks, like
+// LevelEditor for levels or a sample's own tool
+class EditorShell
 {
 public:
-	explicit Editor( const EditorConfig& config = {} );
+	static constexpr const char* kViewportWindow = "Viewport";
+
+	explicit EditorShell( const EditorConfig& config = {} );
+	virtual ~EditorShell() = default;
 
 	bool Init( std::string_view commonPath );
 	void Draw();
@@ -59,57 +61,55 @@ public:
 	bool DisplaysRenderTarget() const { return m_Config.docked; }
 	rect GetViewportSize() const { return m_ViewportSize; }
 
-	Level*  GetLevel() const;
-	Entity* GetSelectedEntity() const;
-	void    SelectEntity( const Entity* entity );
-
 	GizmoMode GetGizmoMode() const { return m_GizmoMode; }
 	void      SetGizmoMode( GizmoMode mode ) { m_GizmoMode = mode; }
 
 	GizmoSpace GetGizmoSpace() const { return m_GizmoSpace; }
 	void       SetGizmoSpace( GizmoSpace space ) { m_GizmoSpace = space; }
 
-	void NewLevel();
-	bool OpenLevel( std::string_view levelName );
-	bool SaveLevel();
-	bool SaveLevelAs( std::string_view fileName );
+protected:
+	// Note: Menus of the main menu bar shown before the Gizmo and Settings menus, and anything they open, like popups
+	virtual void DrawMenus() {}
 
-	Entity* CreateEntity( std::string_view name );
-	Entity* CloneEntity( u64 id );
-	bool    DeleteEntity( u64 id );
+	// Note: The editor's own windows, drawn after the Viewport
+	virtual void DrawPanels() {}
+
+	// Note: Docks the editor's windows once, when the layout is built. viewportNode starts as the whole dock space, an
+	// editor splits panels off it and the Viewport takes what remains. Node ids are ImGuiID values
+	virtual void BuildDockLayout( u32& viewportNode ) {}
+
+	// Note: The transform the gizmo moves, false when there is nothing to move
+	virtual bool GetGizmoTarget( Transform& outTransform ) const { return false; }
+	virtual void SetGizmoTarget( const Transform& transform ) {}
+
+	// Note: Draws over the rendered image, before the gizmo. position and size are the image's area in screen pixels,
+	// ImGui's window draw list paints there
+	virtual void DrawViewportOverlay( Vec2 position, Vec2 size ) {}
+
+	float GetDisplayScale() const { return m_DisplayScale; }
+
+	// Note: Where a world point lands in the image drawn at position and size, false when it is behind the camera
+	static bool ProjectToViewport( const Vec3& worldPoint, Vec2 position, Vec2 size, Vec2& outScreenPoint );
+
+	// Note: Draws the contents of a modal popup that asks for a name, and returns true once it is confirmed
+	static bool DrawNamePrompt( const char* confirmLabel, char* name, u64 nameSize );
 
 private:
 	void DrawMenuBar();
 	void DrawRenderSettings();
 	void DrawShadowSettings();
 	void DrawCameraSettings();
-	void DrawSaveAsPopup();
-	void DrawRenamePopup();
 	void DrawDockSpace();
 	void DrawViewport();
 	void DrawGizmo( Vec2 position, Vec2 size );
-	void DrawHierarchy();
-	void DrawInspector();
-	void DrawEntityProperties( Entity& entity );
 
 	EditorConfig m_Config;
 	bool         m_bDockLayoutPending = true;
 	bool         m_bViewportHovered   = false;
 	bool         m_bGizmoInUse        = false;
 	bool         m_bGameHoldsMouse    = false;
-	bool         m_bSaveAsRequested   = false;
-	bool         m_bRenameRequested   = false;
-	char         m_SaveAsName[128]    = {};
-	char         m_RenameName[128]    = {};
 	float        m_DisplayScale       = 1.0f;
 	rect         m_ViewportSize       = { 1, 1 };
-	u64          m_SelectedEntityId   = 0;
-	u64          m_RenameEntityId     = 0;
 	GizmoMode    m_GizmoMode          = GizmoMode::Selection;
 	GizmoSpace   m_GizmoSpace         = GizmoSpace::World;
-
-	// Note: Euler angles are kept between frames, reading them back from the rotation makes them jump while dragging
-	u64  m_EulerEntityId = 0;
-	Quat m_EulerSource;
-	Vec3 m_EulerAngles;
 };

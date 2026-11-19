@@ -1,5 +1,6 @@
-#include "gaia3_pch.h"
 #include "objImporter.h"
+
+#include <core/log.h>
 
 #include <cctype>
 #include <charconv>

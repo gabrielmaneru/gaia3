@@ -1,6 +1,6 @@
-#include "gaia3_pch.h"
 #include "entity.h"
 
+#include <core/log.h>
 #include <scene/component.h>
 #include <scene/componentFactory.h>
 #include <scene/level.h>

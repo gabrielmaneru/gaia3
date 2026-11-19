@@ -1,5 +1,6 @@
-#include "gaia3_pch.h"
 #include "rtti.h"
+
+#include <core/log.h>
 
 const rtti::PropertyInfo* rtti::TypeInfo::FindProperty( std::string_view propertyName ) const
 {

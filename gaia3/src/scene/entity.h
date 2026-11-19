@@ -30,13 +30,13 @@ public:
 	Transform GetTransform() const { return m_Transform; }
 	void      SetTransform( const Transform& newTransform );
 
-	Vec3 GetPosition() { return m_Transform.position; }
+	Vec3 GetPosition() const { return m_Transform.position; }
 	void SetPosition( const Vec3& newPosition );
 
-	Quat GetRotation() { return m_Transform.rotation; }
+	Quat GetRotation() const { return m_Transform.rotation; }
 	void SetRotation( const Quat& newRotation );
 
-	Vec3 GetScale() { return m_Transform.scale; }
+	Vec3 GetScale() const { return m_Transform.scale; }
 	void SetScale( const Vec3& newScale );
 
 	template <typename T, typename... Args>

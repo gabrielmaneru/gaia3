@@ -1,7 +1,9 @@
 #include "testHelpers.h"
 
 #include <components/cameraComponent.h>
+#include <components/lightComponent.h>
 #include <components/modelComponent.h>
+#include <core/app.h>
 #include <gfx/material.h>
 #include <gfx/model.h>
 #include <math/mathHelpers.h>
@@ -9,7 +11,9 @@
 #include <math/vectorTransforms.h>
 #include <scene/level.h>
 
+#include <algorithm>
 #include <math.h>
+#include <type_traits>
 
 namespace
 {
@@ -20,7 +24,7 @@ Vec3 FrontFromAngles( float yaw, float pitch )
 }
 } // namespace
 
-TEST( CameraComponentTests, AddingTheComponentKeepsTheEntityRotation )
+TEST( FreeCameraComponentTests, AddingTheComponentKeepsTheEntityRotation )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
@@ -28,7 +32,7 @@ TEST( CameraComponentTests, AddingTheComponentKeepsTheEntityRotation )
 	const Quat rotation = LookAtQuat( Vec3( 0.3f, 0.4f, 0.8f ).Normalized(), Vec3::V_Up );
 	entity->SetRotation( rotation );
 
-	entity->AddComponent<CameraComponent>();
+	entity->AddComponent<FreeCameraComponent>();
 
 	EXPECT_EQ( entity->GetRotation().x, rotation.x );
 	EXPECT_EQ( entity->GetRotation().y, rotation.y );
@@ -36,36 +40,36 @@ TEST( CameraComponentTests, AddingTheComponentKeepsTheEntityRotation )
 	EXPECT_EQ( entity->GetRotation().w, rotation.w );
 }
 
-TEST( CameraComponentTests, AnglesAreDerivedFromTheEntityRotation )
+TEST( FreeCameraComponentTests, AnglesAreDerivedFromTheEntityRotation )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
 
 	entity->SetRotation( LookAtQuat( FrontFromAngles( 60.0f, -20.0f ), Vec3::V_Up ) );
 
-	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
+	shared<FreeCameraComponent> camera = entity->AddComponent<FreeCameraComponent>();
 
 	EXPECT_NEAR( camera->GetYaw(), 60.0f, 1e-2f );
 	EXPECT_NEAR( camera->GetPitch(), -20.0f, 1e-2f );
 }
 
-TEST( CameraComponentTests, IdentityRotationLooksAlongTheFrontAxis )
+TEST( FreeCameraComponentTests, IdentityRotationLooksAlongTheFrontAxis )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
 
-	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
+	shared<FreeCameraComponent> camera = entity->AddComponent<FreeCameraComponent>();
 
 	EXPECT_NEAR( camera->GetYaw(), -90.0f, 1e-3f );
 	EXPECT_NEAR( camera->GetPitch(), 0.0f, 1e-3f );
 }
 
-TEST( CameraComponentTests, SetRotationAnglesUpdatesTheEntityRotation )
+TEST( FreeCameraComponentTests, SetRotationAnglesUpdatesTheEntityRotation )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
 
-	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
+	shared<FreeCameraComponent> camera = entity->AddComponent<FreeCameraComponent>();
 	camera->SetRotationAngles( 45.0f, -20.0f );
 
 	const Quat rotation = entity->GetRotation();
@@ -74,12 +78,12 @@ TEST( CameraComponentTests, SetRotationAnglesUpdatesTheEntityRotation )
 	EXPECT_NEAR( rotation.Rotate( Vec3::V_Right ).y, 0.0f, 1e-4f );
 }
 
-TEST( CameraComponentTests, PitchIsClampedToAvoidLookingStraightUp )
+TEST( FreeCameraComponentTests, PitchIsClampedToAvoidLookingStraightUp )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
 
-	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
+	shared<FreeCameraComponent> camera = entity->AddComponent<FreeCameraComponent>();
 
 	camera->SetRotationAngles( 0.0f, 120.0f );
 	EXPECT_FLOAT_EQ( camera->GetPitch(), 89.0f );
@@ -88,7 +92,7 @@ TEST( CameraComponentTests, PitchIsClampedToAvoidLookingStraightUp )
 	EXPECT_FLOAT_EQ( camera->GetPitch(), -89.0f );
 }
 
-TEST( CameraComponentTests, AnglesRoundTripThroughTheRotationWithoutMoving )
+TEST( FreeCameraComponentTests, AnglesRoundTripThroughTheRotationWithoutMoving )
 {
 	const float angles[][2] = { { 90.0f, 0.0f }, { 60.0f, 0.0f }, { 45.0f, -20.0f }, { -135.0f, 40.0f }, { 170.0f, 80.0f } };
 
@@ -97,13 +101,13 @@ TEST( CameraComponentTests, AnglesRoundTripThroughTheRotationWithoutMoving )
 		Level   level;
 		Entity* source = level.CreateEntity( "Source" );
 
-		shared<CameraComponent> sourceCamera = source->AddComponent<CameraComponent>();
+		shared<FreeCameraComponent> sourceCamera = source->AddComponent<FreeCameraComponent>();
 		sourceCamera->SetRotationAngles( pair[0], pair[1] );
 
 		Entity* restored = level.CreateEntity( "Restored" );
 		restored->SetRotation( source->GetRotation() );
 
-		shared<CameraComponent> restoredCamera = restored->AddComponent<CameraComponent>();
+		shared<FreeCameraComponent> restoredCamera = restored->AddComponent<FreeCameraComponent>();
 		EXPECT_NEAR( restoredCamera->GetYaw(), pair[0], 1e-2f );
 		EXPECT_NEAR( restoredCamera->GetPitch(), pair[1], 1e-2f );
 
@@ -114,11 +118,11 @@ TEST( CameraComponentTests, AnglesRoundTripThroughTheRotationWithoutMoving )
 	}
 }
 
-TEST( CameraComponentTests, YawAndPitchAreNotSaved )
+TEST( FreeCameraComponentTests, YawAndPitchAreNotSaved )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
-	entity->AddComponent<CameraComponent>();
+	entity->AddComponent<FreeCameraComponent>();
 
 	Json::Value json;
 	ASSERT_TRUE( entity->SerializeComponents( json ) );
@@ -127,7 +131,7 @@ TEST( CameraComponentTests, YawAndPitchAreNotSaved )
 	EXPECT_FALSE( json[0]["m_Data"].isMember( "m_Pitch" ) );
 }
 
-TEST( CameraComponentTests, SavedLevelRestoresWhereTheCameraWasLooking )
+TEST( FreeCameraComponentTests, SavedLevelRestoresWhereTheCameraWasLooking )
 {
 	ScopedTempDir     directory;
 	const std::string path = directory.PathTo( "camera.lvl" );
@@ -135,7 +139,7 @@ TEST( CameraComponentTests, SavedLevelRestoresWhereTheCameraWasLooking )
 		Level   saved;
 		Entity* entity = saved.CreateEntity( "Camera" );
 
-		shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
+		shared<FreeCameraComponent> camera = entity->AddComponent<FreeCameraComponent>();
 		camera->SetRotationAngles( 45.0f, -20.0f );
 		ASSERT_TRUE( saved.SaveAs( path ) );
 	}
@@ -146,31 +150,31 @@ TEST( CameraComponentTests, SavedLevelRestoresWhereTheCameraWasLooking )
 	Entity* entity = loaded.FindEntity( 1 );
 	ASSERT_NE( entity, nullptr );
 	EXPECT_TRUE( IsClose( entity->GetRotation().Rotate( Vec3::V_Front ), FrontFromAngles( 45.0f, -20.0f ), 1e-4f ) );
-	EXPECT_NEAR( entity->GetComponent<CameraComponent>()->GetYaw(), 45.0f, 1e-2f );
-	EXPECT_NEAR( entity->GetComponent<CameraComponent>()->GetPitch(), -20.0f, 1e-2f );
+	EXPECT_NEAR( entity->GetComponent<FreeCameraComponent>()->GetYaw(), 45.0f, 1e-2f );
+	EXPECT_NEAR( entity->GetComponent<FreeCameraComponent>()->GetPitch(), -20.0f, 1e-2f );
 }
 
-TEST( CameraComponentTests, YawAndPitchInOldLevelFilesAreIgnored )
+TEST( FreeCameraComponentTests, YawAndPitchInOldLevelFilesAreIgnored )
 {
 	ScopedTempDir directory;
 
 	Level level( directory.Write( "old.lvl", R"({
 		"m_Entities": [ {
 			"m_Name": "Camera",
-			"m_SerializedComponents": [ { "m_TypeName": "CameraComponent", "m_Data": { "m_Yaw": 10.0, "m_Pitch": 5.0 } } ]
+			"m_SerializedComponents": [ { "m_TypeName": "FreeCameraComponent", "m_Data": { "m_Yaw": 10.0, "m_Pitch": 5.0 } } ]
 		} ]
 	})" ) );
 
 	ASSERT_TRUE( level.Load() );
 
-	EXPECT_NEAR( level.FindEntity( 1 )->GetComponent<CameraComponent>()->GetYaw(), -90.0f, 1e-3f );
+	EXPECT_NEAR( level.FindEntity( 1 )->GetComponent<FreeCameraComponent>()->GetYaw(), -90.0f, 1e-3f );
 }
 
-TEST( CameraComponentTests, SpeedsAreSharedAndNotSaved )
+TEST( FreeCameraComponentTests, SpeedsAreSharedAndNotSaved )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
-	entity->AddComponent<CameraComponent>();
+	entity->AddComponent<FreeCameraComponent>();
 
 	Json::Value json;
 	ASSERT_TRUE( entity->SerializeComponents( json ) );
@@ -178,40 +182,40 @@ TEST( CameraComponentTests, SpeedsAreSharedAndNotSaved )
 	EXPECT_FALSE( json[0]["m_Data"].isMember( "m_LinearSpeed" ) );
 	EXPECT_FALSE( json[0]["m_Data"].isMember( "m_AngularSpeed" ) );
 
-	CameraComponent::SetLinearSpeed( 0.5f );
-	CameraComponent::SetAngularSpeed( 1.5f );
-	EXPECT_EQ( CameraComponent::GetLinearSpeed(), 0.5f );
-	EXPECT_EQ( CameraComponent::GetAngularSpeed(), 1.5f );
+	FreeCameraComponent::SetLinearSpeed( 0.5f );
+	FreeCameraComponent::SetAngularSpeed( 1.5f );
+	EXPECT_EQ( FreeCameraComponent::GetLinearSpeed(), 0.5f );
+	EXPECT_EQ( FreeCameraComponent::GetAngularSpeed(), 1.5f );
 
 	// Note: Restored so other tests see the defaults
-	CameraComponent::SetLinearSpeed( CameraComponent::kDefaultLinearSpeed );
-	CameraComponent::SetAngularSpeed( CameraComponent::kDefaultAngularSpeed );
+	FreeCameraComponent::SetLinearSpeed( FreeCameraComponent::kDefaultLinearSpeed );
+	FreeCameraComponent::SetAngularSpeed( FreeCameraComponent::kDefaultAngularSpeed );
 }
 
-TEST( CameraComponentTests, SpeedsInOldLevelFilesAreIgnored )
+TEST( FreeCameraComponentTests, SpeedsInOldLevelFilesAreIgnored )
 {
 	ScopedTempDir directory;
 
 	Level level( directory.Write( "old.lvl", R"({
 		"m_Entities": [ {
 			"m_Name": "Camera",
-			"m_SerializedComponents": [ { "m_TypeName": "CameraComponent", "m_Data": { "m_LinearSpeed": 3.0, "m_AngularSpeed": 4.0 } } ]
+			"m_SerializedComponents": [ { "m_TypeName": "FreeCameraComponent", "m_Data": { "m_LinearSpeed": 3.0, "m_AngularSpeed": 4.0 } } ]
 		} ]
 	})" ) );
 
 	ASSERT_TRUE( level.Load() );
 
-	EXPECT_EQ( CameraComponent::GetLinearSpeed(), CameraComponent::kDefaultLinearSpeed );
-	EXPECT_EQ( CameraComponent::GetAngularSpeed(), CameraComponent::kDefaultAngularSpeed );
+	EXPECT_EQ( FreeCameraComponent::GetLinearSpeed(), FreeCameraComponent::kDefaultLinearSpeed );
+	EXPECT_EQ( FreeCameraComponent::GetAngularSpeed(), FreeCameraComponent::kDefaultAngularSpeed );
 }
 
-TEST( CameraComponentTests, ViewMatrixMovesTheCameraToTheOrigin )
+TEST( FreeCameraComponentTests, ViewMatrixMovesTheCameraToTheOrigin )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
 	entity->SetPosition( Vec3( 1.0f, 2.0f, -3.0f ) );
 
-	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
+	shared<FreeCameraComponent> camera = entity->AddComponent<FreeCameraComponent>();
 
 	const Matrix44 view = camera->GetViewMatrix();
 	const Vec4     position( entity->GetPosition(), 1.0f );
@@ -221,12 +225,12 @@ TEST( CameraComponentTests, ViewMatrixMovesTheCameraToTheOrigin )
 	EXPECT_NEAR( Dot( view.GetRow( 2 ), position ), 0.0f, 1e-5f );
 }
 
-TEST( CameraComponentTests, ProjectionKeepsHorizontalFovAcrossAspectRatios )
+TEST( FreeCameraComponentTests, ProjectionKeepsHorizontalFovAcrossAspectRatios )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
 
-	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
+	shared<FreeCameraComponent> camera = entity->AddComponent<FreeCameraComponent>();
 
 	const Matrix44 wide   = camera->GetProjectionMatrix( rect{ 1600, 900 } );
 	const Matrix44 square = camera->GetProjectionMatrix( rect{ 900, 900 } );
@@ -235,6 +239,115 @@ TEST( CameraComponentTests, ProjectionKeepsHorizontalFovAcrossAspectRatios )
 	EXPECT_NEAR( square.m00, 1.0f, 1e-5f );
 	EXPECT_NEAR( wide.m11, 1600.0f / 900.0f, 1e-5f );
 	EXPECT_NEAR( square.m11, 1.0f, 1e-5f );
+}
+
+// Note: The bases can't be created on their own, only the component types built on them, checked while compiling
+static_assert( std::is_abstract_v<Component> );
+static_assert( std::is_abstract_v<CameraComponent> );
+static_assert( std::is_abstract_v<LightComponent> );
+static_assert( !std::is_default_constructible_v<Component> );
+static_assert( !std::is_default_constructible_v<CameraComponent> );
+static_assert( !std::is_default_constructible_v<LightComponent> );
+
+static_assert( std::is_default_constructible_v<FreeCameraComponent> );
+static_assert( std::is_default_constructible_v<OrbitCameraComponent> );
+static_assert( std::is_default_constructible_v<DirectionalLightComponent> );
+static_assert( std::is_default_constructible_v<PointLightComponent> );
+static_assert( std::is_default_constructible_v<ModelComponent> );
+
+TEST( CameraComponentTests, BothCameraTypesAreCamerasAndRegisteredComponents )
+{
+	const std::vector<std::string> names = ComponentFactory::GetRegisteredTypeNames();
+	EXPECT_NE( std::find( names.begin(), names.end(), "FreeCameraComponent" ), names.end() );
+	EXPECT_NE( std::find( names.begin(), names.end(), "OrbitCameraComponent" ), names.end() );
+
+	// Note: The shared base isn't a component of its own
+	EXPECT_EQ( std::find( names.begin(), names.end(), "CameraComponent" ), names.end() );
+
+	Level   level;
+	Entity* entity = level.CreateEntity( "Camera" );
+
+	shared<FreeCameraComponent> freeCamera = entity->AddComponent<FreeCameraComponent>();
+	const CameraComponent&      camera     = *freeCamera;
+	EXPECT_FLOAT_EQ( camera.GetHorizontalFOV(), 90.0f );
+	EXPECT_EQ( App::GetRenderer().GetCamera(), static_cast<const RenderCamera*>( freeCamera.get() ) );
+
+	entity->RemoveComponent( freeCamera.get() );
+	EXPECT_EQ( App::GetRenderer().GetCamera(), nullptr );
+}
+
+TEST( OrbitCameraComponentTests, LooksAtItsTargetFromItsDistance )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Camera" );
+
+	shared<OrbitCameraComponent> orbit = entity->AddComponent<OrbitCameraComponent>();
+	orbit->SetOrbit( Vec3( 1.0f, 2.0f, 3.0f ), 10.0f, 0.0f, 0.0f );
+
+	// Note: Zero yaw and pitch looks along -Z, so the camera sits 10 along +Z from the target
+	EXPECT_TRUE( IsClose( entity->GetPosition(), Vec3( 1.0f, 2.0f, 13.0f ), 1e-4f ) );
+	EXPECT_TRUE( IsClose( entity->GetRotation().Rotate( Vec3::V_Front ), Vec3( 0.0f, 0.0f, -1.0f ), 1e-4f ) );
+
+	// Note: A quarter turn of yaw looks along -X instead
+	orbit->SetOrbit( Vec3::V_Zero, 4.0f, 90.0f, 0.0f );
+	EXPECT_TRUE( IsClose( entity->GetPosition(), Vec3( 4.0f, 0.0f, 0.0f ), 1e-4f ) );
+}
+
+TEST( OrbitCameraComponentTests, PitchStaysShortOfStraightUpOrDown )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Camera" );
+
+	shared<OrbitCameraComponent> orbit = entity->AddComponent<OrbitCameraComponent>();
+	orbit->SetOrbit( Vec3::V_Zero, 1.0f, 0.0f, -120.0f );
+
+	EXPECT_FLOAT_EQ( orbit->GetPitch(), -89.0f );
+}
+
+TEST( OrbitCameraComponentTests, FramingSeesTheWholeBox )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Camera" );
+
+	shared<OrbitCameraComponent> orbit = entity->AddComponent<OrbitCameraComponent>();
+	orbit->SetHorizontalFOV( 70.0f );
+
+	AABB box;
+	box.Add( Vec3( -1.0f, 0.0f, -2.0f ) );
+	box.Add( Vec3( 3.0f, 2.0f, 2.0f ) );
+	orbit->Frame( box );
+
+	EXPECT_TRUE( IsClose( orbit->GetTarget(), Vec3( 1.0f, 1.0f, 0.0f ), 1e-5f ) );
+
+	// Note: The camera stays outside the box's sphere, and every corner lands inside the view
+	EXPECT_GT( orbit->GetDistance(), box.GetRadius() );
+	const Matrix44 viewProjection = orbit->GetProjectionMatrix( rect{ 1600, 1000 } ) * orbit->GetViewMatrix();
+	for( const Vec3& corner : { box.min, box.max, Vec3( box.min.x, box.max.y, box.min.z ), Vec3( box.max.x, box.min.y, box.max.z ) } )
+	{
+		const Vec4 clip = viewProjection * Vec4( corner, 1.0f );
+		ASSERT_GT( clip.w, 0.0f );
+		EXPECT_LE( fabsf( clip.x / clip.w ), 1.0f );
+		EXPECT_LE( fabsf( clip.y / clip.w ), 1.0f );
+	}
+
+	// Note: An empty box leaves the camera where it is
+	const float distance = orbit->GetDistance();
+	orbit->Frame( AABB() );
+	EXPECT_FLOAT_EQ( orbit->GetDistance(), distance );
+}
+
+TEST( OrbitCameraComponentTests, ItsPlanesFollowItsDistance )
+{
+	Level   level;
+	Entity* entity = level.CreateEntity( "Camera" );
+
+	shared<OrbitCameraComponent> orbit = entity->AddComponent<OrbitCameraComponent>();
+	orbit->SetOrbit( Vec3::V_Zero, 1000.0f, 0.0f, 0.0f );
+
+	// Note: A point 2000 away, past the saved far plane of 100, still projects in front of the far plane
+	const Matrix44 viewProjection = orbit->GetProjectionMatrix( rect{ 100, 100 } ) * orbit->GetViewMatrix();
+	const Vec4     clip           = viewProjection * Vec4( 0.0f, 0.0f, -1000.0f, 1.0f );
+	EXPECT_LT( clip.z / clip.w, 1.0f );
 }
 
 TEST( ModelComponentTests, ModelMatrixFollowsTheEntityTransform )
@@ -509,12 +622,12 @@ TEST( ModelComponentTests, ChangingThePropertyResolvesTheNewModel )
 	EXPECT_TRUE( log.Contains( "error: ModelComponent: failed to load missing" ) );
 }
 
-TEST( CameraComponentTests, EditingTheTransformUpdatesYawAndPitch )
+TEST( FreeCameraComponentTests, EditingTheTransformUpdatesYawAndPitch )
 {
 	Level   level;
 	Entity* entity = level.CreateEntity( "Camera" );
 
-	shared<CameraComponent> camera = entity->AddComponent<CameraComponent>();
+	shared<FreeCameraComponent> camera = entity->AddComponent<FreeCameraComponent>();
 
 	entity->SetRotation( LookAtQuat( FrontFromAngles( 60.0f, -20.0f ), Vec3::V_Up ) );
 
@@ -522,18 +635,18 @@ TEST( CameraComponentTests, EditingTheTransformUpdatesYawAndPitch )
 	EXPECT_NEAR( camera->GetPitch(), -20.0f, 1e-2f );
 }
 
-TEST( CameraComponentTests, ClonedCameraKeepsItsOrientation )
+TEST( FreeCameraComponentTests, ClonedCameraKeepsItsOrientation )
 {
 	Level   level;
 	Entity* source = level.CreateEntity( "Camera" );
 
-	shared<CameraComponent> camera = source->AddComponent<CameraComponent>();
+	shared<FreeCameraComponent> camera = source->AddComponent<FreeCameraComponent>();
 	camera->SetRotationAngles( 45.0f, -20.0f );
 
 	Entity* clone = level.CloneEntity( source->GetId() );
 	ASSERT_NE( clone, nullptr );
 
-	const CameraComponent* clonedCamera = clone->GetComponent<CameraComponent>();
+	const FreeCameraComponent* clonedCamera = clone->GetComponent<FreeCameraComponent>();
 	ASSERT_NE( clonedCamera, nullptr );
 	EXPECT_NEAR( clonedCamera->GetYaw(), 45.0f, 1e-2f );
 	EXPECT_NEAR( clonedCamera->GetPitch(), -20.0f, 1e-2f );

@@ -1,8 +1,12 @@
-#include "gaia3_pch.h"
 #include "level.h"
 
-#include <filesystem>
+#include <core/log.h>
+
 #include <json/json.h>
+
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
 
 RTTI_DEFINE_RESOURCE( Level,
                       RTTI_RESOURCE_FOLDER( "levels" ),

@@ -1,11 +1,13 @@
-#include "gaia3_pch.h"
 #include "app.h"
+
+#include <core/log.h>
+#include <editor/levelEditor.h>
 
 Window         App::m_Window;
 Input          App::m_Input;
 Renderer       App::m_Renderer;
 Session        App::m_Session;
-unique<Editor> App::m_Editor;
+unique<EditorShell> App::m_Editor;
 u64            App::m_MaxFrames = 0;
 
 bool App::Init( const AppConfig& config )
@@ -26,8 +28,16 @@ bool App::Init( const AppConfig& config )
 
 	if( config.editor.enabled )
 	{
-		m_Editor = new_unique<Editor>( config.editor );
-		if( !m_Editor->Init( config.commonPath ) )
+		if( config.createEditor )
+		{
+			m_Editor = config.createEditor( config.editor );
+		}
+		else
+		{
+			m_Editor = new_unique<LevelEditor>( config.editor );
+		}
+
+		if( m_Editor == nullptr || !m_Editor->Init( config.commonPath ) )
 		{
 			GAIA_ERROR( "Editor failed to initialize, continuing without it" );
 			m_Editor.reset();

@@ -1,10 +1,10 @@
 #include "sunComponent.h"
 
+#include <editor/inspector.h>
 #include <math/mathHelpers.h>
 #include <math/quaternionTransforms.h>
 #include <math/vectorTransforms.h>
 #include <scene/entity.h>
-#include <scene/inspector.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>

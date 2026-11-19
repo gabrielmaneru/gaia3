@@ -1,7 +1,8 @@
-#include "gaia3_pch.h"
 #include "quaternionTransforms.h"
 
+#include <math/mathHelpers.h>
 #include <math/matrixTransforms.h>
+#include <math/vectorTransforms.h>
 
 #include <math.h>
 

@@ -1,7 +1,7 @@
-#include "gaia3_pch.h"
 #include "renderer.h"
 
 #include <core/app.h>
+#include <core/log.h>
 #include <gfx/shader.h>
 
 #include <glad/glad.h>

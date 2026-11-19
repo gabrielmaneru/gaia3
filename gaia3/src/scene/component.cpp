@@ -1,7 +1,6 @@
-#include "gaia3_pch.h"
 #include "component.h"
 
-#include <scene/inspector.h>
+#include <editor/inspector.h>
 
 void Component::DrawInspector()
 {

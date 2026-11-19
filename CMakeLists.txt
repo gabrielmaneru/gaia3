@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Option flags for selective builds
 option(GAIA3_BUILD_TESTS "Build gaia3 test suite" ON)
 option(GAIA3_BUILD_SAMPLES "Build gaia3 sample projects" ON)
+option(GAIA3_USE_PCH "Build the engine with its precompiled header, off checks every file includes what it uses" ON)
 
 # Compile option flags
 add_compile_options(-Wno-invalid-offsetof) # Silence invalid-offsetof warning
@@ -23,4 +24,5 @@ endif()
 # 3. Sample Projects
 if(GAIA3_BUILD_SAMPLES)
     add_subdirectory(samples/sandbox)
+    add_subdirectory(samples/modelEditor)
 endif()

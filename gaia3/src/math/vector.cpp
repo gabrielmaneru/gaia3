@@ -1,5 +1,6 @@
-#include "gaia3_pch.h"
 #include "vector.h"
+
+#include <core/log.h>
 
 #include <math.h>
 

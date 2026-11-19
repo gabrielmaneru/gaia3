@@ -3,6 +3,7 @@
 #include "testComponents.h"
 
 #include <core/app.h>
+#include <editor/levelEditor.h>
 #include <math/quaternionTransforms.h>
 
 namespace
@@ -48,16 +49,66 @@ TEST( EditorDefaultsTests, AppRunsUntilClosedByDefault )
 	EXPECT_EQ( config.maxFrames, 0u );
 }
 
+namespace
+{
+// Note: An editor of its own, like a sample's tool, built on the shared shell
+class ToolEditor : public EditorShell
+{
+public:
+	using EditorShell::EditorShell;
+
+	bool GetGizmoTarget( Transform& outTransform ) const override
+	{
+		outTransform = m_Target;
+		return true;
+	}
+
+	void SetGizmoTarget( const Transform& transform ) override { m_Target = transform; }
+
+	Transform m_Target;
+};
+} // namespace
+
+TEST( EditorDefaultsTests, TheLevelEditorIsUsedWithoutAFactory )
+{
+	const AppConfig config;
+
+	EXPECT_FALSE( static_cast<bool>( config.createEditor ) );
+	EXPECT_EQ( App::GetEditor(), nullptr );
+}
+
+TEST( EditorDefaultsTests, AppsCanSupplyTheirOwnEditor )
+{
+	AppConfig config;
+	config.editor.gizmoMode = GizmoMode::Rotate;
+	config.createEditor     = []( const EditorConfig& editorConfig ) -> unique<EditorShell> {
+		return new_unique<ToolEditor>( editorConfig );
+	};
+
+	const unique<EditorShell> editor = config.createEditor( config.editor );
+	ASSERT_NE( editor, nullptr );
+	EXPECT_EQ( editor->GetGizmoMode(), GizmoMode::Rotate );
+	EXPECT_NE( dynamic_cast<const ToolEditor*>( editor.get() ), nullptr );
+}
+
+TEST( EditorDefaultsTests, TheLevelEditorIsAnEditorShell )
+{
+	LevelEditor  levelEditor( EditorConfig{ true, true } );
+	EditorShell& shell = levelEditor;
+
+	EXPECT_TRUE( shell.DisplaysRenderTarget() );
+}
+
 TEST( EditorDefaultsTests, FloatingEditorLeavesTheGameInTheWindow )
 {
-	const Editor editor( EditorConfig{ true, false } );
+	const LevelEditor editor( EditorConfig{ true, false } );
 
 	EXPECT_FALSE( editor.DisplaysRenderTarget() );
 }
 
 TEST( EditorDefaultsTests, DockedEditorDisplaysTheGameInItsViewport )
 {
-	const Editor editor( EditorConfig{ true, true } );
+	const LevelEditor editor( EditorConfig{ true, true } );
 
 	EXPECT_TRUE( editor.DisplaysRenderTarget() );
 }
@@ -65,7 +116,7 @@ TEST( EditorDefaultsTests, DockedEditorDisplaysTheGameInItsViewport )
 TEST( EditorDefaultsTests, GizmoStartsInSelectionMode )
 {
 	const EditorConfig config;
-	const Editor       editor( config );
+	const LevelEditor       editor( config );
 
 	EXPECT_EQ( config.gizmoMode, GizmoMode::Selection );
 	EXPECT_EQ( editor.GetGizmoMode(), GizmoMode::Selection );
@@ -76,14 +127,14 @@ TEST( EditorDefaultsTests, GizmoStartsInTheConfiguredMode )
 	EditorConfig config;
 	config.gizmoMode = GizmoMode::Translate;
 
-	const Editor editor( config );
+	const LevelEditor editor( config );
 
 	EXPECT_EQ( editor.GetGizmoMode(), GizmoMode::Translate );
 }
 
 TEST( EditorDefaultsTests, GizmoModeCanChange )
 {
-	Editor editor;
+	LevelEditor editor;
 
 	editor.SetGizmoMode( GizmoMode::Scale );
 
@@ -93,7 +144,7 @@ TEST( EditorDefaultsTests, GizmoModeCanChange )
 TEST( EditorDefaultsTests, GizmoStartsInWorldSpace )
 {
 	const EditorConfig config;
-	const Editor       editor( config );
+	const LevelEditor       editor( config );
 
 	EXPECT_EQ( config.gizmoSpace, GizmoSpace::World );
 	EXPECT_EQ( editor.GetGizmoSpace(), GizmoSpace::World );
@@ -104,14 +155,14 @@ TEST( EditorDefaultsTests, GizmoStartsInTheConfiguredSpace )
 	EditorConfig config;
 	config.gizmoSpace = GizmoSpace::Local;
 
-	const Editor editor( config );
+	const LevelEditor editor( config );
 
 	EXPECT_EQ( editor.GetGizmoSpace(), GizmoSpace::Local );
 }
 
 TEST( EditorDefaultsTests, GizmoSpaceCanChange )
 {
-	Editor editor;
+	LevelEditor editor;
 
 	editor.SetGizmoSpace( GizmoSpace::Local );
 
@@ -242,7 +293,7 @@ TEST( RendererDrawModeTests, AlphaTestStartsOnAndCanBeTurnedOff )
 
 TEST( EditorDefaultsTests, NoLevelMeansNoSelection )
 {
-	Editor editor;
+	LevelEditor editor;
 
 	EXPECT_EQ( editor.GetLevel(), nullptr );
 	EXPECT_EQ( editor.GetSelectedEntity(), nullptr );
@@ -250,7 +301,7 @@ TEST( EditorDefaultsTests, NoLevelMeansNoSelection )
 
 TEST_F( EditorTests, GetLevelReturnsTheSessionLevel )
 {
-	Editor editor;
+	LevelEditor editor;
 
 	EXPECT_EQ( editor.GetLevel(), GetSessionLevel() );
 }
@@ -259,7 +310,7 @@ TEST_F( EditorTests, NothingIsSelectedByDefault )
 {
 	GetSessionLevel()->CreateEntity( "Entity" );
 
-	Editor editor;
+	LevelEditor editor;
 
 	EXPECT_EQ( editor.GetSelectedEntity(), nullptr );
 }
@@ -268,7 +319,7 @@ TEST_F( EditorTests, SelectEntityRemembersTheEntity )
 {
 	Entity* entity = GetSessionLevel()->CreateEntity( "Entity" );
 
-	Editor editor;
+	LevelEditor editor;
 	editor.SelectEntity( entity );
 
 	EXPECT_EQ( editor.GetSelectedEntity(), entity );
@@ -278,7 +329,7 @@ TEST_F( EditorTests, SelectingNullClearsTheSelection )
 {
 	Entity* entity = GetSessionLevel()->CreateEntity( "Entity" );
 
-	Editor editor;
+	LevelEditor editor;
 	editor.SelectEntity( entity );
 	editor.SelectEntity( nullptr );
 
@@ -289,7 +340,7 @@ TEST_F( EditorTests, RemovingTheSelectedEntityClearsTheSelection )
 {
 	Entity* entity = GetSessionLevel()->CreateEntity( "Entity" );
 
-	Editor editor;
+	LevelEditor editor;
 	editor.SelectEntity( entity );
 	ASSERT_TRUE( GetSessionLevel()->RemoveEntity( entity->GetId() ) );
 
@@ -301,7 +352,7 @@ TEST_F( EditorTests, GetEntitiesListsEntitiesInCreationOrder )
 	Entity* first  = GetSessionLevel()->CreateEntity( "First" );
 	Entity* second = GetSessionLevel()->CreateEntity( "Second" );
 
-	Editor                             editor;
+	LevelEditor                             editor;
 	const std::vector<unique<Entity>>& entities = editor.GetLevel()->GetEntities();
 
 	ASSERT_EQ( entities.size(), 2u );
@@ -333,7 +384,7 @@ TEST( EditorLevelTests, OpenLevelClearsTheSelection )
 
 	ASSERT_TRUE( App::GetSession().Init( "", "", directory.GetPath() ) );
 
-	Editor editor;
+	LevelEditor editor;
 	editor.SelectEntity( App::GetSession().GetCurrentLevel()->CreateEntity( "Selected" ) );
 
 	EXPECT_TRUE( editor.OpenLevel( "other" ) );
@@ -349,7 +400,7 @@ TEST( EditorLevelTests, FailedOpenKeepsTheSelection )
 
 	Entity* entity = App::GetSession().GetCurrentLevel()->CreateEntity( "Selected" );
 
-	Editor editor;
+	LevelEditor editor;
 	editor.SelectEntity( entity );
 
 	EXPECT_FALSE( editor.OpenLevel( "missing" ) );
@@ -363,7 +414,7 @@ TEST( EditorLevelTests, SaveLevelAsAddsTheLevelExtension )
 	ScopedTempDir directory;
 	ASSERT_TRUE( App::GetSession().Init( "", "", directory.GetPath() ) );
 
-	Editor editor;
+	LevelEditor editor;
 
 	EXPECT_TRUE( editor.SaveLevelAs( "named" ) );
 	EXPECT_TRUE( std::filesystem::exists( directory.PathTo( "levels/named.lvl" ) ) );
@@ -376,7 +427,7 @@ TEST( EditorLevelTests, SaveLevelAsKeepsAnExistingExtension )
 	ScopedTempDir directory;
 	ASSERT_TRUE( App::GetSession().Init( "", "", directory.GetPath() ) );
 
-	Editor editor;
+	LevelEditor editor;
 
 	EXPECT_TRUE( editor.SaveLevelAs( "named.lvl" ) );
 	EXPECT_TRUE( std::filesystem::exists( directory.PathTo( "levels/named.lvl" ) ) );
@@ -390,7 +441,7 @@ TEST( EditorLevelTests, SaveLevelNeedsANameForNewLevels )
 	ScopedTempDir directory;
 	ASSERT_TRUE( App::GetSession().Init( "", "", directory.GetPath() ) );
 
-	Editor editor;
+	LevelEditor editor;
 
 	EXPECT_FALSE( editor.SaveLevel() );
 

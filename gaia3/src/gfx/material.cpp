@@ -1,9 +1,10 @@
-#include "gaia3_pch.h"
 #include "material.h"
 
 #include <core/app.h>
+#include <core/log.h>
 #include <gfx/shader.h>
 #include <gfx/texture.h>
+#include <math/mathHelpers.h>
 
 #include <glad/glad.h>
 
@@ -142,7 +143,7 @@ void MaterialEntry::Bind( const DrawContext& context ) const
 	shader->SetMatrix44( "u_Projection", context.projection );
 	shader->SetInt( "u_DrawMode", static_cast<int>( context.drawMode ) );
 
-	const u64 lightCount = std::min<u64>( context.lights.size(), kMaxLights );
+	const u64 lightCount = Min<u64>( context.lights.size(), kMaxLights );
 	shader->SetInt( "u_LightCount", static_cast<int>( lightCount ) );
 	for( u64 i = 0; i < lightCount; ++i )
 	{

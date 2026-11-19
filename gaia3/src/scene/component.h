@@ -9,7 +9,6 @@ class Entity;
 class Component
 {
 public:
-	Component()          = default;
 	virtual ~Component() = default;
 
 	virtual void OnAddComponent() {};
@@ -29,6 +28,10 @@ public:
 
 	Entity* GetOwner() const { return m_Owner; }
 	bool    HasOwner() const { return m_Owner != nullptr; }
+
+protected:
+	// Note: Only component types derived from it can be created, a bare Component means nothing
+	Component() = default;
 
 private:
 	friend class Entity;

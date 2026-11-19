@@ -1,4 +1,3 @@
-#include "gaia3_pch.h"
 #include "serializationTypes.h"
 
 #include <math/matrix.h>

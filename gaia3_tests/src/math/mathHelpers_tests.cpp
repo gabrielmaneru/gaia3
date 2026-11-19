@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <core/types.h>
 #include <math/mathHelpers.h>
 
 TEST( MathHelpersTests, ToRadiansConvertsKnownAngles )
@@ -63,4 +64,29 @@ TEST( MathHelpersTests, IsCloseChecksEveryComponent )
 	const Vec4 a4( 1.0f, 2.0f, 3.0f, 4.0f );
 	EXPECT_TRUE( IsClose( a4, Vec4( 1.05f, 2.0f, 3.0f, 4.05f ), 0.1f ) );
 	EXPECT_FALSE( IsClose( a4, Vec4( 1.0f, 2.0f, 3.0f, 4.5f ), 0.1f ) );
+}
+
+TEST( MathHelpersTests, MinAndMaxPickTheSmallerAndLarger )
+{
+	EXPECT_EQ( Min( 3, 7 ), 3 );
+	EXPECT_EQ( Max( 3, 7 ), 7 );
+	EXPECT_FLOAT_EQ( Min( -1.5f, -2.5f ), -2.5f );
+	EXPECT_FLOAT_EQ( Max( -1.5f, -2.5f ), -1.5f );
+
+	// Note: Mixed types name the type to compare in
+	const u64 count = 12;
+	const u32 limit = 8;
+	EXPECT_EQ( Min<u64>( count, limit ), 8u );
+}
+
+TEST( MathHelpersTests, VectorMinAndMaxGoComponentByComponent )
+{
+	EXPECT_TRUE( Min( Vec2( 1.0f, 5.0f ), Vec2( 3.0f, 2.0f ) ) == Vec2( 1.0f, 2.0f ) );
+	EXPECT_TRUE( Max( Vec2( 1.0f, 5.0f ), Vec2( 3.0f, 2.0f ) ) == Vec2( 3.0f, 5.0f ) );
+
+	EXPECT_TRUE( Min( Vec3( 1.0f, -2.0f, 3.0f ), Vec3( 0.0f, 4.0f, 3.0f ) ) == Vec3( 0.0f, -2.0f, 3.0f ) );
+	EXPECT_TRUE( Max( Vec3( 1.0f, -2.0f, 3.0f ), Vec3( 0.0f, 4.0f, 3.0f ) ) == Vec3( 1.0f, 4.0f, 3.0f ) );
+
+	EXPECT_TRUE( Min( Vec4( 1.0f, 2.0f, 3.0f, 4.0f ), Vec4( 4.0f, 3.0f, 2.0f, 1.0f ) ) == Vec4( 1.0f, 2.0f, 2.0f, 1.0f ) );
+	EXPECT_TRUE( Max( Vec4( 1.0f, 2.0f, 3.0f, 4.0f ), Vec4( 4.0f, 3.0f, 2.0f, 1.0f ) ) == Vec4( 4.0f, 3.0f, 3.0f, 4.0f ) );
 }

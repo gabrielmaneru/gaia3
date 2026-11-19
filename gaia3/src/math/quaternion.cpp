@@ -1,5 +1,7 @@
-#include "gaia3_pch.h"
 #include "quaternion.h"
+
+#include <core/log.h>
+#include <math/vectorTransforms.h>
 
 #include <math.h>
 

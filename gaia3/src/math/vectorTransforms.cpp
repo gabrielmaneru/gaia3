@@ -1,4 +1,3 @@
-#include "gaia3_pch.h"
 #include "vectorTransforms.h"
 
 Vec3 Cross( const Vec3& a, const Vec3& b )

@@ -1,5 +1,7 @@
-#include "gaia3_pch.h"
 #include "transform.h"
+
+#include <core/log.h>
+#include <math/mathHelpers.h>
 
 #include <math.h>
 

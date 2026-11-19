@@ -1,5 +1,6 @@
-#include "gaia3_pch.h"
 #include "framebuffer.h"
+
+#include <core/log.h>
 
 #include <glad/glad.h>
 

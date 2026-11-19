@@ -1,6 +1,6 @@
-#include "gaia3_pch.h"
 #include "modelData.h"
 
+#include <math/mathHelpers.h>
 #include <math/vectorTransforms.h>
 
 #include <math.h>
@@ -15,7 +15,50 @@ Vec3 AnyPerpendicular( const Vec3& normal )
 	const Vec3 axis = fabsf( normal.x ) < 0.9f ? Vec3::V_Right : Vec3::V_Up;
 	return Cross( axis, normal );
 }
+
+// Note: Indices that point past the vertices are skipped, so a half-edited model still gives a bounding volume
+AABB GetIndexRangeBoundingVolume( const ModelData& data, u64 indexOffset, u64 indexCount )
+{
+	AABB      boundingVolume;
+	const u64 end = Min<u64>( indexOffset + indexCount, data.indices.size() );
+	for( u64 i = indexOffset; i < end; ++i )
+	{
+		const u32 vertex = data.indices[i];
+		if( vertex < data.positions.size() )
+		{
+			boundingVolume.Add( data.positions[vertex] );
+		}
+	}
+	return boundingVolume;
+}
 } // namespace
+
+AABB ModelData::GetBoundingVolume() const
+{
+	return GetIndexRangeBoundingVolume( *this, 0, indices.size() );
+}
+
+AABB ModelData::GetMeshBoundingVolume( u64 meshIndex ) const
+{
+	AABB boundingVolume;
+	if( meshIndex >= meshes.size() )
+		return boundingVolume;
+
+	for( const SubMeshData& subMesh : meshes[meshIndex].subMeshes )
+	{
+		boundingVolume.Add( GetIndexRangeBoundingVolume( *this, subMesh.indexOffset, subMesh.indexCount ) );
+	}
+	return boundingVolume;
+}
+
+AABB ModelData::GetSubMeshBoundingVolume( u64 meshIndex, u64 subMeshIndex ) const
+{
+	if( meshIndex >= meshes.size() || subMeshIndex >= meshes[meshIndex].subMeshes.size() )
+		return AABB();
+
+	const SubMeshData& subMesh = meshes[meshIndex].subMeshes[subMeshIndex];
+	return GetIndexRangeBoundingVolume( *this, subMesh.indexOffset, subMesh.indexCount );
+}
 
 void ModelData::ComputeTangents()
 {

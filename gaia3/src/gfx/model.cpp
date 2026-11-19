@@ -1,12 +1,13 @@
-#include "gaia3_pch.h"
 #include "model.h"
 
 #include <core/app.h>
+#include <core/log.h>
 #include <gfx/material.h>
 #include <gfx/objImporter.h>
 
 #include <glad/glad.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <unordered_map>
 
@@ -92,6 +93,17 @@ bool Model::LoadInternal()
 	if( !ImportModel( GetPath(), data ) )
 	{
 		return false;
+	}
+
+	return Build( std::move( data ) );
+}
+
+bool Model::Build( ModelData data )
+{
+	// Note: Building again replaces everything, like after an edit
+	if( m_VertexArray != 0 )
+	{
+		UnloadInternal();
 	}
 
 	// Note: OBJ files have no tangents, formats like glTF can bring their own

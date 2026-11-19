@@ -1,4 +1,3 @@
-#include "gaia3_pch.h"
 #include "texture.h"
 
 // Note: stb_image is header only, this is the one file that compiles it, limited to the formats Texture registers.
@@ -11,6 +10,7 @@
 #include <stb_image.h>
 
 #include <core/app.h>
+#include <core/log.h>
 
 #include <json/json.h>
 

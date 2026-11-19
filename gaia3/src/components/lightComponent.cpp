@@ -1,9 +1,8 @@
-#include "gaia3_pch.h"
 #include "lightComponent.h"
 
 #include <core/app.h>
+#include <editor/inspector.h>
 #include <scene/entity.h>
-#include <scene/inspector.h>
 
 RTTI_DEFINE_COMP( DirectionalLightComponent,
                   RTTI_PROPERTY( m_Color ),

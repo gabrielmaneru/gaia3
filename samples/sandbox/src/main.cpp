@@ -63,7 +63,7 @@ void createDefaultLevel( Level* pLevel )
 	{
 		pCamera->SetPosition( Vec3( 1.0f, 1.0f, -4.12f ) );
 		pCamera->SetRotation( LookAtQuat( Vec3( 0.0f, 0.0f, 1.0f ), Vec3::V_Up ) );
-		pCamera->AddComponent<CameraComponent>();
+		pCamera->AddComponent<FreeCameraComponent>();
 	}
 
 	// Create cube in the middle

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <core/types.h>
+#include <math/boundingBox.h>
 #include <math/vector.h>
 
 #include <string>
@@ -41,4 +42,12 @@ struct ModelData
 
 	// Note: Works out tangents from positions, normals and UVs, for normal maps. Needs every other stream filled
 	void ComputeTangents();
+
+	// Note: Bounding volumes around the vertices the triangles use, the whole model's, one mesh's or one sub-mesh's.
+	// Empty for an index out of range or a model without triangles
+	AABB GetBoundingVolume() const;
+	AABB GetMeshBoundingVolume( u64 meshIndex ) const;
+	AABB GetSubMeshBoundingVolume( u64 meshIndex, u64 subMeshIndex ) const;
+
+	u64 GetTriangleCount() const { return indices.size() / 3; }
 };

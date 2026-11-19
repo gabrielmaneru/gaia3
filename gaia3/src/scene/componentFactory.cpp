@@ -1,7 +1,6 @@
-#include "gaia3_pch.h"
 #include "componentFactory.h"
 
-#include <unordered_map>
+#include <algorithm>
 
 std::unordered_map<std::string, ComponentFactory::CreateFunc>& ComponentFactory::GetCreators()
 {

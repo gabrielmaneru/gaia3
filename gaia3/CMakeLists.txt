@@ -7,6 +7,9 @@ add_library(gaia3 STATIC
     src/core/log.cpp
     src/core/session.cpp
     src/core/serializationTypes.cpp
+    src/editor/editorShell.cpp
+    src/editor/inspector.cpp
+    src/editor/levelEditor.cpp
     src/gfx/framebuffer.cpp
     src/gfx/material.cpp
     src/gfx/model.cpp
@@ -18,6 +21,7 @@ add_library(gaia3 STATIC
     src/gfx/shadowMap.cpp
     src/gfx/texture.cpp
     src/gfx/texture2D.cpp
+    src/math/boundingBox.cpp
     src/math/mathHelpers.cpp
     src/math/matrix.cpp
     src/math/matrixTransforms.cpp
@@ -30,9 +34,7 @@ add_library(gaia3 STATIC
     src/platform/window.cpp
     src/scene/component.cpp
     src/scene/componentFactory.cpp
-    src/scene/editor.cpp
     src/scene/entity.cpp
-    src/scene/inspector.cpp
     src/scene/level.cpp
     src/system/resource.cpp
     src/system/resourceManager.cpp
@@ -42,7 +44,11 @@ add_library(gaia3 STATIC
 # Apply C++ 20 Standard
 target_compile_features(gaia3 PUBLIC cxx_std_20)
 # Configure Precompiled Headers
-target_precompile_headers(gaia3 PRIVATE src/gaia3_pch.h)
+# Note: CMake includes the header in every engine .cpp itself, so files don't include it. Every file still includes
+# what it uses, so the engine also builds with GAIA3_USE_PCH off
+if(GAIA3_USE_PCH)
+    target_precompile_headers(gaia3 PRIVATE src/gaia3_pch.h)
+endif()
 
 # Include Directories
 target_include_directories(gaia3 PUBLIC 
@@ -67,8 +73,9 @@ target_link_libraries(gaia3 PUBLIC
     spdlog::spdlog
 )
 
-# Note: Private because ImGui is an implementation detail of the editor
-target_link_libraries(gaia3 PRIVATE imgui::imgui imguizmo::imguizmo)
+# Note: ImGui is public so samples can build their own editors on EditorShell, ImGuizmo stays inside the shell
+target_link_libraries(gaia3 PUBLIC imgui::imgui)
+target_link_libraries(gaia3 PRIVATE imguizmo::imguizmo)
 
 # Note: stb is header only, texture.cpp compiles the image loader
 target_include_directories(gaia3 PRIVATE ${Stb_INCLUDE_DIR})

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <gfx/modelData.h>
 #include <gfx/rendererTypes.h>
 #include <system/resource.h>
 
@@ -20,6 +21,10 @@ public:
 
 	bool LoadInternal() override;
 	bool UnloadInternal() override;
+
+	// Note: Uploads data to the GPU and finds its materials, replacing whatever the model had. LoadInternal builds from
+	// the file, an editor builds from the copy it changed. Tangents are worked out when data has none
+	bool Build( ModelData data );
 
 	// Note: True for the libraries the model already draws with: its mtllib libraries, and default when some faces
 	// have no material. Overriding with one of them would change nothing

@@ -13,6 +13,7 @@ add_executable(gaia3_tests
     src/gfx/shader_tests.cpp
     src/gfx/shadowMap_tests.cpp
     src/gfx/texture_tests.cpp
+    src/math/boundingBox_tests.cpp
     src/math/mathHelpers_tests.cpp
     src/math/matrix_tests.cpp
     src/math/quaternion_tests.cpp

@@ -41,6 +41,7 @@
 **Resources**
 - Every resource type has its own folder: `levels/`, `models/`, `materials/`, `shaders/` and `textures/`
 - Resources are found by short name, so `models/cube.obj` is simply `cube`
+- Built-in shapes, one unit across: `cube`, `tetrahedron`, `octahedron`, `icosahedron`, `dodecahedron`, a `plane` facing up (+Y), and a `quad` and `triangle` facing +Z, the side a camera sees from its starting direction, like glTF models
 - App assets override the engine's common assets
 - Typed references (`ResourceRef<Model>`) that save as names and pick from a dropdown in the Inspector
 
@@ -61,6 +62,7 @@
 - Translate, rotate and scale gizmos in the Viewport, along the world's axes or the entity's own
 - Unity and Unreal inspired theme that follows the Windows display scale
 - Off by default, each app turns it on through `AppConfig`
+- Built on `EditorShell`, which holds the ImGui setup, viewport, gizmo and Settings menu. `LevelEditor` adds the level tools and is the default, and an app can supply its own editor with `AppConfig::createEditor`
 
 **Foundations**
 - Math library: vectors, matrices, quaternions and transforms
@@ -91,7 +93,7 @@ cmake -S . -B out/build/x64-Debug -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug 
 cmake --build out/build/x64-Debug
 ```
 
-Tests and samples can be switched off with `-DGAIA3_BUILD_TESTS=OFF` and `-DGAIA3_BUILD_SAMPLES=OFF`.
+Tests and samples can be switched off with `-DGAIA3_BUILD_TESTS=OFF` and `-DGAIA3_BUILD_SAMPLES=OFF`. `-DGAIA3_USE_PCH=OFF` builds the engine without its precompiled header, which checks that every file includes what it uses. CMake adds the precompiled header to engine files itself, so they don't include it.
 
 ### Run the sandbox
 
@@ -106,13 +108,40 @@ Tests and samples can be switched off with `-DGAIA3_BUILD_TESTS=OFF` and `-DGAIA
 | `-frames N` | Closes after `N` frames |
 | `-level name` | Opens that level at startup instead of the default one |
 
+### Run the Model Editor
+
+A second sample, an editor for one model at a time built on the same `EditorShell`. It works on a project's assets, the sandbox's by default.
+
+```bash
+./out/build/x64-Debug/samples/modelEditor/modelEditor.exe -model sponza
+```
+
+| Argument | Effect |
+|---|---|
+| `-project path` | Uses that assets folder as the project instead of the sandbox's |
+| `-model name` | Opens that model of the project at startup |
+| `-frames N` | Closes after `N` frames |
+
+**File** opens the project's models or imports an `.obj` from any path. The **Model** panel lists the meshes and their sub-meshes with their materials, and outlines the selected one in the viewport. **Statistics** shows the counts and the size. Right drag orbits, middle drag pans, the wheel zooms and `F` frames the model.
+
+The **Inspector** edits what is selected, then the whole model:
+
+| Section | What you can do |
+|---|---|
+| **Mesh** | Rename, merge into another mesh, delete |
+| **Sub-mesh** | Pick its material from the model's `.mtl` libraries, split it into its own mesh |
+| **Transform** | Move, turn and scale the model with the gizmo or the fields, then **Apply** bakes it into the vertices or **Reset** drops it. The pivot buttons bake straight away, moving the model's centre or base to the origin |
+| **Geometry** | Recompute normals with a smoothing angle, flip faces, weld vertices within a tolerance, remove unused vertices |
+
+**Edit** undoes and redoes the last 16 edits (`Ctrl+Z`, `Ctrl+Y`). **View** frames the model, and shows or hides the ground, the bounding volume and the normals. Normals are drawn as short lines from the vertices of the selection, or of the whole model, coloured like the Normals draw mode, with a length set as a share of the model's size. They are drawn over the image, so normals behind other surfaces show through. Saving is planned.
+
 ### Run the tests
 
 ```bash
 ctest --test-dir out/build/x64-Debug
 ```
 
-This also opens the sandbox for a few frames in each editor mode, so it needs a GPU.
+This also opens the sandbox for a few frames in each editor mode, and the Model Editor, so it needs a GPU.
 
 ## Using the editor
 
@@ -143,7 +172,7 @@ Clones are numbered automatically: cloning `Crate` or `Crate (1)` gives the firs
 
 ## Writing an app
 
-An app fills in an `AppConfig` and hands control to the engine. This is a shortened version of [`sandbox.cpp`](samples/sandbox/src/sandbox.cpp):
+An app fills in an `AppConfig` and hands control to the engine. This is a shortened version of the sandbox's [`main.cpp`](samples/sandbox/src/main.cpp):
 
 ```cpp
 #include <gaia3.h>
@@ -172,7 +201,7 @@ int main()
 	Entity* camera = level->CreateEntity( "Camera" );
 	camera->SetPosition( Vec3( 1.0f, 1.0f, -4.12f ) );
 	camera->SetRotation( LookAtQuat( Vec3( 0.0f, 0.0f, 1.0f ), Vec3::V_Up ) );
-	camera->AddComponent<CameraComponent>();
+	camera->AddComponent<FreeCameraComponent>();
 
 	// Components are added empty, then each property is set
 	Entity* cube = level->CreateEntity( "Cube" );
@@ -203,7 +232,7 @@ RTTI_DEFINE_COMP( HealthComponent,
                   RTTI_PROPERTY( m_Health ) )
 ```
 
-Override `DrawInspector` for a dedicated editing experience, as `CameraComponent` does for its yaw and pitch. Override `OnPropertyChanged` or `OnTransformChanged` to react to edits.
+Override `DrawInspector` for a dedicated editing experience, as `FreeCameraComponent` does for its yaw and pitch. Override `OnPropertyChanged` or `OnTransformChanged` to react to edits.
 
 ### Materials, shaders and textures
 
@@ -276,7 +305,8 @@ graph TD
     App --> Input
     App --> Renderer
     App --> Session
-    App -. optional .-> Editor
+    App -. optional .-> EditorShell
+    EditorShell --> LevelEditor
 
     Session --> ResourceManager
     Session --> Level
@@ -289,6 +319,8 @@ graph TD
     Level --> Entity
     Entity --> Component
     Component --> CameraComponent
+    CameraComponent --> FreeCameraComponent
+    CameraComponent --> OrbitCameraComponent
     Component --> ModelComponent
 
     CameraComponent -. registers with .-> Renderer
@@ -299,7 +331,7 @@ graph TD
     Material -. uses .-> Shader
     Material -. uses .-> Texture
 
-    Editor -. edits .-> Level
+    LevelEditor -. edits .-> Level
 ```
 
 ### Conventions
@@ -327,15 +359,17 @@ gaia3/
 ├── gaia3/                 Engine static library
 │   ├── assets/            Common assets: models, materials, shaders, textures and the editor font
 │   └── src/
-│       ├── components/    CameraComponent, ModelComponent, lights (DirectionalLightComponent, PointLightComponent)
+│       ├── components/    Cameras (FreeCameraComponent, OrbitCameraComponent), ModelComponent, lights (DirectionalLightComponent, PointLightComponent)
 │       ├── core/          App, Session, logging, type aliases
+│       ├── editor/        EditorShell, LevelEditor, Inspector widgets, editor style
 │       ├── gfx/           Renderer, Framebuffer, Model, Material, Shader, Texture, OBJ importer
 │       ├── math/          Vectors, matrices, quaternions, transforms
 │       ├── platform/      Window and Input
-│       ├── scene/         Level, Entity, Component, Editor, Inspector
+│       ├── scene/         Level, Entity, Component
 │       └── system/        RTTI, Resource, ResourceManager, ResourceRef
 ├── gaia3_tests/           GoogleTest suite
 ├── samples/sandbox/       Sample app, and the reference for using the engine
+├── samples/modelEditor/   Model Editor sample, its own editor built on EditorShell
 ├── vcpkg.json             Dependency manifest
 └── CMakeSettings.json     Visual Studio configurations
 ```
@@ -346,7 +380,7 @@ gaia3/
 - **Materials:** only the lines listed in [Materials, shaders and textures](#materials-shaders-and-textures) are read from `.mtl` files.
 - **Model formats:** only OBJ for now. glTF and FBX importers are planned, along with skeletal animation.
 - **Cameras:** the renderer uses one camera, and extra ones are ignored. Choosing a render target per camera is planned.
-- **Undo:** there's no undo or redo yet, and no warning about unsaved changes. Both are planned.
+- **Undo:** the level editor has no undo or redo yet, and no warning about unsaved changes. Both are planned.
 - **Selection:** entities are selected from the Hierarchy, as clicking in the Viewport doesn't pick them.
 - **Hierarchy:** entities have no parents.
 - **OBJ files:** only positive face indices are supported.

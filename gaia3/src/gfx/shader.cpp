@@ -1,7 +1,7 @@
-#include "gaia3_pch.h"
 #include "shader.h"
 
 #include <core/app.h>
+#include <core/log.h>
 
 #include <glad/glad.h>
 

@@ -1,24 +1,23 @@
-#include "gaia3_pch.h"
 #include "shadowMap.h"
 
+#include <core/log.h>
+#include <math/mathHelpers.h>
 #include <math/matrixTransforms.h>
 #include <math/quaternionTransforms.h>
 #include <math/transform.h>
 
 #include <glad/glad.h>
 
-#include <algorithm>
-
 ShadowView FitShadowToBox( const Vec3& lightPosition, const Vec3& lightDirection, float size, float depth, u32 mapSize )
 {
 	// Note: A box with no width or depth can't be projected, so it keeps a small minimum
-	const float halfSize = std::max( size, 0.01f ) * 0.5f;
+	const float halfSize = Max( size, 0.01f ) * 0.5f;
 
 	const Quat     lightRotation = LookAtQuat( lightDirection, Vec3::V_Up );
 	const Matrix44 lightView     = Transform( lightPosition, lightRotation, Vec3::V_One ).Inverse().ToMatrix44();
 
 	// Note: The view looks down -Z from the light, so the box runs from the light to depth along -Z
-	const Matrix44 projection = Orthographic( -halfSize, halfSize, -halfSize, halfSize, 0.0f, std::max( depth, 0.01f ) );
+	const Matrix44 projection = Orthographic( -halfSize, halfSize, -halfSize, halfSize, 0.0f, Max( depth, 0.01f ) );
 
 	ShadowView shadowView;
 	shadowView.viewProjection = projection * lightView;

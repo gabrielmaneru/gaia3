@@ -3,6 +3,7 @@
 #include "testComponents.h"
 
 #include <core/app.h>
+#include <editor/levelEditor.h>
 
 namespace
 {
@@ -15,7 +16,7 @@ protected:
 	Level* GetSessionLevel() { return App::GetSession().GetCurrentLevel(); }
 
 	ScopedTempDir m_Directory;
-	Editor        m_Editor;
+	LevelEditor   m_Editor;
 };
 } // namespace
 

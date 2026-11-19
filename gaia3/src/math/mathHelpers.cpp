@@ -1,5 +1,6 @@
-#include "gaia3_pch.h"
 #include "mathHelpers.h"
+
+#include <core/log.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -32,6 +33,36 @@ float Ramp( float value, float minValue, float maxValue )
 	}
 
 	return Clamp( ( value - minValue ) / ( maxValue - minValue ), 0.0f, 1.0f );
+}
+
+Vec2 Min( const Vec2& a, const Vec2& b )
+{
+	return Vec2( Min( a.x, b.x ), Min( a.y, b.y ) );
+}
+
+Vec3 Min( const Vec3& a, const Vec3& b )
+{
+	return Vec3( Min( a.x, b.x ), Min( a.y, b.y ), Min( a.z, b.z ) );
+}
+
+Vec4 Min( const Vec4& a, const Vec4& b )
+{
+	return Vec4( Min( a.x, b.x ), Min( a.y, b.y ), Min( a.z, b.z ), Min( a.w, b.w ) );
+}
+
+Vec2 Max( const Vec2& a, const Vec2& b )
+{
+	return Vec2( Max( a.x, b.x ), Max( a.y, b.y ) );
+}
+
+Vec3 Max( const Vec3& a, const Vec3& b )
+{
+	return Vec3( Max( a.x, b.x ), Max( a.y, b.y ), Max( a.z, b.z ) );
+}
+
+Vec4 Max( const Vec4& a, const Vec4& b )
+{
+	return Vec4( Max( a.x, b.x ), Max( a.y, b.y ), Max( a.z, b.z ), Max( a.w, b.w ) );
 }
 
 bool IsClose( const Vec2& a, const Vec2& b, float epsilon )
